@@ -32,6 +32,9 @@ apps/web-portal/
 │   ├── api/                  # webhooks or public REST only
 │   └── global.css            # only unscoped global styles
 ├── components/ui/            # design-system primitives (shadcn)
+├── components/providers/     # QueryProvider and other client providers
+├── hooks/                    # TanStack Query hooks (auditor-api)
+├── store/                    # Zustand stores (UI only)
 ├── lib/                      # shared infrastructure (db, redis, auth, env)
 └── features/
     └── <feature-name>/       # e.g. billing, users, inventory
@@ -103,20 +106,42 @@ export default async function Page() {
 
 ## 5. State
 
-- MUST treat server data as RSC + Suspense + Server Action revalidation (`revalidatePath`, `revalidateTag`).
-- MUST NOT copy server data into client `useState` or `useEffect`.
+- MUST treat Next-owned data as RSC + Suspense + Server Action revalidation (`revalidatePath`, `revalidateTag`).
+- PREFER TanStack Query as the only client cache for auditor-api (and other HTTP) data. Do not add SWR, RTK Query, or a second fetch library.
+- MUST NOT copy server or Query data into `useState`, `useEffect`, or Zustand.
 - MUST keep shareable state in the URL: filters, tabs, sort, search, pagination.
 - PREFER nuqs as the only API for that URL state. Do not mix ad-hoc `useSearchParams` / stringly-typed query parsing.
-- PREFER Zustand as the only store for shared client UI (drawers, wizards, disconnected leaves). Do not add React Context stores or extra state libraries. Stores stay client-only; do not put server data in them.
+- PREFER Zustand as the only store for shared client UI (drawers, wizards, disconnected leaves, mode toggles). Do not add React Context stores or extra state libraries. Stores stay client-only; do not put server data in them.
 
-## 6. Validation and mutations
+## 6. TanStack Query
+
+Client cache for auditor-api. The Next server does not store this data; Query holds the browser cache; Nest remains the source of truth.
+
+- MUST create one `QueryClient` inside a client `QueryProvider` mounted from the server `layout.tsx` (factory in `useState`). MUST NOT use a module-level `QueryClient` singleton.
+- MUST keep Query hooks in `hooks/`. One exported hook per query or mutation (e.g. `useAuditSummary`, `useRemediateResource`).
+- MUST put every input that changes the result in `queryKey` (including audit mode). PREFER a key factory so invalidation uses the same tuples.
+- MUST parse query and mutation payloads with Zod contract schemas (`CostAuditSummarySchema`, etc.).
+- MUST run auditor-api writes through `useMutation` and `invalidateQueries` on success. MUST NOT also `setQueryData` with unparsed JSON, and MUST NOT stash the same payload in Zustand.
+- MUST NOT fetch auditor-api data in `useEffect`, and MUST NOT fetch the same resource in an RSC and again in Query (no double source of truth).
+- PREFER these client defaults: `staleTime` of 5 minutes, `refetchOnWindowFocus: false`, `refetchInterval: false` unless the feature is explicitly live-polling.
+
+```ts
+// BAD — module singleton shared across users/requests
+export const queryClient = new QueryClient();
+
+// GOOD — per-browser client in a provider
+const [queryClient] = useState(() => new QueryClient({ ...defaults }));
+```
+
+## 7. Validation and mutations
 
 - MUST validate route params, search params, API bodies, and Server Action payloads with Zod.
 - MUST infer types from schemas (`z.infer<>`).
-- MUST put mutations in `features/<feature>/actions/` with `'use server'`. Parse input, check auth, and return a typed error inside the action — treat it as a public endpoint.
+- MUST put Next-owned mutations in `features/<feature>/actions/` with `'use server'`. Parse input, check auth, and return a typed error inside the action — treat it as a public endpoint.
 - PREFER next-safe-action as the only wrapper around those actions. Do not invent a second action helper.
-- MUST submit forms through Server Actions.
+- MUST submit Next-owned forms through Server Actions.
 - PREFER React Hook Form + `@hookform/resolvers/zod` as the only form library. Do not use `useActionState` or other form kits. The component handles UI feedback; submit still goes to a Server Action.
+- MUST send auditor-api mutations through TanStack `useMutation` (section 6), not a parallel Server Action.
 
 ```ts
 export const updateUserSchema = z.object({
@@ -126,7 +151,7 @@ export const updateUserSchema = z.object({
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 ```
 
-## 7. Vitest
+## 8. Vitest
 
 - MUST colocate unit/integration tests in `features/<feature>/tests/` as `*.test.ts` or `*.test.tsx`.
 - MUST export every util, adapter, and calculation in `features/<feature>/utils/` and give each an isolated unit test (no DOM). Target ≥95% coverage on `utils/`.
@@ -135,7 +160,7 @@ export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 - MUST NOT render RSCs in Vitest. Unit-test queries as async functions against a mocked data layer; pass mock view-models into client presenters.
 - MUST prefer dependency injection over `vi.mock()`.
 
-## 8. Playwright
+## 9. Playwright
 
 Nx convention: e2e is its own application, named with an `-e2e` suffix, sibling to the app under `apps/`.
 
