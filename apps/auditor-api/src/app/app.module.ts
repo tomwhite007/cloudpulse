@@ -1,10 +1,18 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { CLOUD_AUDITOR_SERVICE } from './cloud-auditor.interface';
+import { MockCloudAuditorService } from './mock-cloud-auditor.service';
 
 @Module({
   imports: [],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: CLOUD_AUDITOR_SERVICE,
+      useClass: MockCloudAuditorService,
+    },
+  ],
 })
 export class AppModule {}
