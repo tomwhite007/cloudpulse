@@ -30,7 +30,11 @@
       "vite/client",
       "node",
       "vitest"
-    ]
+    ],
+    "paths": {
+      "@/*": ["./*"],
+      "@cloudpulse/api-contracts": ["../../libs/api-contracts/src/index.ts"]
+    }
   },
   "include": [
     "**/*.ts",
