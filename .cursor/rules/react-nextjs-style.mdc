@@ -28,7 +28,9 @@ apps/web-portal/
 │   ├── dashboard/
 │   │   ├── page.tsx          # thin entry: fetch via RSC, render features
 │   │   ├── layout.tsx
-│   │   └── loading.tsx
+│   │   ├── loading.tsx
+│   │   ├── error.tsx
+│   │   └── not-found.tsx
 │   ├── api/                  # webhooks or public REST only
 │   └── global.css            # only unscoped global styles
 ├── components/ui/            # design-system primitives (shadcn)
@@ -84,7 +86,7 @@ export default async function Page() {
 
 - MUST NOT pass raw database entities (Prisma, Drizzle rows) or raw API entities across the RSC-to-client boundary.
 - MUST reshape data in `features/<feature>/utils/*.adapters.ts` before client props.
-- MUST pass only the primitive fields the client component needs to render.
+- MUST pass only JSON-serializable view-model fields the client needs. MUST NOT pass functions, `Date`, `Map`, `Set`, or class instances as props to client components.
 
 ```ts
 // BAD
@@ -171,3 +173,38 @@ Nx convention: e2e is its own application, named with an `-e2e` suffix, sibling 
 - MUST run against `next build` + `next start` (not only `next dev`).
 - MUST NOT use `page.waitForTimeout()`. Await `expect(locator).toBeVisible()` or network idle.
 - MUST reuse authenticated `storageState` instead of logging in through the UI every suite.
+
+## 10. Route error, loading, and streaming
+
+- MUST add App Router `loading.tsx`, `error.tsx`, and `not-found.tsx` beside the routes that need them. `error.tsx` is a client component.
+- MUST wrap slow RSC subtrees in `<Suspense>` so one slow query does not block the whole page.
+- MUST set document metadata in `layout.tsx` / `page.tsx` (`metadata` or `generateMetadata`). MUST NOT set `document.title` from client effects.
+- PREFER `useOptimistic` for Next-owned Server Action pending UI. MUST NOT use it as a second cache of auditor-api data (that stays TanStack Query + Zustand queued ids).
+
+## 11. Caching (Next 16)
+
+- MUST use Cache Components APIs for Next-owned cached data: `'use cache'`, `cacheLife`, `cacheTag`, and `updateTag` for read-your-writes in a Server Action.
+- MUST NOT add `export const dynamic`, `export const revalidate`, or `export const fetchCache` on routes.
+- MUST NOT use Pages Router data APIs (`getServerSideProps`, `getStaticProps`, `_app`).
+
+## 12. Environment and secrets
+
+- MUST keep secrets in server-only env vars. MUST NOT prefix secrets with `NEXT_PUBLIC_`.
+- PREFER a single Zod-validated env module in `lib/env.ts` (fail at boot). Do not read `process.env` ad hoc inside components.
+
+## 13. Navigation, images, and fonts
+
+- MUST use `next/link` for internal navigation. MUST NOT use a raw `<a>` for in-app routes.
+- MUST use `next/image` for raster images and `next/font` for application fonts. MUST NOT load Google Fonts from a CDN `<link>` in `layout.tsx`.
+
+## 14. Accessibility
+
+- MUST use semantic HTML (`button`, `label`, `nav`, headings in order) rather than clickable `div`s.
+- MUST associate every form control with a visible `<label>` (or `aria-label` when a visible label would be noise).
+- MUST keep flows keyboard-operable. MUST NOT use `outline-none` without a visible `focus-visible` replacement.
+- MUST honour `prefers-reduced-motion` for non-essential animation.
+
+## 15. TypeScript and XSS
+
+- MUST keep `strict` TypeScript. MUST NOT introduce `any` or `as unknown as` to silence the boundary.
+- MUST NOT use `dangerouslySetInnerHTML` unless the HTML is sanitised and there is no alternative. Default to text.
