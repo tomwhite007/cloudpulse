@@ -1,10 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import type {
-  RemediationResponseDto,
-  ResourceStatusCardDto,
-} from '@cloudpulse/api-contracts';
+import type { ResourceStatusCardDto } from '@cloudpulse/api-contracts';
 import { Loader2, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -17,8 +13,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { useRemediateResource } from '@/hooks/use-audit-data';
 import { formatUsd } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { useDashboardStore } from '@/store/dashboard-store';
 
 const SEVERITY_STYLES: Record<
   ResourceStatusCardDto['status'],
@@ -46,39 +44,42 @@ const SEVERITY_STYLES: Record<
   },
 };
 
-type RemediationState = 'idle' | 'loading' | 'queued' | 'error';
-
-async function queueRemediation(
-  resource: ResourceStatusCardDto,
-): Promise<RemediationResponseDto> {
-  await new Promise((resolve) => setTimeout(resolve, 700));
-  return {
-    success: true,
-    resourceId: resource.id,
-    message: `Queued ${resource.recommendedAction.label} for ${resource.resourceName}. Terraform patch will apply in the next plan.`,
-    queuedAt: new Date().toISOString(),
-  };
-}
-
 export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) {
-  const [state, setState] = useState<RemediationState>('idle');
+  const remediate = useRemediateResource();
+  const queuedRemediations = useDashboardStore(
+    (state) => state.queuedRemediations,
+  );
+  const queueRemediation = useDashboardStore((state) => state.queueRemediation);
+  const removeQueuedRemediation = useDashboardStore(
+    (state) => state.removeQueuedRemediation,
+  );
   const severity = SEVERITY_STYLES[resource.status];
+  const isQueued = queuedRemediations.includes(resource.id);
+  const isMutating =
+    remediate.isPending &&
+    remediate.variables?.resourceId === resource.id;
 
   async function handleRemediate() {
-    setState('loading');
-    const toastId = toast.loading(`Queuing ${resource.recommendedAction.label}…`);
+    queueRemediation(resource.id);
+    const toastId = toast.loading(
+      `Queuing ${resource.recommendedAction.label}…`,
+    );
     try {
-      const response = await queueRemediation(resource);
+      const response = await remediate.mutateAsync({
+        resourceId: resource.id,
+        actionId: resource.recommendedAction.actionId,
+      });
       if (!response.success) {
-        setState('error');
+        removeQueuedRemediation(resource.id);
         toast.error(response.message, { id: toastId });
         return;
       }
-      setState('queued');
       toast.success(response.message, { id: toastId });
     } catch {
-      setState('error');
-      toast.error('Unable to queue remediation. Retry in a moment.', { id: toastId });
+      removeQueuedRemediation(resource.id);
+      toast.error('Unable to queue remediation. Retry in a moment.', {
+        id: toastId,
+      });
     }
   }
 
@@ -129,17 +130,19 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
         <p className="text-xs text-muted-foreground">
           1-click remediation · {resource.recommendedAction.actionType}
         </p>
-        {state === 'queued' ? (
+        {isQueued && !isMutating ? (
           <Badge className="border-emerald-400/30 bg-emerald-500/15 text-emerald-300">
             Queued
           </Badge>
         ) : (
           <Button
             size="sm"
-            onClick={handleRemediate}
-            disabled={state === 'loading'}
+            onClick={() => {
+              void handleRemediate();
+            }}
+            disabled={isQueued || isMutating}
           >
-            {state === 'loading' ? (
+            {isMutating ? (
               <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
             ) : null}
             {resource.recommendedAction.label}

@@ -14,15 +14,27 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAuditMode } from '@/lib/audit-mode-context';
+import {
+  useDashboardStore,
+  type ResourceTypeFilter,
+} from '@/store/dashboard-store';
 
-type ResourceFilter = 'all' | ResourceStatusCardDto['status'];
+type StatusFilter = 'all' | ResourceStatusCardDto['status'];
 
-const FILTERS: { value: ResourceFilter; label: string }[] = [
+const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'All findings' },
   { value: 'OVER_PROVISIONED', label: 'Over-provisioned' },
   { value: 'ZOMBIE', label: 'Zombie' },
   { value: 'IDLE', label: 'Idle' },
+];
+
+const RESOURCE_TYPE_FILTERS: { value: ResourceTypeFilter; label: string }[] = [
+  { value: 'ALL', label: 'All types' },
+  { value: 'RDS', label: 'RDS' },
+  { value: 'EBS', label: 'EBS' },
+  { value: 'ECS', label: 'ECS' },
+  { value: 'EC2', label: 'EC2' },
+  { value: 'LAMBDA', label: 'Lambda' },
 ];
 
 export function ResourceFeed({
@@ -30,15 +42,26 @@ export function ResourceFeed({
 }: {
   resources: ResourceStatusCardDto[];
 }) {
-  const { isSimulated } = useAuditMode();
-  const [filter, setFilter] = useState<ResourceFilter>('all');
+  const mode = useDashboardStore((state) => state.mode);
+  const selectedResourceType = useDashboardStore(
+    (state) => state.selectedResourceType,
+  );
+  const setSelectedResourceType = useDashboardStore(
+    (state) => state.setSelectedResourceType,
+  );
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const isSimulated = mode === 'SIMULATED';
 
   const visibleResources = useMemo(() => {
-    if (filter === 'all') {
-      return resources;
-    }
-    return resources.filter((resource) => resource.status === filter);
-  }, [filter, resources]);
+    return resources.filter((resource) => {
+      const matchesType =
+        selectedResourceType === 'ALL' ||
+        resource.resourceType === selectedResourceType;
+      const matchesStatus =
+        statusFilter === 'all' || resource.status === statusFilter;
+      return matchesType && matchesStatus;
+    });
+  }, [resources, selectedResourceType, statusFilter]);
 
   return (
     <section className="space-y-4" aria-label="Audited resource feed">
@@ -50,11 +73,11 @@ export function ResourceFeed({
           </p>
         </div>
         <Tabs
-          value={filter}
-          onValueChange={(value) => setFilter(value as ResourceFilter)}
+          value={statusFilter}
+          onValueChange={(value) => setStatusFilter(value as StatusFilter)}
         >
           <TabsList className="h-auto flex-wrap">
-            {FILTERS.map((item) => (
+            {STATUS_FILTERS.map((item) => (
               <TabsTrigger key={item.value} value={item.value}>
                 {item.label}
               </TabsTrigger>
@@ -62,6 +85,19 @@ export function ResourceFeed({
           </TabsList>
         </Tabs>
       </div>
+
+        <Tabs
+          value={selectedResourceType}
+          onValueChange={(value) => setSelectedResourceType(String(value))}
+        >
+        <TabsList variant="line" className="h-auto flex-wrap">
+          {RESOURCE_TYPE_FILTERS.map((item) => (
+            <TabsTrigger key={item.value} value={item.value}>
+              {item.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {!isSimulated ? (
         <Card className="border-dashed bg-transparent">
@@ -89,9 +125,15 @@ export function ResourceFeed({
             </Badge>
             <span>Sorted by identified monthly waste</span>
           </div>
-          {visibleResources.map((resource) => (
-            <ResourceCard key={resource.id} resource={resource} />
-          ))}
+          {visibleResources.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No resources match the current filters.
+            </p>
+          ) : (
+            visibleResources.map((resource) => (
+              <ResourceCard key={resource.id} resource={resource} />
+            ))
+          )}
         </div>
       )}
     </section>

@@ -1,18 +1,23 @@
 'use client';
 
-import { Activity, Cloud } from 'lucide-react';
+import { Activity, Cloud, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { useAuditSummary } from '@/hooks/use-audit-data';
 import { cn } from '@/lib/utils';
-import { useAuditMode, type AuditMode } from '@/lib/audit-mode-context';
+import { useDashboardStore, type AuditMode } from '@/store/dashboard-store';
 
 const modes: { id: AuditMode; label: string }[] = [
-  { id: 'simulated', label: 'Simulated Enterprise' },
-  { id: 'live', label: 'Live AWS' },
+  { id: 'SIMULATED', label: 'Simulated Enterprise' },
+  { id: 'LIVE', label: 'Live AWS' },
 ];
 
 export function NavHeader() {
-  const { mode, setMode, isSimulated } = useAuditMode();
+  const mode = useDashboardStore((state) => state.mode);
+  const toggleMode = useDashboardStore((state) => state.toggleMode);
+  const { refetch, isFetching } = useAuditSummary();
+  const isSimulated = mode === 'SIMULATED';
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-background/85 backdrop-blur-md">
@@ -50,7 +55,11 @@ export function NavHeader() {
               <button
                 key={option.id}
                 type="button"
-                onClick={() => setMode(option.id)}
+                onClick={() => {
+                  if (!active) {
+                    toggleMode();
+                  }
+                }}
                 className={cn(
                   'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors sm:px-3 sm:text-sm',
                   active
@@ -73,6 +82,21 @@ export function NavHeader() {
         </div>
 
         <div className="flex min-w-0 items-center gap-2 justify-self-start text-xs text-muted-foreground md:justify-self-end">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              void refetch();
+            }}
+            aria-busy={isFetching}
+          >
+            <RefreshCw
+              className={cn('size-3.5', isFetching && 'animate-spin')}
+              aria-hidden="true"
+            />
+            Sync Telemetry
+          </Button>
           <span
             className={cn(
               'size-2 shrink-0 rounded-full',

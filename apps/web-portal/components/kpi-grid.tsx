@@ -11,8 +11,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuditMode } from '@/lib/audit-mode-context';
 import { formatInteger, formatUsd } from '@/lib/format';
+import { useDashboardStore } from '@/store/dashboard-store';
 
 interface KpiItem {
   key: keyof Pick<
@@ -62,8 +62,13 @@ const KPI_ITEMS: KpiItem[] = [
   },
 ];
 
-export function KpiGrid({ summary }: { summary: CostAuditSummaryDto }) {
-  const { isSimulated } = useAuditMode();
+export function KpiGrid({
+  summary,
+}: {
+  summary: CostAuditSummaryDto | undefined;
+}) {
+  const mode = useDashboardStore((state) => state.mode);
+  const isSimulated = mode === 'SIMULATED';
 
   return (
     <section aria-label="FinOps KPI metrics">
@@ -77,7 +82,7 @@ export function KpiGrid({ summary }: { summary: CostAuditSummaryDto }) {
                   <CardTitle className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                     {item.label}
                   </CardTitle>
-                  {isSimulated ? (
+                  {isSimulated && summary ? (
                     <p
                       className={
                         item.tone === 'warning'
@@ -98,7 +103,7 @@ export function KpiGrid({ summary }: { summary: CostAuditSummaryDto }) {
                 </div>
               </CardHeader>
               <CardContent>
-                {item.key === 'complianceScorePercent' && isSimulated ? (
+                {item.key === 'complianceScorePercent' && isSimulated && summary ? (
                   <Progress value={summary.complianceScorePercent} />
                 ) : null}
                 <p className="mt-2 text-xs text-muted-foreground">{item.hint}</p>

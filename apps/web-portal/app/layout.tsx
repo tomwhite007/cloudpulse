@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { QueryProvider } from '@/components/providers/query-provider';
 import './global.css';
 
 export const metadata = {
@@ -15,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="min-h-screen bg-background text-foreground antialiased">
-        {children}
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );
