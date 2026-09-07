@@ -9,7 +9,17 @@ export function PulseAdvisor() {
   const chat = useChat({
     api: '/api/chat',
   } as any) as any;
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = chat;
+  const { messages, isLoading, append } = chat;
+  const [input, setInput] = useState('');
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value);
+  
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    append({ role: 'user', content: input });
+    setInput('');
+  };
 
   const promptPills = [
     "Find zombie storage",
@@ -18,7 +28,7 @@ export function PulseAdvisor() {
   ];
 
   const onPillClick = (prompt: string) => {
-    handleInputChange({ target: { value: prompt } } as any);
+    setInput(prompt);
   };
 
   return (
@@ -124,6 +134,8 @@ export function PulseAdvisor() {
         
         <form onSubmit={handleSubmit} className="relative flex items-center">
           <input
+            id="advisor-input"
+            name="advisor-input"
             type="text"
             value={input || ''}
             onChange={handleInputChange}
