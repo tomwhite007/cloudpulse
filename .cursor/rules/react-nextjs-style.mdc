@@ -239,3 +239,9 @@ Nx convention: e2e is its own application, named with an `-e2e` suffix, sibling 
 - MUST keep `strict` TypeScript. MUST NOT introduce `any` or `as unknown as` to silence the boundary.
 - Nx `index.d.ts` SVG `any` shim is allowed.
 - MUST NOT use `dangerouslySetInnerHTML` unless the HTML is sanitised and there is no alternative. Default to text.
+
+## 16. Agent Workflows & MCPs
+
+- **Nx Integration**: When instructed to generate new components, libraries, or features, AI agents MUST prioritize using the configured `nx` MCP server rather than manually creating files. This ensures Nx generator defaults and project graph consistency are maintained.
+- **Context Generation**: When utilizing or implementing unfamiliar libraries, agents should leverage the `context7` MCP server to query up-to-date documentation.
+- **Linting & Formatting**: Agents should run `nx lint web-portal` after significant architectural changes to ensure strict boundary rules (`@nx/enforce-module-boundaries`) are not violated.
