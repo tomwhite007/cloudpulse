@@ -10,6 +10,7 @@
   },
   "private": true,
   "devDependencies": {
+    "@ai-sdk/provider": "^4.0.10",
     "@eslint/js": "^9.8.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
@@ -62,12 +63,15 @@
     "webpack-dev-server": "^5.2.1"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.60",
+    "@ai-sdk/react": "^4.0.96",
     "@base-ui/react": "^1.7.0",
     "@nestjs/common": "^11.0.0",
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@tanstack/react-query": "^5.102.8",
+    "ai": "^7.0.93",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.40.0",

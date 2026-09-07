@@ -2,7 +2,7 @@
 
 import { Toaster } from '@/components/ui/sonner';
 import { useAuditSummary } from '../hooks/use-audit-data';
-import { CopilotPlaceholder } from './copilot-placeholder';
+import { PulseAdvisor } from '../../../components/pulse-advisor/pulse-advisor';
 import { KpiGrid } from './kpi-grid';
 import { NavHeader } from './nav-header';
 import { ResourceFeed } from './resource-feed';
@@ -22,7 +22,7 @@ export function Dashboard() {
           <ResourceFeed resources={resources} />
         </main>
         <div className="lg:sticky lg:top-20 lg:w-1/3">
-          <CopilotPlaceholder />
+          <PulseAdvisor />
         </div>
       </div>
       <Toaster position="bottom-right" />
