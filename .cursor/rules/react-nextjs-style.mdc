@@ -52,6 +52,7 @@ Organize by domain feature, not by framework artifact type.
 - MUST NOT put business logic, queries, or large component trees in `app/` routes.
 - MUST import shared UI from `components/ui/` and infra from `lib/` only.
 - MUST NOT import another feature's private files. Cross-feature use goes through that feature's `index.ts`.
+- MUST enforce boundary rules and prevent internal deep-imports using `@nx/enforce-module-boundaries` or ESLint path rules.
 - MUST colocate a feature's presenters, Query hooks, and Zustand store under `features/<name>/`. MUST NOT add root `store/` or `hooks/` folders.
 
 ## 2. RSC vs client
@@ -80,7 +81,7 @@ export default function Page() {
 }
 ```
 
-Auditor-api data is Query-only. MUST NOT fetch the same auditor-api resource in an RSC and again in Query.
+Auditor-api data is Query-only. MUST NOT fetch the same auditor-api resource in an RSC and again in Query. Ad-hoc duplicate fetches are forbidden, but RSC prefetching via TanStack Query's `dehydrate` and `<HydrationBoundary>` for initial page loads is permitted.
 
 ## 3. Serialization and adapters
 
@@ -103,7 +104,7 @@ Auditor-api data is Query-only. MUST NOT fetch the same auditor-api resource in 
 ## 4. Files and exports
 
 - MUST put one exported component per file.
-- MUST NOT colocate private helpers, formatters, or adapters inside a component file. Extract them to `features/<feature>/utils/`, export them, and unit-test them in isolation.
+- Non-exported, file-local helper functions and micro-components are allowed if they are private to that file and not reused. Require extraction to `features/<feature>/utils/` only when reused or when business logic requires dedicated unit testing.
 - MUST use named function exports for domain components, actions, and utilities: `export function FeatureCard() {}`.
 - MUST use `export default` only for App Router files: `page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`.
 - MUST colocate extra component types in `<component-name>.types.ts`; feature-wide types in `features/<feature>/utils/` or `types/`.
@@ -123,21 +124,21 @@ Auditor-api data is Query-only. MUST NOT fetch the same auditor-api resource in 
 
 Client cache for auditor-api. The Next server does not store this data; Query holds the browser cache; Nest remains the source of truth.
 
-- MUST create one `QueryClient` inside a client `QueryProvider` mounted from the server `layout.tsx` (factory in `useState`). MUST NOT use a module-level `QueryClient` singleton. QueryProvider stays in `components/providers/`.
+- MUST create one `QueryClient` inside a client `QueryProvider` mounted from the server `layout.tsx`. Replace the `useState` snippet with TanStack's recommended browser-singleton pattern (`getQueryClient()` checking `typeof window === 'undefined'`), ensuring a stable client instance in the browser while isolating server requests. QueryProvider stays in `components/providers/`.
 - MUST keep Query hooks in `features/<feature>/hooks/`. One file per resource may contain that resource's `useQuery` and `useMutation` together (e.g. `useAuditSummary` + `useRemediateResource` in `use-audit-data.ts`).
 - MUST extract pure fetch, parse, and fallback helpers to `features/<feature>/utils/` and test them.
 - MUST put every input that changes the result in `queryKey` (including audit mode). PREFER a key factory so invalidation uses the same tuples.
 - MUST parse query and mutation payloads with Zod contract schemas (`CostAuditSummarySchema`, etc.).
 - MUST run auditor-api writes through `useMutation` and `invalidateQueries` on success. MUST NOT also `setQueryData` with unparsed JSON, and MUST NOT stash the same payload in Zustand.
-- MUST NOT fetch auditor-api data in `useEffect`, and MUST NOT fetch the same resource in an RSC and again in Query (no double source of truth).
+- MUST NOT fetch auditor-api data in `useEffect`, and MUST NOT fetch the same resource in an RSC and again in Query (no double source of truth). RSC prefetching via `dehydrate` and `<HydrationBoundary>` is permitted.
 - PREFER these client defaults: `staleTime` of 5 minutes, `refetchOnWindowFocus: false`, `refetchInterval: false` unless the feature is explicitly live-polling.
 
 ```ts
 // BAD — module singleton shared across users/requests
 export const queryClient = new QueryClient();
 
-// GOOD — per-browser client in a provider
-const [queryClient] = useState(() => new QueryClient({ ...defaults }));
+// GOOD — browser-singleton pattern
+const queryClient = getQueryClient();
 ```
 
 ## 7. Validation and mutations
@@ -147,7 +148,8 @@ const [queryClient] = useState(() => new QueryClient({ ...defaults }));
 - MUST put Next-owned mutations in `features/<feature>/actions/` with `'use server'`. Parse input, check auth, and return a typed error inside the action — treat it as a public endpoint.
 - PREFER next-safe-action as the only wrapper around those actions. Do not invent a second action helper. Do not add the library until a Next-owned form exists.
 - MUST submit Next-owned forms through Server Actions.
-- PREFER React Hook Form + `@hookform/resolvers/zod` as the only form library. Do not use `useActionState` or other form kits. Do not add the libraries until a Next-owned form exists.
+- PERMIT native `useActionState` (React 19) for simple mutations, confirmations, and minimal forms.
+- RESTRICT React Hook Form + `@hookform/resolvers/zod` to complex, multi-input forms or wizards requiring client-side validation logic. Do not add the libraries until such a form exists.
 - MUST send auditor-api mutations through TanStack `useMutation` (section 6), not a parallel Server Action.
 
 ```ts
@@ -176,7 +178,7 @@ Nx convention: e2e is its own application, named with an `-e2e` suffix, sibling 
 - MUST NOT use a repo-root `e2e/` folder or an `e2e-web-portal` prefix.
 - MUST locate with `getByRole`, `getByLabel`, `getByText`. Use `getByTestId` only when semantic HTML cannot distinguish the control.
 - MUST run against `next build` + `next start` (not only `next dev`).
-- MUST NOT use `page.waitForTimeout()`. Await `expect(locator).toBeVisible()` or network idle.
+- MUST NOT use `page.waitForTimeout()` or `page.waitForLoadState('networkidle')`. Rely purely on locator-driven assertions (e.g., `expect(locator).toBeVisible()`).
 - MUST reuse authenticated `storageState` instead of logging in through the UI every suite.
 
 ## 10. Route error, loading, and streaming
