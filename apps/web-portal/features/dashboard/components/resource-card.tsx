@@ -56,6 +56,9 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
   const removeQueuedRemediation = useDashboardStore(
     (state) => state.removeQueuedRemediation,
   );
+  const triggerAdvisorPrompt = useDashboardStore(
+    (state) => state.triggerAdvisorPrompt,
+  );
   const severity = SEVERITY_STYLES[resource.status];
   const isQueued = queuedRemediations.includes(resource.id);
   const isMutating =
@@ -63,27 +66,9 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
     remediate.variables?.resourceId === resource.id;
 
   async function handleRemediate() {
-    queueRemediation(resource.id);
-    const toastId = toast.loading(
-      `Queuing ${resource.recommendedAction.label}…`,
+    triggerAdvisorPrompt(
+      `Remediate resource ${resource.resourceName} with action ${resource.recommendedAction.actionType}`
     );
-    try {
-      const response = await remediate.mutateAsync({
-        resourceId: resource.id,
-        actionId: resource.recommendedAction.actionId,
-      });
-      if (!response.success) {
-        removeQueuedRemediation(resource.id);
-        toast.error(response.message, { id: toastId });
-        return;
-      }
-      toast.success(response.message, { id: toastId });
-    } catch {
-      removeQueuedRemediation(resource.id);
-      toast.error('Unable to queue remediation. Retry in a moment.', {
-        id: toastId,
-      });
-    }
   }
 
   return (
@@ -140,7 +125,7 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
             aria-label="Queued"
             className="border-emerald-400/30 bg-emerald-500/15 text-emerald-300"
           >
-            Queued
+            ✓ PR Drafted
           </Badge>
         ) : (
           <Button

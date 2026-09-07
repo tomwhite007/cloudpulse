@@ -16,12 +16,14 @@ interface DashboardStore {
   selectedResourceType: ResourceTypeFilter;
   statusFilter: StatusFilter;
   queuedRemediations: string[];
+  advisorPrompt: string | null;
   setMode: (mode: AuditMode) => void;
   toggleMode: () => void;
   setSelectedResourceType: (type: string) => void;
   setStatusFilter: (status: string) => void;
   queueRemediation: (resourceId: string) => void;
   removeQueuedRemediation: (resourceId: string) => void;
+  triggerAdvisorPrompt: (prompt: string | null) => void;
 }
 
 const initialChrome = {
@@ -29,6 +31,7 @@ const initialChrome = {
   selectedResourceType: 'ALL' as ResourceTypeFilter,
   statusFilter: 'all' as StatusFilter,
   queuedRemediations: [] as string[],
+  advisorPrompt: null as string | null,
 };
 
 export const useDashboardStore = create<DashboardStore>((set) => ({
@@ -62,6 +65,7 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
         (id) => id !== resourceId,
       ),
     })),
+  triggerAdvisorPrompt: (prompt) => set({ advisorPrompt: prompt }),
 }));
 
 export function resetDashboardStore() {

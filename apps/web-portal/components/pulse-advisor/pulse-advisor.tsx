@@ -1,7 +1,8 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useDashboardStore } from '../../features/dashboard/store/dashboard-store';
 import { Send, Bot, Loader2, CheckCircle } from 'lucide-react';
 import { RemediationProposalCard } from './remediation-proposal-card';
 
@@ -11,6 +12,16 @@ export function PulseAdvisor() {
   } as any);
   const isLoading = status === 'submitted' || status === 'streaming';
   const [input, setInput] = useState('');
+  
+  const advisorPrompt = useDashboardStore(state => state.advisorPrompt);
+  const triggerAdvisorPrompt = useDashboardStore(state => state.triggerAdvisorPrompt);
+
+  useEffect(() => {
+    if (advisorPrompt) {
+      (sendMessage as any)({ role: 'user', content: advisorPrompt });
+      triggerAdvisorPrompt(null);
+    }
+  }, [advisorPrompt, sendMessage, triggerAdvisorPrompt]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value);
   

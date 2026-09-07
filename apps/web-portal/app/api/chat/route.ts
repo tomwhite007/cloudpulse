@@ -26,7 +26,7 @@ const mockModel = {
               toolCallType: 'function', 
               toolCallId: 'call_mock_123', 
               toolName: 'propose_terraform_remediation_pr', 
-              input: '{"resourceId":"res-ebs-analytics-scratch","resourceType":"EBS","actionType":"TERMINATE"}' 
+              input: '{"resourceId":"res-ebs-02","resourceType":"EBS","actionType":"TERMINATE"}' 
             });
             controller.enqueue({ 
               type: 'finish', 
@@ -74,6 +74,24 @@ export async function POST(req: Request) {
           targetBranch: z.string().optional(),
         }),
         execute: async (args: any): Promise<any> => {
+          if (isDemoMode) {
+            return {
+              resourceId: 'res-ebs-02',
+              resourceName: 'analytics-scratch-vol-08f2',
+              actionType: 'TERMINATE',
+              monthlySavingsUsd: 950.00,
+              branchName: 'finops/remediate-scratch-vol-08f2',
+              commitMessage: 'fix(infra): terminate unattached 2TB scratch volume',
+              hclDiff: '- resource "aws_ebs_volume" "analytics_scratch" {\n-   availability_zone = "us-west-2a"\n-   size              = 2048\n-   type              = "io2"\n- }',
+              safetyChecks: [
+                'Volume detached > 30 days',
+                'Zero read/write IOPS recorded',
+                'Final EBS snapshot initiated'
+              ],
+              isSimulated: true
+            };
+          }
+          
           try {
             const transport = new SSEClientTransport(new URL('http://localhost:3000/api/mcp/sse'));
             const client = new Client({ name: 'web-portal', version: '1.0.0' }, { capabilities: {} });
@@ -87,7 +105,6 @@ export async function POST(req: Request) {
             const content = (result as any).content[0] as { type: 'text', text: string };
             const payload = JSON.parse(content.text);
             
-            // Also need resourceName and actionLabel for the UI
             const resource = MOCK_COST_AUDIT_SUMMARY.resources.find(r => r.id === args.resourceId);
             
             return {

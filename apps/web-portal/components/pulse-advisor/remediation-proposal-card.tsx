@@ -9,9 +9,12 @@ export interface RemediationProposalProps {
   hclDiff: string;
   actionLabel: string;
   branchName: string;
-  prTitle: string;
+  prTitle?: string;
   commitMessage: string;
   safetyChecks: string[];
+  isSimulated?: boolean;
+  monthlySavingsUsd?: number;
+  actionType?: string;
 }
 
 export function RemediationProposalCard({
@@ -22,7 +25,11 @@ export function RemediationProposalCard({
   actionLabel,
   branchName,
   prTitle,
-  safetyChecks
+  commitMessage,
+  safetyChecks,
+  isSimulated,
+  monthlySavingsUsd,
+  actionType
 }: RemediationProposalProps) {
   const queueRemediation = useDashboardStore(state => state.queueRemediation);
   const [isApproved, setIsApproved] = useState(false);
@@ -34,10 +41,15 @@ export function RemediationProposalCard({
 
   return (
     <div className="my-4 rounded-xl border border-white/10 bg-white/5 p-4 shadow-lg backdrop-blur-md transition-all duration-300">
+      {isSimulated && (
+        <div className="mb-3 inline-flex items-center rounded bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-400 border border-amber-500/20">
+          SIMULATED PROPOSAL (MOCK)
+        </div>
+      )}
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-lg font-medium text-white">{prTitle || actionLabel}</h4>
+        <h4 className="text-lg font-medium text-white">{prTitle || commitMessage || actionLabel || actionType}</h4>
         <span className="rounded-full bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-300">
-          Save ${estimatedMonthlySavingsUsd}/mo
+          +${monthlySavingsUsd || estimatedMonthlySavingsUsd}/mo
         </span>
       </div>
       
@@ -89,7 +101,7 @@ export function RemediationProposalCard({
             onClick={handleApprove}
             className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900 transition-all active:scale-95"
           >
-            Create Pull Request
+            Draft Pull Request
           </button>
         )}
       </div>
