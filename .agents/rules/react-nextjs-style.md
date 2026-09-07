@@ -124,7 +124,7 @@ Auditor-api data is Query-only. MUST NOT fetch the same auditor-api resource in 
 
 Client cache for auditor-api. The Next server does not store this data; Query holds the browser cache; Nest remains the source of truth.
 
-- MUST create one `QueryClient` inside a client `QueryProvider` mounted from the server `layout.tsx`. Replace the `useState` snippet with TanStack's recommended browser-singleton pattern (`getQueryClient()` checking `typeof window === 'undefined'`), ensuring a stable client instance in the browser while isolating server requests. QueryProvider stays in `components/providers/`.
+- MUST create one `QueryClient` inside a client `QueryProvider` mounted from the server `layout.tsx` using TanStack's browser-singleton pattern (`getQueryClient()` checking `typeof window === 'undefined'`), ensuring a stable client instance across client Suspense boundaries while isolating per-request instances on the server. QueryProvider stays in `components/providers/`.
 - MUST keep Query hooks in `features/<feature>/hooks/`. One file per resource may contain that resource's `useQuery` and `useMutation` together (e.g. `useAuditSummary` + `useRemediateResource` in `use-audit-data.ts`).
 - MUST extract pure fetch, parse, and fallback helpers to `features/<feature>/utils/` and test them.
 - MUST put every input that changes the result in `queryKey` (including audit mode). PREFER a key factory so invalidation uses the same tuples.
@@ -138,6 +138,26 @@ Client cache for auditor-api. The Next server does not store this data; Query ho
 export const queryClient = new QueryClient();
 
 // GOOD — browser-singleton pattern
+// lib/query-client.ts or inside QueryProvider
+function makeQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { staleTime: 5 * 60 * 1000 },
+    },
+  });
+}
+
+let browserQueryClient: QueryClient | undefined = undefined;
+
+export function getQueryClient() {
+  if (typeof window === 'undefined') {
+    return makeQueryClient();
+  }
+  if (!browserQueryClient) browserQueryClient = makeQueryClient();
+  return browserQueryClient;
+}
+
+// Inside QueryProvider:
 const queryClient = getQueryClient();
 ```
 
@@ -184,7 +204,7 @@ Nx convention: e2e is its own application, named with an `-e2e` suffix, sibling 
 ## 10. Route error, loading, and streaming
 
 - MUST add App Router `loading.tsx`, `error.tsx`, and `not-found.tsx` beside the routes that need them. `error.tsx` is a client component.
-- MUST wrap slow **RSC** subtrees in `<Suspense>` so one slow query does not block the whole page. Auditor-api Query loading stays skeletons / `isFetching`, not RSC Suspense.
+- MUST wrap slow **RSC** subtrees in `<Suspense>` so one slow query does not block the whole page. When prefetching auditor-api data on the server via `HydrationBoundary`, streaming via RSC `<Suspense>` around the feature screen is permitted; purely client-fetched auditor-api queries rely on client skeletons / `isPending` / `isFetching`.
 - MUST set document metadata in `layout.tsx` / `page.tsx` (`metadata` or `generateMetadata`). MUST NOT set `document.title` from client effects.
 - PREFER `useOptimistic` for Next-owned Server Action pending UI. MUST NOT use it as a second cache of auditor-api data (that stays TanStack Query + Zustand queued ids).
 
