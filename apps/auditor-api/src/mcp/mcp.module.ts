@@ -1,0 +1,17 @@
+import { Module } from '@nestjs/common';
+import { McpController } from './mcp.controller';
+import { GitFlowMcpServer } from './gitflow-mcp.server';
+import { MockCloudAuditorService } from '../app/mock-cloud-auditor.service';
+import { CLOUD_AUDITOR_SERVICE } from '../app/cloud-auditor.interface';
+
+@Module({
+  controllers: [McpController],
+  providers: [
+    GitFlowMcpServer,
+    {
+      provide: CLOUD_AUDITOR_SERVICE,
+      useClass: MockCloudAuditorService,
+    },
+  ],
+})
+export class McpModule {}

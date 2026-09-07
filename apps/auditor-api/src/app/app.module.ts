@@ -3,9 +3,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CLOUD_AUDITOR_SERVICE } from './cloud-auditor.interface';
 import { MockCloudAuditorService } from './mock-cloud-auditor.service';
+import { McpModule } from '../mcp/mcp.module';
 
 @Module({
-  imports: [],
+  imports: [McpModule],
   controllers: [AppController],
   providers: [
     AppService,
