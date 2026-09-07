@@ -78,11 +78,11 @@ export interface AuditApiDeps {
   simulated?: typeof simulatedRemediation;
 }
 
-function summaryEndpoint(deps: AuditApiDeps): string {
+export function summaryEndpoint(deps: AuditApiDeps = {}): string {
   return deps.summaryUrl ?? `${env.NEXT_PUBLIC_AUDITOR_API_URL}/api/audit/summary`;
 }
 
-function remediateEndpoint(deps: AuditApiDeps): string {
+export function remediateEndpoint(deps: AuditApiDeps = {}): string {
   return (
     deps.remediateUrl ??
     `${env.NEXT_PUBLIC_AUDITOR_API_URL}/api/audit/remediate`

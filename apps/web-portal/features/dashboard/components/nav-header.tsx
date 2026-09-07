@@ -6,21 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useAuditSummary } from '../hooks/use-audit-data';
-import {
-  useDashboardStore,
-  type AuditMode,
-} from '../store/dashboard-store';
-
-const modes: { id: AuditMode; label: string }[] = [
-  { id: 'SIMULATED', label: 'Simulated Enterprise' },
-  { id: 'LIVE', label: 'Live AWS' },
-];
+import { useDashboardStore } from '../store/dashboard-store';
+import { AUDIT_MODE_OPTIONS } from '../utils/filters';
 
 export function NavHeader() {
   const mode = useDashboardStore((state) => state.mode);
   const toggleMode = useDashboardStore((state) => state.toggleMode);
   const { refetch, isFetching } = useAuditSummary();
   const isSimulated = mode === 'SIMULATED';
+  const engineStatus = isSimulated
+    ? 'Auditor Engine: Connected (Local)'
+    : 'Auditor Engine: Awaiting AWS credentials';
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-background/85 backdrop-blur-md">
@@ -31,9 +27,9 @@ export function NavHeader() {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <p className="truncate text-sm font-semibold tracking-tight text-foreground sm:text-base">
+              <h1 className="truncate text-sm font-semibold tracking-tight text-foreground sm:text-base">
                 CloudPulse
-              </p>
+              </h1>
               <Badge
                 variant="outline"
                 className="hidden border-sky-500/30 bg-sky-500/10 text-sky-300 sm:inline-flex"
@@ -52,7 +48,7 @@ export function NavHeader() {
           role="group"
           aria-label="Audit data source"
         >
-          {modes.map((option) => {
+          {AUDIT_MODE_OPTIONS.map((option) => {
             const active = mode === option.id;
             return (
               <button
@@ -113,10 +109,13 @@ export function NavHeader() {
             aria-hidden="true"
           />
           <Cloud className="size-3.5 shrink-0" aria-hidden="true" />
-          <span className="truncate">
-            {isSimulated
-              ? 'Auditor Engine: Connected (Local)'
-              : 'Auditor Engine: Awaiting AWS credentials'}
+          <span
+            className="truncate"
+            role="status"
+            aria-live="polite"
+            aria-label={engineStatus}
+          >
+            {engineStatus}
           </span>
         </div>
       </div>

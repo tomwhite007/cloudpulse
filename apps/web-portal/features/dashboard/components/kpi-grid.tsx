@@ -12,55 +12,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDashboardStore } from '../store/dashboard-store';
-import { formatInteger, formatUsd } from '../utils/format';
+import { KPI_ITEMS, kpiValueClassName } from '../utils/kpi-items';
+import type { KpiMetricKey } from './kpi-grid.types';
 
-interface KpiItem {
-  key: keyof Pick<
-    CostAuditSummaryDto,
-    | 'totalMonthlySpend'
-    | 'totalIdentifiedWaste'
-    | 'activeAssetCount'
-    | 'complianceScorePercent'
-  >;
-  label: string;
-  icon: LucideIcon;
-  format: (summary: CostAuditSummaryDto) => string;
-  hint: string;
-  tone?: 'default' | 'warning' | 'success';
-}
-
-const KPI_ITEMS: KpiItem[] = [
-  {
-    key: 'totalMonthlySpend',
-    label: 'Total Monthly Spend',
-    icon: DollarSign,
-    format: (summary) => formatUsd(summary.totalMonthlySpend),
-    hint: 'Trailing 30-day cloud invoice',
-  },
-  {
-    key: 'totalIdentifiedWaste',
-    label: 'Identified Monthly Waste',
-    icon: Leaf,
-    format: (summary) => formatUsd(summary.totalIdentifiedWaste),
-    hint: 'Recoverable run-rate from findings',
-    tone: 'warning',
-  },
-  {
-    key: 'activeAssetCount',
-    label: 'Monitored Cloud Assets',
-    icon: Server,
-    format: (summary) => formatInteger(summary.activeAssetCount),
-    hint: 'Resources under continuous audit',
-  },
-  {
-    key: 'complianceScorePercent',
-    label: 'FinOps Compliance Score',
-    icon: ShieldCheck,
-    format: (summary) => `${summary.complianceScorePercent}%`,
-    hint: 'Policy adherence across estates',
-    tone: 'success',
-  },
-];
+const KPI_ICONS: Record<KpiMetricKey, LucideIcon> = {
+  totalMonthlySpend: DollarSign,
+  totalIdentifiedWaste: Leaf,
+  activeAssetCount: Server,
+  complianceScorePercent: ShieldCheck,
+};
 
 export function KpiGrid({
   summary,
@@ -74,7 +34,7 @@ export function KpiGrid({
     <section aria-label="FinOps KPI metrics">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {KPI_ITEMS.map((item) => {
-          const Icon = item.icon;
+          const Icon = KPI_ICONS[item.key];
           return (
             <Card key={item.key} className="bg-card/80">
               <CardHeader className="flex flex-row items-start justify-between gap-3">
@@ -83,15 +43,7 @@ export function KpiGrid({
                     {item.label}
                   </CardTitle>
                   {isSimulated && summary ? (
-                    <p
-                      className={
-                        item.tone === 'warning'
-                          ? 'mt-2 text-2xl font-semibold tracking-tight text-amber-300'
-                          : item.tone === 'success'
-                            ? 'mt-2 text-2xl font-semibold tracking-tight text-emerald-300'
-                            : 'mt-2 text-2xl font-semibold tracking-tight text-foreground'
-                      }
-                    >
+                    <p className={kpiValueClassName(item.tone)}>
                       {item.format(summary)}
                     </p>
                   ) : (

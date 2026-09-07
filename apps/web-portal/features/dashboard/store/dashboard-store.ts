@@ -24,11 +24,15 @@ interface DashboardStore {
   removeQueuedRemediation: (resourceId: string) => void;
 }
 
+const initialChrome = {
+  mode: 'SIMULATED' as AuditMode,
+  selectedResourceType: 'ALL' as ResourceTypeFilter,
+  statusFilter: 'all' as StatusFilter,
+  queuedRemediations: [] as string[],
+};
+
 export const useDashboardStore = create<DashboardStore>((set) => ({
-  mode: 'SIMULATED',
-  selectedResourceType: 'ALL',
-  statusFilter: 'all',
-  queuedRemediations: [],
+  ...initialChrome,
   setMode: (mode) => set({ mode }),
   toggleMode: () =>
     set((state) => ({
@@ -59,3 +63,7 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
       ),
     })),
 }));
+
+export function resetDashboardStore() {
+  useDashboardStore.setState({ ...initialChrome });
+}

@@ -1,18 +1,29 @@
-import React from 'react';
-import { render, screen } from '@testing-library/react';
-import Page from '../app/page';
-import { QueryProvider } from '@/components/providers/query-provider';
+import { Dashboard } from '@/features/dashboard';
+import { screen } from '@testing-library/react';
+import {
+  renderPresenter,
+  usePresenterTestLifecycle,
+} from '../features/dashboard/tests/presenter-harness';
 
-describe('Page', () => {
-  it('should render the CloudPulse dashboard', () => {
-    const { baseElement } = render(
-      <QueryProvider>
-        <Page />
-      </QueryProvider>,
-    );
-    expect(baseElement).toBeTruthy();
-    expect(screen.getByText('CloudPulse')).toBeTruthy();
-    expect(screen.getByText('Total Monthly Spend')).toBeTruthy();
-    expect(screen.getByText('FinOps AI Copilot (GenUI)')).toBeTruthy();
+usePresenterTestLifecycle();
+
+describe('Dashboard', () => {
+  it('renders the FinOps screen landmarks', async () => {
+    await renderPresenter(<Dashboard />);
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'CloudPulse' }),
+    ).toBeDefined();
+    expect(
+      screen.getByRole('region', { name: 'FinOps KPI metrics' }),
+    ).toBeDefined();
+    expect(
+      screen.getByRole('region', { name: 'Audited resource feed' }),
+    ).toBeDefined();
+    expect(
+      screen.getByRole('complementary', {
+        name: 'FinOps AI Copilot placeholder',
+      }),
+    ).toBeDefined();
   });
 });

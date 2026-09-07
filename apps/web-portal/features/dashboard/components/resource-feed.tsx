@@ -13,32 +13,13 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useDashboardStore } from '../store/dashboard-store';
 import {
-  useDashboardStore,
-  type ResourceTypeFilter,
-  type StatusFilter,
-} from '../store/dashboard-store';
-import { filterResources } from '../utils/filters';
+  filterResources,
+  RESOURCE_TYPE_FILTER_OPTIONS,
+  STATUS_FILTER_OPTIONS,
+} from '../utils/filters';
 import { ResourceCard } from './resource-card';
-
-const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: 'All findings' },
-  { value: 'OVER_PROVISIONED', label: 'Over-provisioned' },
-  { value: 'ZOMBIE', label: 'Zombie' },
-  { value: 'IDLE', label: 'Idle' },
-];
-
-const RESOURCE_TYPE_FILTER_OPTIONS: {
-  value: ResourceTypeFilter;
-  label: string;
-}[] = [
-  { value: 'ALL', label: 'All types' },
-  { value: 'RDS', label: 'RDS' },
-  { value: 'EBS', label: 'EBS' },
-  { value: 'ECS', label: 'ECS' },
-  { value: 'EC2', label: 'EC2' },
-  { value: 'LAMBDA', label: 'Lambda' },
-];
 
 export function ResourceFeed({
   resources,
@@ -110,7 +91,7 @@ export function ResourceFeed({
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm">
               <Radio className="size-4 text-amber-300" aria-hidden="true" />
-              Live AWS connector pending
+              <h3 className="text-sm font-medium">Live AWS connector pending</h3>
             </CardTitle>
             <CardDescription>
               Switch back to Simulated Enterprise to inspect the Day 3 mock
@@ -132,7 +113,12 @@ export function ResourceFeed({
             <span>Sorted by identified monthly waste</span>
           </div>
           {visibleResources.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <p
+              role="status"
+              aria-live="polite"
+              aria-label="No resources match the current filters."
+              className="text-sm text-muted-foreground"
+            >
               No resources match the current filters.
             </p>
           ) : (

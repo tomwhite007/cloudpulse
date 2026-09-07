@@ -68,7 +68,7 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <CardTitle className="truncate font-semibold">
-              {resource.resourceName}
+              <h3 className="truncate font-semibold">{resource.resourceName}</h3>
             </CardTitle>
             <CardDescription className="mt-1 flex flex-wrap items-center gap-2">
               <span>{resource.resourceType}</span>
@@ -106,7 +106,12 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
           1-click remediation · {resource.recommendedAction.actionType}
         </p>
         {isQueued && !isMutating ? (
-          <Badge className="border-emerald-400/30 bg-emerald-500/15 text-emerald-300">
+          <Badge
+            role="status"
+            aria-live="polite"
+            aria-label="Queued"
+            className="border-emerald-400/30 bg-emerald-500/15 text-emerald-300"
+          >
             Queued
           </Badge>
         ) : (

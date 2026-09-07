@@ -4,20 +4,38 @@ export type AuditMode = 'SIMULATED' | 'LIVE';
 export type ResourceTypeFilter = 'ALL' | ResourceStatusCardDto['resourceType'];
 export type StatusFilter = 'all' | ResourceStatusCardDto['status'];
 
-export const RESOURCE_TYPE_FILTERS: readonly ResourceTypeFilter[] = [
-  'ALL',
-  'RDS',
-  'EBS',
-  'ECS',
-  'EC2',
-  'LAMBDA',
+export const AUDIT_MODE_OPTIONS: readonly { id: AuditMode; label: string }[] = [
+  { id: 'SIMULATED', label: 'Simulated Enterprise' },
+  { id: 'LIVE', label: 'Live AWS' },
 ];
 
+export const RESOURCE_TYPE_FILTER_OPTIONS: readonly {
+  value: ResourceTypeFilter;
+  label: string;
+}[] = [
+  { value: 'ALL', label: 'All types' },
+  { value: 'RDS', label: 'RDS' },
+  { value: 'EBS', label: 'EBS' },
+  { value: 'ECS', label: 'ECS' },
+  { value: 'EC2', label: 'EC2' },
+  { value: 'LAMBDA', label: 'Lambda' },
+];
+
+export const STATUS_FILTER_OPTIONS: readonly {
+  value: StatusFilter;
+  label: string;
+}[] = [
+  { value: 'all', label: 'All findings' },
+  { value: 'OVER_PROVISIONED', label: 'Over-provisioned' },
+  { value: 'ZOMBIE', label: 'Zombie' },
+  { value: 'IDLE', label: 'Idle' },
+];
+
+export const RESOURCE_TYPE_FILTERS: readonly ResourceTypeFilter[] =
+  RESOURCE_TYPE_FILTER_OPTIONS.map((item) => item.value);
+
 export const STATUS_FILTERS: readonly StatusFilter[] = [
-  'all',
-  'OVER_PROVISIONED',
-  'ZOMBIE',
-  'IDLE',
+  ...STATUS_FILTER_OPTIONS.map((item) => item.value),
   'HEALTHY',
 ];
 

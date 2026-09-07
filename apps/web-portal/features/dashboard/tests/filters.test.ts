@@ -1,9 +1,12 @@
 import type { ResourceStatusCardDto } from '@cloudpulse/api-contracts';
 import { describe, expect, it } from 'vitest';
 import {
+  AUDIT_MODE_OPTIONS,
   filterResources,
   isResourceTypeFilter,
   isStatusFilter,
+  RESOURCE_TYPE_FILTER_OPTIONS,
+  STATUS_FILTER_OPTIONS,
 } from '../utils/filters';
 
 function resource(
@@ -99,5 +102,35 @@ describe('filterResources', () => {
         status: 'HEALTHY',
       }),
     ).toEqual([]);
+  });
+});
+
+describe('filter option catalogs', () => {
+  it('lists both audit modes', () => {
+    expect(AUDIT_MODE_OPTIONS.map((item) => item.id)).toEqual([
+      'SIMULATED',
+      'LIVE',
+    ]);
+  });
+
+  it('lists resource type tabs including ALL', () => {
+    expect(RESOURCE_TYPE_FILTER_OPTIONS.map((item) => item.value)).toEqual([
+      'ALL',
+      'RDS',
+      'EBS',
+      'ECS',
+      'EC2',
+      'LAMBDA',
+    ]);
+  });
+
+  it('lists status tabs without HEALTHY, which remains a type-guard value', () => {
+    expect(STATUS_FILTER_OPTIONS.map((item) => item.value)).toEqual([
+      'all',
+      'OVER_PROVISIONED',
+      'ZOMBIE',
+      'IDLE',
+    ]);
+    expect(isStatusFilter('HEALTHY')).toBe(true);
   });
 });

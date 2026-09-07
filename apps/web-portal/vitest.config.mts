@@ -31,6 +31,14 @@ export default defineConfig(() => ({
       reportsDirectory: '../../coverage/apps/web-portal',
       provider: 'v8' as const,
       include: ['features/dashboard/utils/**/*.ts', 'lib/env.ts'],
+      thresholds: {
+        'features/dashboard/utils/**/*.ts': {
+          statements: 95,
+          branches: 95,
+          functions: 95,
+          lines: 95,
+        },
+      },
     },
   },
 }));

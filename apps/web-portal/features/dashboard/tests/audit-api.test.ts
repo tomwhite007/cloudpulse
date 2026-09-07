@@ -8,7 +8,9 @@ import {
   fetchAuditSummary,
   fetchJson,
   postRemediation,
+  remediateEndpoint,
   simulatedRemediation,
+  summaryEndpoint,
 } from '../utils/audit-api';
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -22,6 +24,32 @@ const matchingRequest: RemediationRequestDto = {
   resourceId: MOCK_AUDIT_RESOURCES[0].id,
   actionId: MOCK_AUDIT_RESOURCES[0].recommendedAction.actionId,
 };
+
+describe('summaryEndpoint', () => {
+  it('uses the env API base by default', () => {
+    expect(summaryEndpoint()).toBe('http://localhost:3000/api/audit/summary');
+  });
+
+  it('prefers an explicit summary URL', () => {
+    expect(summaryEndpoint({ summaryUrl: 'https://auditor.test/summary' })).toBe(
+      'https://auditor.test/summary',
+    );
+  });
+});
+
+describe('remediateEndpoint', () => {
+  it('uses the env API base by default', () => {
+    expect(remediateEndpoint()).toBe(
+      'http://localhost:3000/api/audit/remediate',
+    );
+  });
+
+  it('prefers an explicit remediate URL', () => {
+    expect(
+      remediateEndpoint({ remediateUrl: 'https://auditor.test/remediate' }),
+    ).toBe('https://auditor.test/remediate');
+  });
+});
 
 describe('fetchJson', () => {
   it('returns parsed JSON for a successful response', async () => {
@@ -96,6 +124,33 @@ describe('simulatedRemediation', () => {
     );
     expect(result.success).toBe(false);
   });
+
+  it('uses an injected resource catalog instead of the contract mock', () => {
+    const queuedAt = '2026-09-04T12:00:00.000Z';
+    const custom = {
+      ...MOCK_AUDIT_RESOURCES[0],
+      id: 'custom-rds',
+      resourceName: 'custom-rds',
+      recommendedAction: {
+        ...MOCK_AUDIT_RESOURCES[0].recommendedAction,
+        actionId: 'act-custom',
+        label: 'Resize Custom',
+      },
+    };
+
+    expect(
+      simulatedRemediation(
+        { resourceId: 'custom-rds', actionId: 'act-custom' },
+        { resources: [custom], nowIso: queuedAt },
+      ),
+    ).toEqual({
+      success: true,
+      resourceId: 'custom-rds',
+      message:
+        'Queued Resize Custom for custom-rds. Terraform patch will apply in the next plan.',
+      queuedAt,
+    });
+  });
 });
 
 describe('fetchAuditSummary', () => {
@@ -156,6 +211,16 @@ describe('postRemediation', () => {
       },
       simulated: (request) =>
         simulatedRemediation(request, { nowIso: '2026-09-04T12:00:00.000Z' }),
+    });
+    expect(result.success).toBe(true);
+    expect(result.resourceId).toBe(matchingRequest.resourceId);
+  });
+
+  it('falls back to the default simulated helper when none is injected', async () => {
+    const result = await postRemediation(matchingRequest, 'SIMULATED', {
+      fetchJsonImpl: async () => {
+        throw new Error('network down');
+      },
     });
     expect(result.success).toBe(true);
     expect(result.resourceId).toBe(matchingRequest.resourceId);
