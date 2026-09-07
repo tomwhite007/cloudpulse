@@ -3,10 +3,10 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "nx build web-portal",
-    "test": "nx test web-portal",
+    "build-web-portal": "nx build web-portal",
     "serve-mock-api": "nx serve auditor-api",
     "serve-web-portal": "nx dev web-portal --port 4000",
+    "test-web-portal": "nx test web-portal",
     "test-api-contracts": "nx run api-contracts:test",
     "test-auditor-api": "nx test auditor-api"
   },

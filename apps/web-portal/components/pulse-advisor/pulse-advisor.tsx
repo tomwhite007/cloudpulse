@@ -32,7 +32,7 @@ export function PulseAdvisor() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/80 shadow-2xl backdrop-blur-xl">
+    <div role="complementary" aria-label="PulseAdvisor AI Assistant" className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/80 shadow-2xl backdrop-blur-xl">
       <div className="flex items-center gap-3 border-b border-white/10 p-4">
         <div className="flex size-8 items-center justify-center rounded-full bg-blue-600/20 text-blue-400">
           <Bot className="size-5" />

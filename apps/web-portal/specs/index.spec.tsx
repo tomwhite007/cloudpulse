@@ -22,7 +22,7 @@ describe('Dashboard', () => {
     ).toBeDefined();
     expect(
       screen.getByRole('complementary', {
-        name: 'FinOps AI Copilot placeholder',
+        name: 'PulseAdvisor AI Assistant',
       }),
     ).toBeDefined();
   });
