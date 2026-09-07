@@ -6,7 +6,8 @@
     "build": "nx build web-portal",
     "test": "nx test web-portal",
     "serve-mock-api": "nx serve auditor-api",
-    "serve-web-portal": "nx dev web-portal --port 4000"
+    "serve-web-portal": "nx dev web-portal --port 4000",
+    "test-api-contracts": "nx run api-contracts:test"
   },
   "private": true,
   "devDependencies": {
