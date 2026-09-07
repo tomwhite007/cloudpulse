@@ -74,7 +74,7 @@ export function PulseAdvisor() {
                     const part = isLegacyTool ? { type: `tool-${partOrTool.toolName}`, ...partOrTool } : partOrTool;
                     const toolCallId = part.toolCallId || index;
                     
-                    if (part.type === 'tool-proposeRemediation' || (part.type === 'dynamic-tool' && part.toolName === 'proposeRemediation')) {
+                    if (part.type === 'tool-propose_terraform_remediation_pr' || (part.type === 'dynamic-tool' && part.toolName === 'propose_terraform_remediation_pr')) {
                       const outputData = part.output || part.result;
                       if (outputData) {
                         return <RemediationProposalCard key={toolCallId} {...outputData} />;
