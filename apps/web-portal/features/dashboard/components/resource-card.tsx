@@ -17,7 +17,35 @@ import { cn } from '@/lib/utils';
 import { useRemediateResource } from '../hooks/use-audit-data';
 import { useDashboardStore } from '../store/dashboard-store';
 import { formatUsd } from '../utils/format';
-import { getSeverityStyle } from '../utils/severity';
+
+type SeverityStyle = {
+  badge: string;
+  bar: string;
+  label: string;
+};
+
+const SEVERITY_STYLES: Record<ResourceStatusCardDto['status'], SeverityStyle> = {
+  OVER_PROVISIONED: {
+    badge: 'border-amber-400/40 bg-amber-500/15 text-amber-300',
+    bar: 'bg-amber-400',
+    label: 'Warning',
+  },
+  ZOMBIE: {
+    badge: 'border-rose-400/40 bg-rose-500/15 text-rose-300',
+    bar: 'bg-rose-400',
+    label: 'Critical',
+  },
+  IDLE: {
+    badge: 'border-sky-400/40 bg-sky-500/15 text-sky-300',
+    bar: 'bg-sky-300',
+    label: 'Info',
+  },
+  HEALTHY: {
+    badge: 'border-emerald-400/40 bg-emerald-500/15 text-emerald-300',
+    bar: 'bg-emerald-400',
+    label: 'Healthy',
+  },
+};
 
 export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) {
   const remediate = useRemediateResource();
@@ -28,7 +56,7 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
   const removeQueuedRemediation = useDashboardStore(
     (state) => state.removeQueuedRemediation,
   );
-  const severity = getSeverityStyle(resource.status);
+  const severity = SEVERITY_STYLES[resource.status];
   const isQueued = queuedRemediations.includes(resource.id);
   const isMutating =
     remediate.isPending &&
