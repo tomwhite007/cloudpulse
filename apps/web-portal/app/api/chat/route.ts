@@ -2,59 +2,62 @@ import { MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts';
 import { openai } from '@ai-sdk/openai';
 import { streamText, tool } from 'ai';
 import { z } from 'zod';
-// A simple mock model to ensure the UI works locally without an OpenAI API Key.
-const mockModel: any = {
-  specificationVersion: 'v1',
+
+const mockModel = {
+  specificationVersion: 'v3',
   provider: 'mock',
   modelId: 'mock-model',
-  defaultObjectGenerationMode: 'json',
-  async doGenerate() {
-    throw new Error('Not implemented');
-  },
-  async doStream() {
+  defaultObjectGenerationMode: 'tool',
+  async doGenerate() { throw new Error('Not implemented'); },
+  async doStream(options) {
     return {
-      stream: new ReadableStream<any>({
+      stream: new ReadableStream({
         start(controller) {
-          controller.enqueue({ type: 'text-delta', textDelta: 'I am a mock PulseAdvisor. Since no OPENAI_API_KEY is set, I am simulating a response to help you save costs.\n\nHere is a recommendation:\n' });
-          
-          controller.enqueue({
-            type: 'tool-call-delta',
-            toolCallType: 'function',
-            toolCallId: 'call_mock_123',
-            toolName: 'proposeRemediation',
-            argsTextDelta: '{"resourceId":"res-ebs-analytics-scratch","actionType":"TERMINATE"}',
-          });
+          const prompt = options.prompt || [];
+          const isToolFollowUp = prompt.some(
+            (msg) => msg.role === 'tool' || (msg.role === 'user' && typeof msg.content === 'string' && msg.content.includes('call tool'))
+          );
 
-          controller.enqueue({
-             type: 'tool-call',
-             toolCallType: 'function',
-             toolCallId: 'call_mock_123',
-             toolName: 'proposeRemediation',
-             args: '{"resourceId":"res-ebs-analytics-scratch","actionType":"TERMINATE"}',
-          });
-
-          controller.enqueue({
-             type: 'finish',
-             finishReason: 'stop',
-             usage: { promptTokens: 0, completionTokens: 0 }
-          });
+          if (!isToolFollowUp) {
+            controller.enqueue({ 
+              type: 'tool-call', 
+              toolCallType: 'function', 
+              toolCallId: 'call_mock_123', 
+              toolName: 'proposeRemediation', 
+              input: '{"resourceId":"res-ebs-analytics-scratch","actionType":"TERMINATE"}' 
+            });
+            controller.enqueue({ 
+              type: 'finish', 
+              finishReason: { unified: 'tool-calls' }, 
+              usage: { inputTokens: { total: 10 }, outputTokens: { total: 20 } } 
+            });
+          } else {
+            controller.enqueue({ type: 'text-delta', delta: 'I have successfully terminated the EBS volume.' });
+            controller.enqueue({ 
+              type: 'finish', 
+              finishReason: { unified: 'stop' }, 
+              usage: { inputTokens: { total: 20 }, outputTokens: { total: 10 } } 
+            });
+          }
           controller.close();
-        },
-      }),
-      rawCall: { rawPrompt: null, rawSettings: {} },
+        }
+      })
     };
-  },
+  }
 };
 
 export async function POST(req: Request) {
+  try {
   const { messages }: { messages: any[] } = await req.json();
 
   const isDemoMode = !process.env.OPENAI_API_KEY;
 
   const result = streamText({
     model: isDemoMode ? mockModel : openai('gpt-4o-mini'),
+    onError: (error) => console.error("STREAM ERROR:", error),
     system: 'You are a FinOps PulseAdvisor Copilot. Your goal is to help users analyze their cloud waste and remediate issues to save costs. You have access to the current waste summary, and can propose remediations.',
     messages,
+    maxSteps: 5,
     tools: {
       inspectWasteSummary: tool({
         description: 'Fetches the current audit summary of the cloud infrastructure, detailing all active resources, spend, and potential savings.',
@@ -86,5 +89,8 @@ export async function POST(req: Request) {
   });
 
   // @ts-ignore
-  return result.toDataStreamResponse ? result.toDataStreamResponse() : (result as any).toTextStreamResponse();
+  return result.toUIMessageStreamResponse ? result.toUIMessageStreamResponse() : (result as any).toDataStreamResponse();
+  } catch(e: any) {
+    return new Response(e.stack || e.message, { status: 500 });
+  }
 }

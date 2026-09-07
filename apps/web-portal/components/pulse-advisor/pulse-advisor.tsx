@@ -6,10 +6,10 @@ import { Send, Bot, Loader2, CheckCircle } from 'lucide-react';
 import { RemediationProposalCard } from './remediation-proposal-card';
 
 export function PulseAdvisor() {
-  const chat = useChat({
+  const { messages, status, sendMessage } = useChat({
     api: '/api/chat',
-  } as any) as any;
-  const { messages, isLoading, append } = chat;
+  } as any);
+  const isLoading = status === 'submitted' || status === 'streaming';
   const [input, setInput] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value);
@@ -17,7 +17,7 @@ export function PulseAdvisor() {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim()) return;
-    append({ role: 'user', content: input });
+    (sendMessage as any)({ role: 'user', content: input });
     setInput('');
   };
 
@@ -68,12 +68,16 @@ export function PulseAdvisor() {
                   {m.content && <p className="whitespace-pre-wrap">{m.content}</p>}
                   
                   {/* Handle Tool Invocations */}
-                  {m.toolInvocations?.map((toolInvocation: any) => {
-                    const toolCallId = toolInvocation.toolCallId;
+                  {(m.parts || m.toolInvocations)?.map((partOrTool: any, index: number) => {
+                    // Normalize legacy toolInvocations into part format for unified handling
+                    const isLegacyTool = !m.parts;
+                    const part = isLegacyTool ? { type: `tool-${partOrTool.toolName}`, ...partOrTool } : partOrTool;
+                    const toolCallId = part.toolCallId || index;
                     
-                    if (toolInvocation.toolName === 'proposeRemediation') {
-                      if ('result' in toolInvocation) {
-                        return <RemediationProposalCard key={toolCallId} {...toolInvocation.result} />;
+                    if (part.type === 'tool-proposeRemediation' || (part.type === 'dynamic-tool' && part.toolName === 'proposeRemediation')) {
+                      const outputData = part.output || part.result;
+                      if (outputData) {
+                        return <RemediationProposalCard key={toolCallId} {...outputData} />;
                       }
                       return (
                         <div key={toolCallId} className="mt-2 flex items-center gap-2 text-xs text-zinc-400">
@@ -83,15 +87,16 @@ export function PulseAdvisor() {
                       );
                     }
                     
-                    if (toolInvocation.toolName === 'inspectWasteSummary') {
+                    if (part.type === 'tool-inspectWasteSummary' || (part.type === 'dynamic-tool' && part.toolName === 'inspectWasteSummary')) {
+                      const outputData = part.output || part.result;
                       return (
                         <div key={toolCallId} className="mt-2 flex items-center gap-2 rounded-md bg-zinc-900/50 p-2 text-xs text-zinc-400 border border-white/5">
-                          {'result' in toolInvocation ? (
+                          {outputData ? (
                             <CheckCircle className="size-3 text-emerald-400" />
                           ) : (
                             <Loader2 className="size-3 animate-spin" />
                           )}
-                          {'result' in toolInvocation ? 'Analyzed Waste Summary' : 'Analyzing Waste Summary...'}
+                          {outputData ? 'Analyzed Waste Summary' : 'Analyzing Waste Summary...'}
                         </div>
                       );
                     }
