@@ -1,31 +1,25 @@
 'use client';
 
-import type { ResourceStatusCardDto } from '@cloudpulse/api-contracts';
 import { create } from 'zustand';
+import {
+  isResourceTypeFilter,
+  isStatusFilter,
+  type AuditMode,
+  type ResourceTypeFilter,
+  type StatusFilter,
+} from '../utils/filters';
 
-export type AuditMode = 'SIMULATED' | 'LIVE';
-export type ResourceTypeFilter = 'ALL' | ResourceStatusCardDto['resourceType'];
-
-const RESOURCE_TYPE_FILTERS: ResourceTypeFilter[] = [
-  'ALL',
-  'RDS',
-  'EBS',
-  'ECS',
-  'EC2',
-  'LAMBDA',
-];
-
-function isResourceTypeFilter(value: string): value is ResourceTypeFilter {
-  return RESOURCE_TYPE_FILTERS.includes(value as ResourceTypeFilter);
-}
+export type { AuditMode, ResourceTypeFilter, StatusFilter };
 
 interface DashboardStore {
   mode: AuditMode;
   selectedResourceType: ResourceTypeFilter;
+  statusFilter: StatusFilter;
   queuedRemediations: string[];
   setMode: (mode: AuditMode) => void;
   toggleMode: () => void;
   setSelectedResourceType: (type: string) => void;
+  setStatusFilter: (status: string) => void;
   queueRemediation: (resourceId: string) => void;
   removeQueuedRemediation: (resourceId: string) => void;
 }
@@ -33,6 +27,7 @@ interface DashboardStore {
 export const useDashboardStore = create<DashboardStore>((set) => ({
   mode: 'SIMULATED',
   selectedResourceType: 'ALL',
+  statusFilter: 'all',
   queuedRemediations: [],
   setMode: (mode) => set({ mode }),
   toggleMode: () =>
@@ -44,6 +39,12 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
       return;
     }
     set({ selectedResourceType: type });
+  },
+  setStatusFilter: (status) => {
+    if (!isStatusFilter(status)) {
+      return;
+    }
+    set({ statusFilter: status });
   },
   queueRemediation: (resourceId) =>
     set((state) => ({

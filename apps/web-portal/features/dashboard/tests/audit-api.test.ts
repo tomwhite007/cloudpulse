@@ -1,0 +1,173 @@
+import {
+  MOCK_AUDIT_RESOURCES,
+  MOCK_COST_AUDIT_SUMMARY,
+  type RemediationRequestDto,
+} from '@cloudpulse/api-contracts';
+import { describe, expect, it } from 'vitest';
+import {
+  fetchAuditSummary,
+  fetchJson,
+  postRemediation,
+  simulatedRemediation,
+} from '../utils/audit-api';
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+const matchingRequest: RemediationRequestDto = {
+  resourceId: MOCK_AUDIT_RESOURCES[0].id,
+  actionId: MOCK_AUDIT_RESOURCES[0].recommendedAction.actionId,
+};
+
+describe('fetchJson', () => {
+  it('returns parsed JSON for a successful response', async () => {
+    const fetchImpl: typeof fetch = async () => jsonResponse({ ok: true });
+    await expect(
+      fetchJson('http://example.test/summary', undefined, { fetchImpl }),
+    ).resolves.toEqual({ ok: true });
+  });
+
+  it('throws when the response is not ok', async () => {
+    const fetchImpl: typeof fetch = async () => jsonResponse({ error: true }, 503);
+    await expect(
+      fetchJson('http://example.test/summary', undefined, { fetchImpl }),
+    ).rejects.toThrow('Request failed with status 503');
+  });
+
+  it('sends no-store cache and a timeout signal', async () => {
+    let received: RequestInit | undefined;
+    const fetchImpl: typeof fetch = async (_input, init) => {
+      received = init;
+      return jsonResponse({});
+    };
+
+    await fetchJson(
+      'http://example.test/summary',
+      { method: 'GET' },
+      { fetchImpl, timeoutMs: 25 },
+    );
+
+    expect(received?.cache).toBe('no-store');
+    expect(received?.signal).toBeInstanceOf(AbortSignal);
+    expect(received?.method).toBe('GET');
+  });
+});
+
+describe('simulatedRemediation', () => {
+  it('queues a matching 1-click action', () => {
+    const queuedAt = '2026-09-04T12:00:00.000Z';
+    expect(
+      simulatedRemediation(matchingRequest, { nowIso: queuedAt }),
+    ).toEqual({
+      success: true,
+      resourceId: matchingRequest.resourceId,
+      message:
+        'Queued Resize Instance for prod-payments-aurora. Terraform patch will apply in the next plan.',
+      queuedAt,
+    });
+  });
+
+  it('fails when the resource is unknown', () => {
+    const queuedAt = '2026-09-04T12:00:00.000Z';
+    expect(
+      simulatedRemediation(
+        { resourceId: 'missing', actionId: 'act-x' },
+        { nowIso: queuedAt },
+      ),
+    ).toEqual({
+      success: false,
+      resourceId: 'missing',
+      message: 'No matching 1-click remediation found for resource missing.',
+      queuedAt,
+    });
+  });
+
+  it('fails when the action id does not match', () => {
+    const result = simulatedRemediation(
+      {
+        resourceId: matchingRequest.resourceId,
+        actionId: 'wrong-action',
+      },
+      { nowIso: '2026-09-04T12:00:00.000Z' },
+    );
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('fetchAuditSummary', () => {
+  it('parses a live payload', async () => {
+    const summary = await fetchAuditSummary('LIVE', {
+      fetchJsonImpl: async () => MOCK_COST_AUDIT_SUMMARY,
+    });
+    expect(summary.totalMonthlySpend).toBe(
+      MOCK_COST_AUDIT_SUMMARY.totalMonthlySpend,
+    );
+  });
+
+  it('falls back to the mock summary in simulated mode', async () => {
+    const summary = await fetchAuditSummary('SIMULATED', {
+      fetchJsonImpl: async () => {
+        throw new Error('network down');
+      },
+    });
+    expect(summary).toEqual(MOCK_COST_AUDIT_SUMMARY);
+  });
+
+  it('rethrows in live mode', async () => {
+    await expect(
+      fetchAuditSummary('LIVE', {
+        fetchJsonImpl: async () => {
+          throw new Error('network down');
+        },
+      }),
+    ).rejects.toThrow('network down');
+  });
+
+  it('falls back when the live payload fails Zod in simulated mode', async () => {
+    const summary = await fetchAuditSummary('SIMULATED', {
+      fetchJsonImpl: async () => ({ not: 'a summary' }),
+    });
+    expect(summary).toEqual(MOCK_COST_AUDIT_SUMMARY);
+  });
+});
+
+describe('postRemediation', () => {
+  it('parses a successful API payload', async () => {
+    const payload = {
+      success: true,
+      resourceId: matchingRequest.resourceId,
+      message: 'queued',
+      queuedAt: '2026-09-04T12:00:00.000Z',
+    };
+    const result = await postRemediation(matchingRequest, 'LIVE', {
+      fetchJsonImpl: async () => payload,
+    });
+    expect(result).toEqual(payload);
+  });
+
+  it('falls back to simulated remediation when simulated mode cannot reach the API', async () => {
+    const result = await postRemediation(matchingRequest, 'SIMULATED', {
+      fetchJsonImpl: async () => {
+        throw new Error('network down');
+      },
+      simulated: (request) =>
+        simulatedRemediation(request, { nowIso: '2026-09-04T12:00:00.000Z' }),
+    });
+    expect(result.success).toBe(true);
+    expect(result.resourceId).toBe(matchingRequest.resourceId);
+  });
+
+  it('rethrows in live mode', async () => {
+    await expect(
+      postRemediation(matchingRequest, 'LIVE', {
+        fetchJsonImpl: async () => {
+          throw new Error('network down');
+        },
+      }),
+    ).rejects.toThrow('network down');
+  });
+});

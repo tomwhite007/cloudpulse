@@ -1,17 +1,16 @@
 'use client';
 
-import { CopilotPlaceholder } from '@/components/copilot-placeholder';
-import { KpiGrid } from '@/components/kpi-grid';
-import { NavHeader } from '@/components/nav-header';
-import { ResourceFeed } from '@/components/resource-feed';
 import { Toaster } from '@/components/ui/sonner';
-import { useAuditSummary } from '@/hooks/use-audit-data';
+import { useAuditSummary } from '../hooks/use-audit-data';
+import { sortResourcesBySavings } from '../utils/sort-resources';
+import { CopilotPlaceholder } from './copilot-placeholder';
+import { KpiGrid } from './kpi-grid';
+import { NavHeader } from './nav-header';
+import { ResourceFeed } from './resource-feed';
 
 export function Dashboard() {
   const { data: summary } = useAuditSummary();
-  const resources = [...(summary?.resources ?? [])].sort(
-    (left, right) => right.potentialMonthlySavings - left.potentialMonthlySavings,
-  );
+  const resources = sortResourcesBySavings(summary?.resources ?? []);
 
   return (
     <div className="min-h-screen bg-background">

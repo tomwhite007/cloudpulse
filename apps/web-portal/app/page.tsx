@@ -1,4 +1,4 @@
-import { Dashboard } from '@/components/dashboard';
+import { Dashboard } from '@/features/dashboard';
 
 export default function Index() {
   return <Dashboard />;

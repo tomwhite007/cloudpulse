@@ -31,6 +31,12 @@
     "specs/**/*.test.js",
     "specs/**/*.spec.js",
     "specs/**/*.test.jsx",
-    "specs/**/*.spec.jsx"
+    "specs/**/*.spec.jsx",
+    "lib/**/*.test.ts",
+    "lib/**/*.test.tsx",
+    "features/**/*.test.ts",
+    "features/**/*.test.tsx",
+    "features/**/*.spec.ts",
+    "features/**/*.spec.tsx"
   ]
 }

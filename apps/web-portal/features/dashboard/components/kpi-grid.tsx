@@ -11,8 +11,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatInteger, formatUsd } from '@/lib/format';
-import { useDashboardStore } from '@/store/dashboard-store';
+import { useDashboardStore } from '../store/dashboard-store';
+import { formatInteger, formatUsd } from '../utils/format';
 
 interface KpiItem {
   key: keyof Pick<

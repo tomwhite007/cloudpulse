@@ -1,9 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { ResourceStatusCardDto } from '@cloudpulse/api-contracts';
 import { Radio } from 'lucide-react';
-import { ResourceCard } from '@/components/resource-card';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -17,18 +16,22 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   useDashboardStore,
   type ResourceTypeFilter,
-} from '@/store/dashboard-store';
+  type StatusFilter,
+} from '../store/dashboard-store';
+import { filterResources } from '../utils/filters';
+import { ResourceCard } from './resource-card';
 
-type StatusFilter = 'all' | ResourceStatusCardDto['status'];
-
-const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+const STATUS_FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'All findings' },
   { value: 'OVER_PROVISIONED', label: 'Over-provisioned' },
   { value: 'ZOMBIE', label: 'Zombie' },
   { value: 'IDLE', label: 'Idle' },
 ];
 
-const RESOURCE_TYPE_FILTERS: { value: ResourceTypeFilter; label: string }[] = [
+const RESOURCE_TYPE_FILTER_OPTIONS: {
+  value: ResourceTypeFilter;
+  label: string;
+}[] = [
   { value: 'ALL', label: 'All types' },
   { value: 'RDS', label: 'RDS' },
   { value: 'EBS', label: 'EBS' },
@@ -49,19 +52,18 @@ export function ResourceFeed({
   const setSelectedResourceType = useDashboardStore(
     (state) => state.setSelectedResourceType,
   );
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const statusFilter = useDashboardStore((state) => state.statusFilter);
+  const setStatusFilter = useDashboardStore((state) => state.setStatusFilter);
   const isSimulated = mode === 'SIMULATED';
 
-  const visibleResources = useMemo(() => {
-    return resources.filter((resource) => {
-      const matchesType =
-        selectedResourceType === 'ALL' ||
-        resource.resourceType === selectedResourceType;
-      const matchesStatus =
-        statusFilter === 'all' || resource.status === statusFilter;
-      return matchesType && matchesStatus;
-    });
-  }, [resources, selectedResourceType, statusFilter]);
+  const visibleResources = useMemo(
+    () =>
+      filterResources(resources, {
+        resourceType: selectedResourceType,
+        status: statusFilter,
+      }),
+    [resources, selectedResourceType, statusFilter],
+  );
 
   return (
     <section className="space-y-4" aria-label="Audited resource feed">
@@ -74,10 +76,10 @@ export function ResourceFeed({
         </div>
         <Tabs
           value={statusFilter}
-          onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+          onValueChange={(value) => setStatusFilter(String(value))}
         >
-          <TabsList className="h-auto flex-wrap">
-            {STATUS_FILTERS.map((item) => (
+          <TabsList className="h-auto flex-wrap" aria-label="Filter by status">
+            {STATUS_FILTER_OPTIONS.map((item) => (
               <TabsTrigger key={item.value} value={item.value}>
                 {item.label}
               </TabsTrigger>
@@ -86,12 +88,16 @@ export function ResourceFeed({
         </Tabs>
       </div>
 
-        <Tabs
-          value={selectedResourceType}
-          onValueChange={(value) => setSelectedResourceType(String(value))}
+      <Tabs
+        value={selectedResourceType}
+        onValueChange={(value) => setSelectedResourceType(String(value))}
+      >
+        <TabsList
+          variant="line"
+          className="h-auto flex-wrap"
+          aria-label="Filter by resource type"
         >
-        <TabsList variant="line" className="h-auto flex-wrap">
-          {RESOURCE_TYPE_FILTERS.map((item) => (
+          {RESOURCE_TYPE_FILTER_OPTIONS.map((item) => (
             <TabsTrigger key={item.value} value={item.value}>
               {item.label}
             </TabsTrigger>

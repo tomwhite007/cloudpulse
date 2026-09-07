@@ -4,9 +4,12 @@ import { Activity, Cloud, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { useAuditSummary } from '@/hooks/use-audit-data';
 import { cn } from '@/lib/utils';
-import { useDashboardStore, type AuditMode } from '@/store/dashboard-store';
+import { useAuditSummary } from '../hooks/use-audit-data';
+import {
+  useDashboardStore,
+  type AuditMode,
+} from '../store/dashboard-store';
 
 const modes: { id: AuditMode; label: string }[] = [
   { id: 'SIMULATED', label: 'Simulated Enterprise' },
@@ -92,7 +95,10 @@ export function NavHeader() {
             aria-busy={isFetching}
           >
             <RefreshCw
-              className={cn('size-3.5', isFetching && 'animate-spin')}
+              className={cn(
+                'size-3.5',
+                isFetching && 'animate-spin motion-reduce:animate-none',
+              )}
               aria-hidden="true"
             />
             Sync Telemetry

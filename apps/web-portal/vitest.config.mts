@@ -23,11 +23,14 @@ export default defineConfig(() => ({
     watch: false,
     globals: true,
     environment: 'jsdom',
-    include: ['{src,app,pages,specs}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    include: [
+      '{src,app,pages,specs,lib,features}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+    ],
     reporters: ['default'],
     coverage: {
       reportsDirectory: '../../coverage/apps/web-portal',
       provider: 'v8' as const,
+      include: ['features/dashboard/utils/**/*.ts', 'lib/env.ts'],
     },
   },
 }));

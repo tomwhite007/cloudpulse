@@ -13,36 +13,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { useRemediateResource } from '@/hooks/use-audit-data';
-import { formatUsd } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { useDashboardStore } from '@/store/dashboard-store';
-
-const SEVERITY_STYLES: Record<
-  ResourceStatusCardDto['status'],
-  { badge: string; bar: string; label: string }
-> = {
-  OVER_PROVISIONED: {
-    badge: 'border-amber-400/40 bg-amber-500/15 text-amber-300',
-    bar: 'bg-amber-400',
-    label: 'Warning',
-  },
-  ZOMBIE: {
-    badge: 'border-rose-400/40 bg-rose-500/15 text-rose-300',
-    bar: 'bg-rose-400',
-    label: 'Critical',
-  },
-  IDLE: {
-    badge: 'border-sky-400/40 bg-sky-500/15 text-sky-300',
-    bar: 'bg-sky-300',
-    label: 'Info',
-  },
-  HEALTHY: {
-    badge: 'border-emerald-400/40 bg-emerald-500/15 text-emerald-300',
-    bar: 'bg-emerald-400',
-    label: 'Healthy',
-  },
-};
+import { useRemediateResource } from '../hooks/use-audit-data';
+import { useDashboardStore } from '../store/dashboard-store';
+import { formatUsd } from '../utils/format';
+import { getSeverityStyle } from '../utils/severity';
 
 export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) {
   const remediate = useRemediateResource();
@@ -53,7 +28,7 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
   const removeQueuedRemediation = useDashboardStore(
     (state) => state.removeQueuedRemediation,
   );
-  const severity = SEVERITY_STYLES[resource.status];
+  const severity = getSeverityStyle(resource.status);
   const isQueued = queuedRemediations.includes(resource.id);
   const isMutating =
     remediate.isPending &&
@@ -143,7 +118,10 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
             disabled={isQueued || isMutating}
           >
             {isMutating ? (
-              <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+              <Loader2
+                className="size-3.5 animate-spin motion-reduce:animate-none"
+                aria-hidden="true"
+              />
             ) : null}
             {resource.recommendedAction.label}
           </Button>
