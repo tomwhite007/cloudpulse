@@ -115,6 +115,8 @@ export function PulseAdvisor() {
                     } else if (partOrTool.type === 'tool-invocation') {
                       toolPayload = partOrTool.toolInvocation;
                       toolName = toolPayload.toolName;
+                    } else if (partOrTool.type === 'text') {
+                      return <p key={index} className="whitespace-pre-wrap">{partOrTool.text}</p>;
                     }
                     
                     const toolCallId = toolPayload.toolCallId || index;

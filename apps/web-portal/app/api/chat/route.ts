@@ -54,12 +54,15 @@ function createMockModel(auditContext: any) {
                   actionType: resource?.recommendedAction?.actionType || 'TERMINATE' 
                 };
               } else {
+                responseText = "I'm currently in demo mode and don't have the capability to process this specific request. Would you like to try one of the suggested prompts?";
                 toolName = 'inspectWasteSummary';
                 toolInput = {};
               }
 
-              if (responseText && !toolName) {
-                controller.enqueue({ type: 'text-delta', id: `text_${Date.now()}`, delta: responseText });
+              if (responseText) {
+                const textId = `text_${Date.now()}`;
+                controller.enqueue({ type: 'text-start', id: textId } as any);
+                controller.enqueue({ type: 'text-delta', id: textId, textDelta: responseText, delta: responseText } as any);
               }
 
               if (toolName) {
