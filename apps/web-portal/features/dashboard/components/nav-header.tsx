@@ -16,7 +16,7 @@ export function NavHeader() {
   const isSimulated = mode === 'SIMULATED';
   const engineStatus = isSimulated
     ? 'Auditor Engine: Connected (Local)'
-    : 'Auditor Engine: Awaiting AWS credentials';
+    : 'Auditor Engine: Connected (Live AWS)';
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-background/85 backdrop-blur-md">
@@ -36,6 +36,14 @@ export function NavHeader() {
               >
                 Enterprise IDP
               </Badge>
+              {!isSimulated && (
+                <Badge
+                  variant="outline"
+                  className="hidden border-amber-500/30 bg-amber-500/10 text-amber-500 sm:inline-flex"
+                >
+                  AWS Read-Only Session
+                </Badge>
+              )}
             </div>
             <p className="hidden text-xs text-muted-foreground sm:block">
               FinOps control plane

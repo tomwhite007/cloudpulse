@@ -3,6 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CLOUD_AUDITOR_SERVICE } from './cloud-auditor.interface';
 import { MockCloudAuditorService } from './mock-cloud-auditor.service';
+import { AwsCloudAuditorService } from '../auditor/aws-cloud-auditor.service';
 import { McpModule } from '../mcp/mcp.module';
 
 @Module({
@@ -12,7 +13,12 @@ import { McpModule } from '../mcp/mcp.module';
     AppService,
     {
       provide: CLOUD_AUDITOR_SERVICE,
-      useClass: MockCloudAuditorService,
+      useFactory: () => {
+        if (process.env.USE_LIVE_AWS === 'true') {
+          return new AwsCloudAuditorService();
+        }
+        return new MockCloudAuditorService();
+      },
     },
   ],
 })

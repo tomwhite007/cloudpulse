@@ -5,6 +5,7 @@
   "scripts": {
     "build-web-portal": "nx build web-portal",
     "serve-mock-api": "nx serve auditor-api",
+    "serve-live-api": "USE_LIVE_AWS=true AWS_PROFILE=cloudpulse nx serve auditor-api",
     "serve-web-portal": "nx dev web-portal --port 4000",
     "test-web-portal": "nx test web-portal",
     "test-api-contracts": "nx run api-contracts:test",
@@ -70,6 +71,10 @@
   "dependencies": {
     "@ai-sdk/openai": "^4.0.60",
     "@ai-sdk/react": "^4.0.96",
+    "@aws-sdk/client-cloudwatch": "^3.1127.0",
+    "@aws-sdk/client-cost-explorer": "^3.1127.0",
+    "@aws-sdk/client-ec2": "^3.1127.0",
+    "@aws-sdk/client-rds": "^3.1127.0",
     "@base-ui/react": "^1.7.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@nestjs/common": "^11.0.0",
