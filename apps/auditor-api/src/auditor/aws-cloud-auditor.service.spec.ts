@@ -37,12 +37,16 @@ describe('AwsCloudAuditorService', () => {
     it('should fallback gracefully when AWS clients fail', async () => {
       // Mock failure
       CostExplorerClient.prototype.send = jest.fn().mockRejectedValue(new Error('AccessDenied'));
+      EC2Client.prototype.send = jest.fn().mockRejectedValue(new Error('AccessDenied'));
+      RDSClient.prototype.send = jest.fn().mockRejectedValue(new Error('AccessDenied'));
 
       const result = await service.getAuditSummary();
       
       expect(result.totalMonthlySpend).toBe(0);
       expect(result.resources).toEqual([]);
       expect(result.spendByService).toEqual([]);
+      expect(result.activeAssetCount).toBe(0);
+      expect(result.complianceScorePercent).toBe(100);
     });
 
     it('should return combined data when clients succeed', async () => {
@@ -59,13 +63,19 @@ describe('AwsCloudAuditorService', () => {
         Volumes: [{
           VolumeId: 'vol-123',
           Size: 100,
+          AvailabilityZone: 'us-east-1a',
+          CreateTime: new Date(Date.now() - 86400000 * 5), // 5 days ago
+          VolumeType: 'gp3'
         }]
       });
 
       RDSClient.prototype.send = jest.fn().mockResolvedValue({
         DBInstances: [{
           DBInstanceIdentifier: 'db-123',
-          AvailabilityZone: 'us-east-1a'
+          DBInstanceStatus: 'available',
+          AvailabilityZone: 'us-east-1a',
+          DBInstanceClass: 'db.m5.large',
+          Engine: 'postgres'
         }]
       });
 
@@ -78,6 +88,8 @@ describe('AwsCloudAuditorService', () => {
       expect(result.totalMonthlySpend).toBe(100.50);
       expect(result.resources).toHaveLength(2); // 1 EBS, 1 RDS
       expect(result.spendByService).toHaveLength(1);
+      expect(result.activeAssetCount).toBe(2);
+      expect(result.complianceScorePercent).toBe(0); // 2 assets, both are waste -> 0%
     });
   });
 
