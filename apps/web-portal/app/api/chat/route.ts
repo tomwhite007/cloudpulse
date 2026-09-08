@@ -1,6 +1,6 @@
 import { MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts';
 import { openai } from '@ai-sdk/openai';
-import { streamText, tool } from 'ai';
+import { streamText, tool, convertToModelMessages } from 'ai';
 import { z } from 'zod';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
@@ -22,9 +22,9 @@ function createMockModel(auditContext: any) {
               ? lastMessage.content.map((c: any) => c.text || '').join('') 
               : (typeof lastMessage?.content === 'string' ? lastMessage.content : '');
             
-            const isToolFollowUp = prompt.some(
-              (msg: any) => msg.role === 'tool' || (msg.role === 'user' && typeof msg.content === 'string' && msg.content.includes('call tool'))
-            );
+            const lastMessageOverall = prompt[prompt.length - 1];
+            const isToolFollowUp = lastMessageOverall?.role === 'tool' || 
+              (lastMessageOverall?.role === 'user' && typeof lastMessageOverall?.content === 'string' && lastMessageOverall.content.includes('call tool'));
 
             if (!isToolFollowUp) {
               let toolName = '';
@@ -118,11 +118,14 @@ export async function POST(req: Request) {
       model: isDemoMode ? (createMockModel(auditContext) as any) : openai('gpt-4o-mini'),
       // @ts-ignore
       maxSteps: 5,
-      onError: (error) => {
+      onError: (error: any) => {
         console.error("STREAM ERROR:", error);
+        require('fs').writeFileSync('/tmp/stream-error.log', `Error name: ${error?.name}, message: ${error?.message}, stack: ${error?.stack}, cause: ${error?.cause}`);
       },
       system: 'You are a FinOps PulseAdvisor Copilot. Your goal is to help users analyze their cloud waste and remediate issues to save costs. You have access to the current waste summary, and can propose remediations. Context: ' + JSON.stringify(auditContext || MOCK_COST_AUDIT_SUMMARY),
-      messages,
+      messages: (messages || [])
+        .filter((m: any) => m.role === 'user' || (m.role === 'assistant' && typeof m.content === 'string' && m.content))
+        .map((m: any) => ({ role: m.role, content: m.content })),
       tools: {
         inspectWasteSummary: tool({
           description: 'Fetches the current audit summary of the cloud infrastructure, detailing all active resources, spend, and potential savings.',
