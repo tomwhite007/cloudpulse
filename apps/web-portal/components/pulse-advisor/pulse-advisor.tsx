@@ -4,12 +4,12 @@ import { useChat } from '@ai-sdk/react';
 import { useState, useEffect, useRef } from 'react';
 import { useDashboardStore } from '../../features/dashboard/store/dashboard-store';
 import { useAuditSummary } from '../../features/dashboard/hooks/use-audit-data';
-import { Send, Bot, Loader2, CheckCircle } from 'lucide-react';
+import { Send, Bot, Loader2, CheckCircle, RefreshCcw } from 'lucide-react';
 import { RemediationProposalCard } from './remediation-proposal-card';
 
 export function PulseAdvisor() {
   const auditSummary = useAuditSummary();
-  const { messages, status, sendMessage } = useChat({
+  const { messages, status, sendMessage, setMessages } = useChat({
     api: '/api/chat',
     body: { auditContext: auditSummary.data },
   } as any) as any;
@@ -54,16 +54,30 @@ export function PulseAdvisor() {
     void sendMessage({ role: 'user', content: prompt });
   };
 
+  const handleReset = () => {
+    setMessages([]);
+  };
+
   return (
     <div role="complementary" aria-label="PulseAdvisor AI Assistant" className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/80 shadow-2xl backdrop-blur-xl">
       <div className="flex items-center gap-3 border-b border-white/10 p-4">
         <div className="flex size-8 items-center justify-center rounded-full bg-blue-600/20 text-blue-400">
           <Bot className="size-5" />
         </div>
-        <div>
+        <div className="flex-1">
           <h2 className="text-lg font-semibold text-white">PulseAdvisor</h2>
           <p className="text-xs text-zinc-400">FinOps Generative UI Copilot</p>
         </div>
+        {messages.length > 0 && (
+          <button
+            onClick={handleReset}
+            className="flex items-center gap-2 rounded-lg border border-white/10 bg-zinc-800/50 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white focus:outline-none"
+            aria-label="Clear chat"
+          >
+            <RefreshCcw className="size-3.5" />
+            Clear
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-zinc-700">
