@@ -131,6 +131,8 @@ export class AwsCloudAuditorService implements ICloudAuditorService {
         for (const vol of volumes.Volumes) {
           const days = vol.CreateTime ? Math.floor((new Date().getTime() - vol.CreateTime.getTime()) / 86400000) : 0;
           const nameTag = vol.Tags?.find(t => t.Key === 'Name')?.Value || vol.VolumeId!;
+          const unattachedStr = days === 0 ? 'Unattached (< 1 day)' : `Unattached for ${days} days`;
+          
           findings.push({
             id: vol.VolumeId!,
             resourceName: nameTag,
@@ -139,7 +141,7 @@ export class AwsCloudAuditorService implements ICloudAuditorService {
             region: vol.AvailabilityZone?.replace(/[a-z]$/, '') || 'unknown',
             monthlyCost: (vol.Size || 0) * 0.08,
             potentialMonthlySavings: (vol.Size || 0) * 0.08,
-            telemetrySummary: `Unattached for ${days} days · ${vol.VolumeType || 'gp2'} ${vol.Size || 0} GB · zero I/O`,
+            telemetrySummary: `${unattachedStr} · ${vol.VolumeType || 'gp2'} ${vol.Size || 0} GB · zero I/O`,
             recommendedAction: {
               actionId: `act-terminate-ebs-${vol.VolumeId}`,
               label: 'Snapshot & Terminate',

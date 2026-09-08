@@ -44,11 +44,39 @@ export function PulseAdvisor() {
     setInput('');
   };
 
-  const promptPills = [
+  let promptPills = [
     "Find zombie storage",
     "How can I cut $2k?",
     "Review RDS spend"
   ];
+
+  if (auditSummary.data) {
+    promptPills = [];
+    const hasZombie = auditSummary.data.resources.some(r => r.status === 'ZOMBIE');
+    const hasRds = auditSummary.data.resources.some(r => r.resourceType === 'RDS');
+    const totalWaste = auditSummary.data.totalIdentifiedWaste;
+    const compliance = auditSummary.data.complianceScorePercent;
+
+    if (hasZombie) {
+      promptPills.push("Find zombie storage");
+    } else {
+      promptPills.push("Audit storage health");
+    }
+
+    if (hasRds) {
+      promptPills.push("Review RDS spend");
+    }
+
+    if (totalWaste >= 1000) {
+      promptPills.push("How can I cut $1k+?");
+    } else {
+      promptPills.push("Explain waste findings");
+    }
+
+    if (compliance < 50 && promptPills.length < 4) {
+      promptPills.push("Explain compliance score");
+    }
+  }
 
   const onPillClick = (prompt: string) => {
     void sendMessage({ role: 'user', content: prompt });

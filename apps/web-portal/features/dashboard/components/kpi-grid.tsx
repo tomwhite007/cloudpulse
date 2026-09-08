@@ -35,13 +35,22 @@ const KPI_ITEMS: readonly KpiItem[] = [
     key: 'totalMonthlySpend',
     label: 'Total Monthly Spend',
     format: (summary) => formatUsd(summary.totalMonthlySpend),
-    hint: 'Trailing 30-day cloud invoice',
+    hint: (summary) => {
+      if (summary.totalMonthlySpend === 0 && summary.totalIdentifiedWaste > 0) {
+        return (
+          <span title="New or low-spend account; waste is projected run-rate" className="cursor-help border-b border-dashed border-muted-foreground/50">
+            Trailing 30d invoice ($0.00 recorded)
+          </span>
+        );
+      }
+      return 'Trailing 30-day cloud invoice';
+    },
   },
   {
     key: 'totalIdentifiedWaste',
     label: 'Identified Monthly Waste',
     format: (summary) => formatUsd(summary.totalIdentifiedWaste),
-    hint: 'Recoverable run-rate from findings',
+    hint: 'Recoverable monthly run-rate',
     tone: 'warning',
   },
   {
@@ -54,7 +63,12 @@ const KPI_ITEMS: readonly KpiItem[] = [
     key: 'complianceScorePercent',
     label: 'FinOps Compliance Score',
     format: formatCompliancePercent,
-    hint: 'Policy adherence across estates',
+    hint: (summary) => {
+      if (summary.complianceScorePercent === 0 && summary.activeAssetCount > 0) {
+        return <span className="font-medium text-rose-400">Critical: 100% of monitored assets flagged</span>;
+      }
+      return 'Policy adherence across estates';
+    },
     tone: 'success',
   },
 ];
@@ -99,9 +113,15 @@ export function KpiGrid({
               </CardHeader>
               <CardContent>
                 {item.key === 'complianceScorePercent' && summary && summary.activeAssetCount > 0 ? (
-                  <Progress value={summary.complianceScorePercent} />
+                  <Progress 
+                    value={summary.complianceScorePercent} 
+                    trackClassName={summary.complianceScorePercent === 0 ? "bg-rose-500/20" : undefined}
+                    indicatorClassName={summary.complianceScorePercent === 0 ? "bg-rose-500" : undefined}
+                  />
                 ) : null}
-                <p className="mt-2 text-xs text-muted-foreground">{item.hint}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {typeof item.hint === 'function' ? (summary ? item.hint(summary) : '') : item.hint}
+                </p>
               </CardContent>
             </Card>
           );

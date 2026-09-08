@@ -14,6 +14,6 @@ export interface KpiItem {
   key: KpiMetricKey;
   label: string;
   format: (summary: CostAuditSummaryDto) => string;
-  hint: string;
+  hint: string | ((summary: CostAuditSummaryDto) => React.ReactNode);
   tone?: KpiTone;
 }

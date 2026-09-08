@@ -73,7 +73,7 @@ export function NavHeader() {
           <span
             className={cn(
               'size-2 shrink-0 rounded-full',
-              isSimulated
+              (isSimulated || statusData?.profile)
                 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
                 : 'bg-amber-400',
             )}
