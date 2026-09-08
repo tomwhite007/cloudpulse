@@ -104,7 +104,13 @@ export function PulseAdvisor() {
                 }`}>
                   {m.content && <p className="whitespace-pre-wrap">{m.content}</p>}
                   
-                  {/* Handle Tool Invocations */}
+                  {/* --- VERCEL AI SDK v4 COMPATIBILITY NOTES ---
+                      When an assistant message contains BOTH text and tool invocations, 
+                      the AI SDK `useChat` hook often leaves `m.content` empty and instead pushes
+                      the text payload into the `m.parts` array as a `{ type: 'text', text: '...' }` object.
+                      To ensure the text is actually rendered, we must explicitly check for `part.type === 'text'` 
+                      while mapping over `m.parts` below. Otherwise, the text will be completely invisible. 
+                  */}
                   {(m.parts || m.toolInvocations || [])?.map((partOrTool: any, index: number) => {
                     let toolName = partOrTool.toolName;
                     let toolPayload = partOrTool;

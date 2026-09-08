@@ -56,15 +56,32 @@ function createMockModel(auditContext: any) {
               } else {
                 responseText = "I'm currently in demo mode and don't have the capability to process this specific request. Would you like to try one of the suggested prompts?";
                 toolName = 'inspectWasteSummary';
-                toolInput = {};
               }
-
+              // --- VERCEL AI SDK v4 CUSTOM PROVIDER COMPATIBILITY NOTES ---
+              // When streaming custom UI text alongside tool calls, the AI SDK v4+ parser has very
+              // strict requirements for the stream chunks.
+              // 1. You CANNOT just emit a `text-delta` chunk. If you do, the AI SDK throws an internal
+              //    error (`text part undefined not found`) because it hasn't registered an active text part.
+              // 2. This internal error translates to an `{"type":"error"}` chunk sent to the frontend.
+              // 3. When the `@ai-sdk/react` useChat hook receives an error chunk, it INSTANTLY aborts rendering
+              //    the current assistant message, causing the UI to disappear (including the tool cards).
+              // 4. FIX: You must emit a `text-start` chunk with a unique `id` first, and then emit the
+              //    `text-delta` chunk using the EXACT SAME `id`.
+              // 5. Property quirks: To satisfy both `@ai-sdk/core` type definitions and the internal parser 
+              //    (which checks `chunk.delta.length`), you must provide BOTH `textDelta` AND `delta` 
+              //    in the `text-delta` chunk.
               if (responseText) {
                 const textId = `text_${Date.now()}`;
+                
+                // Initialize the text part so the AI SDK parser doesn't crash
                 controller.enqueue({ type: 'text-start', id: textId } as any);
+                
+                // Stream the actual delta using the identical ID and both delta properties
                 controller.enqueue({ type: 'text-delta', id: textId, textDelta: responseText, delta: responseText } as any);
               }
 
+              // --- TOOL CALL COMPATIBILITY ---
+              // Tool calls in AI SDK v4 expect `args` as a stringified JSON string.
               if (toolName) {
                 const toolCallId = `call_${Date.now()}_${toolInput.resourceId || 'inspect'}`;
                 controller.enqueue({ 
@@ -119,7 +136,7 @@ export async function POST(req: Request) {
 
     const result = streamText({
       model: isDemoMode ? (createMockModel(auditContext) as any) : openai('gpt-4o-mini'),
-      // @ts-ignore
+      // @ts-ignore - 'maxSteps' is supported by Vercel AI SDK 3.3.0+ but may cause type errors in mismatched local environments
       maxSteps: 5,
       onError: (error: any) => {
         console.error("STREAM ERROR:", error);
@@ -212,7 +229,7 @@ export async function POST(req: Request) {
       }
     });
 
-    // @ts-ignore
+    // @ts-ignore - toUIMessageStreamResponse exists in newer AI SDK versions, but the local type definition may not recognize it.
     return result.toUIMessageStreamResponse ? result.toUIMessageStreamResponse() : (result as any).toDataStreamResponse();
   } catch(e: any) {
     return new Response(e.stack || e.message, { status: 500 });
