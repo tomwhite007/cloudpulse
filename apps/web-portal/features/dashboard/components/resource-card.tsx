@@ -59,20 +59,25 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
   const triggerAdvisorPrompt = useDashboardStore(
     (state) => state.triggerAdvisorPrompt,
   );
+  const reviewingRemediations = useDashboardStore(
+    (state) => state.reviewingRemediations,
+  );
   const severity = SEVERITY_STYLES[resource.status];
   const isQueued = queuedRemediations.includes(resource.id);
+  const isReviewing = reviewingRemediations.includes(resource.id);
   const isMutating =
     remediate.isPending &&
     remediate.variables?.resourceId === resource.id;
 
   async function handleRemediate() {
     triggerAdvisorPrompt(
-      `Remediate resource ${resource.resourceName} with action ${resource.recommendedAction.actionType}`
+      `Request PR proposal for ${resource.resourceName}`,
+      resource
     );
   }
 
   return (
-    <Card className="relative overflow-hidden bg-card/80">
+    <Card className={cn("relative overflow-hidden bg-card/80", isReviewing && "border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]")}>
       <span
         className={cn('absolute inset-y-0 left-0 w-1', severity.bar)}
         aria-hidden="true"
@@ -127,13 +132,21 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
           >
             ✓ PR Drafted
           </Badge>
+        ) : isReviewing ? (
+          <Badge
+            role="status"
+            aria-live="polite"
+            className="border-blue-400/30 bg-blue-500/15 text-blue-300 animate-pulse"
+          >
+            Reviewing in Advisor
+          </Badge>
         ) : (
           <Button
             size="sm"
             onClick={() => {
               void handleRemediate();
             }}
-            disabled={isQueued || isMutating}
+            disabled={isQueued || isMutating || isReviewing}
           >
             {isMutating ? (
               <Loader2

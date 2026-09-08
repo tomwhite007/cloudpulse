@@ -16,14 +16,17 @@ interface DashboardStore {
   selectedResourceType: ResourceTypeFilter;
   statusFilter: StatusFilter;
   queuedRemediations: string[];
-  advisorPrompt: string | null;
+  reviewingRemediations: string[];
+  advisorPrompt: { prompt: string; resource?: any } | null;
   setMode: (mode: AuditMode) => void;
   toggleMode: () => void;
   setSelectedResourceType: (type: string) => void;
   setStatusFilter: (status: string) => void;
   queueRemediation: (resourceId: string) => void;
   removeQueuedRemediation: (resourceId: string) => void;
-  triggerAdvisorPrompt: (prompt: string | null) => void;
+  setReviewingRemediation: (resourceId: string) => void;
+  removeReviewingRemediation: (resourceId: string) => void;
+  triggerAdvisorPrompt: (prompt: string | null, resource?: any) => void;
 }
 
 const initialChrome = {
@@ -31,7 +34,8 @@ const initialChrome = {
   selectedResourceType: 'ALL' as ResourceTypeFilter,
   statusFilter: 'all' as StatusFilter,
   queuedRemediations: [] as string[],
-  advisorPrompt: null as string | null,
+  reviewingRemediations: [] as string[],
+  advisorPrompt: null as { prompt: string; resource?: any } | null,
 };
 
 export const useDashboardStore = create<DashboardStore>((set) => ({
@@ -65,7 +69,20 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
         (id) => id !== resourceId,
       ),
     })),
-  triggerAdvisorPrompt: (prompt) => set({ advisorPrompt: prompt }),
+  setReviewingRemediation: (resourceId) =>
+    set((state) => ({
+      reviewingRemediations: state.reviewingRemediations.includes(resourceId)
+        ? state.reviewingRemediations
+        : [...state.reviewingRemediations, resourceId],
+    })),
+  removeReviewingRemediation: (resourceId) =>
+    set((state) => ({
+      reviewingRemediations: state.reviewingRemediations.filter(
+        (id) => id !== resourceId,
+      ),
+    })),
+  triggerAdvisorPrompt: (prompt, resource) => 
+    set({ advisorPrompt: prompt ? { prompt, resource } : null }),
 }));
 
 export function resetDashboardStore() {

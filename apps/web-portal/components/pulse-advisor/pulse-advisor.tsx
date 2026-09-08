@@ -1,34 +1,46 @@
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDashboardStore } from '../../features/dashboard/store/dashboard-store';
+import { useAuditSummary } from '../../features/dashboard/hooks/use-audit-data';
 import { Send, Bot, Loader2, CheckCircle } from 'lucide-react';
 import { RemediationProposalCard } from './remediation-proposal-card';
 
 export function PulseAdvisor() {
+  const auditSummary = useAuditSummary();
   const { messages, status, sendMessage } = useChat({
     api: '/api/chat',
-  } as any);
+    body: { auditContext: auditSummary.data },
+  } as any) as any;
   const isLoading = status === 'submitted' || status === 'streaming';
   const [input, setInput] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const advisorPrompt = useDashboardStore(state => state.advisorPrompt);
   const triggerAdvisorPrompt = useDashboardStore(state => state.triggerAdvisorPrompt);
+  const setReviewingRemediation = useDashboardStore(state => state.setReviewingRemediation);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length, status]);
 
   useEffect(() => {
     if (advisorPrompt) {
-      (sendMessage as any)({ role: 'user', content: advisorPrompt });
+      void sendMessage({ role: 'user', content: advisorPrompt.prompt });
+      if (advisorPrompt.resource) {
+        setReviewingRemediation(advisorPrompt.resource.id);
+      }
       triggerAdvisorPrompt(null);
     }
-  }, [advisorPrompt, sendMessage, triggerAdvisorPrompt]);
+  }, [advisorPrompt, sendMessage, triggerAdvisorPrompt, setReviewingRemediation]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value);
   
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim()) return;
-    (sendMessage as any)({ role: 'user', content: input });
+    void sendMessage({ role: 'user', content: input });
     setInput('');
   };
 
@@ -39,7 +51,7 @@ export function PulseAdvisor() {
   ];
 
   const onPillClick = (prompt: string) => {
-    setInput(prompt);
+    void sendMessage({ role: 'user', content: prompt });
   };
 
   return (
@@ -79,14 +91,22 @@ export function PulseAdvisor() {
                   {m.content && <p className="whitespace-pre-wrap">{m.content}</p>}
                   
                   {/* Handle Tool Invocations */}
-                  {(m.parts || m.toolInvocations)?.map((partOrTool: any, index: number) => {
-                    // Normalize legacy toolInvocations into part format for unified handling
-                    const isLegacyTool = !m.parts;
-                    const part = isLegacyTool ? { type: `tool-${partOrTool.toolName}`, ...partOrTool } : partOrTool;
-                    const toolCallId = part.toolCallId || index;
+                  {(m.parts || m.toolInvocations || [])?.map((partOrTool: any, index: number) => {
+                    let toolName = partOrTool.toolName;
+                    let toolPayload = partOrTool;
+
+                    if (partOrTool.type?.startsWith('tool-')) {
+                      toolName = partOrTool.type.replace('tool-', '');
+                      toolPayload = partOrTool;
+                    } else if (partOrTool.type === 'tool-invocation') {
+                      toolPayload = partOrTool.toolInvocation;
+                      toolName = toolPayload.toolName;
+                    }
                     
-                    if (part.type === 'tool-propose_terraform_remediation_pr' || (part.type === 'dynamic-tool' && part.toolName === 'propose_terraform_remediation_pr')) {
-                      const outputData = part.output || part.result;
+                    const toolCallId = toolPayload.toolCallId || index;
+                    
+                    if (toolName === 'propose_terraform_remediation_pr') {
+                      const outputData = toolPayload.output || toolPayload.result;
                       if (outputData) {
                         return <RemediationProposalCard key={toolCallId} {...outputData} />;
                       }
@@ -98,8 +118,8 @@ export function PulseAdvisor() {
                       );
                     }
                     
-                    if (part.type === 'tool-inspectWasteSummary' || (part.type === 'dynamic-tool' && part.toolName === 'inspectWasteSummary')) {
-                      const outputData = part.output || part.result;
+                    if (toolName === 'inspectWasteSummary') {
+                      const outputData = toolPayload.output || toolPayload.result;
                       return (
                         <div key={toolCallId} className="mt-2 flex items-center gap-2 rounded-md bg-zinc-900/50 p-2 text-xs text-zinc-400 border border-white/5">
                           {outputData ? (
@@ -129,6 +149,7 @@ export function PulseAdvisor() {
                   </div>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
         )}
       </div>
