@@ -23,6 +23,15 @@ export class AppController {
     return this.appService.getData();
   }
 
+  @Get('audit/status')
+  getAuditStatus() {
+    const isLive = process.env.USE_LIVE_AWS === 'true';
+    return {
+      mode: isLive ? 'LIVE' : 'SIMULATED',
+      profile: isLive ? process.env.AWS_PROFILE || 'default' : undefined,
+    };
+  }
+
   @Get('audit/summary')
   getAuditSummary(): Promise<CostAuditSummaryDto> {
     return this.cloudAuditor.getAuditSummary();

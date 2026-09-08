@@ -155,7 +155,7 @@ describe('simulatedRemediation', () => {
 
 describe('fetchAuditSummary', () => {
   it('parses a live payload', async () => {
-    const summary = await fetchAuditSummary('LIVE', {
+    const summary = await fetchAuditSummary({
       fetchJsonImpl: async () => MOCK_COST_AUDIT_SUMMARY,
     });
     expect(summary.totalMonthlySpend).toBe(
@@ -163,8 +163,8 @@ describe('fetchAuditSummary', () => {
     );
   });
 
-  it('falls back to the mock summary in simulated mode', async () => {
-    const summary = await fetchAuditSummary('SIMULATED', {
+  it('falls back to the mock summary when network fails', async () => {
+    const summary = await fetchAuditSummary({
       fetchJsonImpl: async () => {
         throw new Error('network down');
       },
@@ -172,18 +172,10 @@ describe('fetchAuditSummary', () => {
     expect(summary).toEqual(MOCK_COST_AUDIT_SUMMARY);
   });
 
-  it('rethrows in live mode', async () => {
-    await expect(
-      fetchAuditSummary('LIVE', {
-        fetchJsonImpl: async () => {
-          throw new Error('network down');
-        },
-      }),
-    ).rejects.toThrow('network down');
-  });
 
-  it('falls back when the live payload fails Zod in simulated mode', async () => {
-    const summary = await fetchAuditSummary('SIMULATED', {
+
+  it('falls back when the payload fails Zod', async () => {
+    const summary = await fetchAuditSummary({
       fetchJsonImpl: async () => ({ not: 'a summary' }),
     });
     expect(summary).toEqual(MOCK_COST_AUDIT_SUMMARY);
@@ -198,14 +190,14 @@ describe('postRemediation', () => {
       message: 'queued',
       queuedAt: '2026-09-04T12:00:00.000Z',
     };
-    const result = await postRemediation(matchingRequest, 'LIVE', {
+    const result = await postRemediation(matchingRequest, {
       fetchJsonImpl: async () => payload,
     });
     expect(result).toEqual(payload);
   });
 
-  it('falls back to simulated remediation when simulated mode cannot reach the API', async () => {
-    const result = await postRemediation(matchingRequest, 'SIMULATED', {
+  it('falls back to simulated remediation when cannot reach the API', async () => {
+    const result = await postRemediation(matchingRequest, {
       fetchJsonImpl: async () => {
         throw new Error('network down');
       },
@@ -217,7 +209,7 @@ describe('postRemediation', () => {
   });
 
   it('falls back to the default simulated helper when none is injected', async () => {
-    const result = await postRemediation(matchingRequest, 'SIMULATED', {
+    const result = await postRemediation(matchingRequest, {
       fetchJsonImpl: async () => {
         throw new Error('network down');
       },
@@ -226,13 +218,5 @@ describe('postRemediation', () => {
     expect(result.resourceId).toBe(matchingRequest.resourceId);
   });
 
-  it('rethrows in live mode', async () => {
-    await expect(
-      postRemediation(matchingRequest, 'LIVE', {
-        fetchJsonImpl: async () => {
-          throw new Error('network down');
-        },
-      }),
-    ).rejects.toThrow('network down');
-  });
+
 });

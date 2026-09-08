@@ -11,7 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useDashboardStore } from '../store/dashboard-store';
+import { useAuditSummary, useAuditStatus } from '../hooks/use-audit-data';
 import { formatInteger, formatUsd } from '../utils/format';
 import type { KpiItem, KpiMetricKey, KpiTone } from './kpi-grid.types';
 
@@ -70,8 +70,8 @@ export function KpiGrid({
 }: {
   summary: CostAuditSummaryDto | undefined;
 }) {
-  const mode = useDashboardStore((state) => state.mode);
-  const isSimulated = mode === 'SIMULATED';
+  const { data: statusData } = useAuditStatus();
+  const isSimulated = statusData?.mode === 'SIMULATED';
 
   return (
     <section aria-label="FinOps KPI metrics">

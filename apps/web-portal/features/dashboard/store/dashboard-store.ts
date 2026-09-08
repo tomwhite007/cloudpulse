@@ -12,14 +12,11 @@ import {
 export type { AuditMode, ResourceTypeFilter, StatusFilter };
 
 interface DashboardStore {
-  mode: AuditMode;
   selectedResourceType: ResourceTypeFilter;
   statusFilter: StatusFilter;
   queuedRemediations: string[];
   reviewingRemediations: string[];
   advisorPrompt: { prompt: string; resource?: any } | null;
-  setMode: (mode: AuditMode) => void;
-  toggleMode: () => void;
   setSelectedResourceType: (type: string) => void;
   setStatusFilter: (status: string) => void;
   queueRemediation: (resourceId: string) => void;
@@ -30,7 +27,6 @@ interface DashboardStore {
 }
 
 const initialChrome = {
-  mode: 'SIMULATED' as AuditMode,
   selectedResourceType: 'ALL' as ResourceTypeFilter,
   statusFilter: 'all' as StatusFilter,
   queuedRemediations: [] as string[],
@@ -40,11 +36,6 @@ const initialChrome = {
 
 export const useDashboardStore = create<DashboardStore>((set) => ({
   ...initialChrome,
-  setMode: (mode) => set({ mode }),
-  toggleMode: () =>
-    set((state) => ({
-      mode: state.mode === 'SIMULATED' ? 'LIVE' : 'SIMULATED',
-    })),
   setSelectedResourceType: (type) => {
     if (!isResourceTypeFilter(type)) {
       return;

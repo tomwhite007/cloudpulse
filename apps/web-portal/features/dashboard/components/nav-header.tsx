@@ -5,18 +5,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { useAuditSummary } from '../hooks/use-audit-data';
+import { useAuditSummary, useAuditStatus } from '../hooks/use-audit-data';
 import { useDashboardStore } from '../store/dashboard-store';
-import { AUDIT_MODE_OPTIONS } from '../utils/filters';
 
 export function NavHeader() {
-  const mode = useDashboardStore((state) => state.mode);
-  const toggleMode = useDashboardStore((state) => state.toggleMode);
+  const { data: statusData } = useAuditStatus();
   const { refetch, isFetching } = useAuditSummary();
-  const isSimulated = mode === 'SIMULATED';
+  const isSimulated = statusData?.mode === 'SIMULATED';
   const engineStatus = isSimulated
     ? 'Auditor Engine: Connected (Local)'
-    : 'Auditor Engine: Connected (Live AWS)';
+    : `Auditor Engine: Connected (Live AWS${statusData?.profile ? ` - ${statusData.profile}` : ''})`;
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/80 bg-background/85 backdrop-blur-md">
@@ -51,42 +49,7 @@ export function NavHeader() {
           </div>
         </div>
 
-        <div
-          className="inline-flex justify-self-start rounded-lg border border-border bg-muted/40 p-1 md:justify-self-center"
-          role="group"
-          aria-label="Audit data source"
-        >
-          {AUDIT_MODE_OPTIONS.map((option) => {
-            const active = mode === option.id;
-            return (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => {
-                  if (!active) {
-                    toggleMode();
-                  }
-                }}
-                className={cn(
-                  'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors sm:px-3 sm:text-sm',
-                  active
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-                aria-pressed={active}
-              >
-                <span
-                  className={cn(
-                    'size-2 rounded-full',
-                    active ? 'bg-emerald-400' : 'border border-muted-foreground/70',
-                  )}
-                  aria-hidden="true"
-                />
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
+
 
         <div className="flex min-w-0 items-center gap-2 justify-self-start text-xs text-muted-foreground md:justify-self-end">
           <Button

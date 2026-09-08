@@ -16,7 +16,7 @@ describe('ResourceFeed', () => {
     await renderPresenter(<ResourceFeed resources={MOCK_AUDIT_RESOURCES} />);
 
     expect(
-      screen.getByRole('heading', { name: 'prod-payments-aurora' }),
+      await screen.findByRole('heading', { name: 'prod-payments-aurora' }),
     ).toBeDefined();
     expect(
       screen.getByRole('heading', { name: 'analytics-scratch-vol-08f2' }),
@@ -38,7 +38,7 @@ describe('ResourceFeed', () => {
     await clickControl(screen.getByRole('tab', { name: 'RDS' }));
 
     expect(
-      screen.getByRole('heading', { name: 'prod-payments-aurora' }),
+      await screen.findByRole('heading', { name: 'prod-payments-aurora' }),
     ).toBeDefined();
     expect(
       screen.queryByRole('heading', { name: 'analytics-scratch-vol-08f2' }),
@@ -55,21 +55,9 @@ describe('ResourceFeed', () => {
     await clickControl(screen.getByRole('tab', { name: 'RDS' }));
 
     expect(
-      screen.getByRole('status', {
+      await screen.findByRole('status', {
         name: 'No resources match the current filters.',
       }),
     ).toBeDefined();
-  });
-
-  it('shows the live connector pending heading instead of the estate', async () => {
-    useDashboardStore.getState().setMode('LIVE');
-    await renderPresenter(<ResourceFeed resources={MOCK_AUDIT_RESOURCES} />);
-
-    expect(
-      screen.getByRole('heading', { name: 'Live AWS connector pending' }),
-    ).toBeDefined();
-    expect(
-      screen.queryByRole('heading', { name: 'prod-payments-aurora' }),
-    ).toBeNull();
   });
 });

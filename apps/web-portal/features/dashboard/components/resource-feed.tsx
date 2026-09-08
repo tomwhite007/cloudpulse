@@ -2,16 +2,7 @@
 
 import { useMemo } from 'react';
 import type { ResourceStatusCardDto } from '@cloudpulse/api-contracts';
-import { Radio } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useDashboardStore } from '../store/dashboard-store';
 import {
@@ -26,7 +17,6 @@ export function ResourceFeed({
 }: {
   resources: ResourceStatusCardDto[];
 }) {
-  const mode = useDashboardStore((state) => state.mode);
   const selectedResourceType = useDashboardStore(
     (state) => state.selectedResourceType,
   );
@@ -35,7 +25,6 @@ export function ResourceFeed({
   );
   const statusFilter = useDashboardStore((state) => state.statusFilter);
   const setStatusFilter = useDashboardStore((state) => state.setStatusFilter);
-  const isSimulated = mode === 'SIMULATED';
 
   const visibleResources = useMemo(
     () =>
@@ -86,48 +75,29 @@ export function ResourceFeed({
         </TabsList>
       </Tabs>
 
-      {!isSimulated ? (
-        <Card className="border-dashed bg-transparent">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <Radio className="size-4 text-amber-300" aria-hidden="true" />
-              <h3 className="text-sm font-medium">Live AWS connector pending</h3>
-            </CardTitle>
-            <CardDescription>
-              Switch back to Simulated Enterprise to inspect the Day 3 mock
-              estate, or complete AWS account linking to stream live telemetry.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-24 w-full" />
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Badge variant="secondary">
-              {visibleResources.length}{' '}
-              {visibleResources.length === 1 ? 'resource' : 'resources'}
-            </Badge>
-            <span>Sorted by identified monthly waste</span>
-          </div>
-          {visibleResources.length === 0 ? (
-            <p
-              role="status"
-              aria-live="polite"
-              aria-label="No resources match the current filters."
-              className="text-sm text-muted-foreground"
-            >
-              No resources match the current filters.
-            </p>
-          ) : (
-            visibleResources.map((resource) => (
-              <ResourceCard key={resource.id} resource={resource} />
-            ))
-          )}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Badge variant="secondary">
+            {visibleResources.length}{' '}
+            {visibleResources.length === 1 ? 'resource' : 'resources'}
+          </Badge>
+          <span>Sorted by identified monthly waste</span>
         </div>
-      )}
+        {visibleResources.length === 0 ? (
+          <p
+            role="status"
+            aria-live="polite"
+            aria-label="No resources match the current filters."
+            className="text-sm text-muted-foreground"
+          >
+            No resources match the current filters.
+          </p>
+        ) : (
+          visibleResources.map((resource) => (
+            <ResourceCard key={resource.id} resource={resource} />
+          ))
+        )}
+      </div>
     </section>
   );
 }

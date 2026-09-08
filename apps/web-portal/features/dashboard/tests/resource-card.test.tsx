@@ -13,7 +13,7 @@ usePresenterTestLifecycle();
 const overProvisioned = MOCK_AUDIT_RESOURCES[0];
 
 describe('ResourceCard', () => {
-  it('queues a 1-click remediation and shows queued status', async () => {
+  it('sets the reviewing status when clicking remediate', async () => {
     await renderPresenter(<ResourceCard resource={overProvisioned} />);
 
     await clickControl(
@@ -23,7 +23,7 @@ describe('ResourceCard', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('status', { name: 'Queued' })).toBeDefined();
+      expect(screen.getByText('Reviewing in Advisor')).toBeDefined();
     });
     expect(
       screen.queryByRole('button', {
@@ -32,28 +32,5 @@ describe('ResourceCard', () => {
     ).toBeNull();
   });
 
-  it('keeps the action available when the auditor cannot queue it', async () => {
-    await renderPresenter(
-      <ResourceCard
-        resource={{
-          ...overProvisioned,
-          id: 'missing-resource',
-        }}
-      />,
-    );
 
-    await clickControl(
-      screen.getByRole('button', {
-        name: overProvisioned.recommendedAction.label,
-      }),
-    );
-
-    await waitFor(() => {
-      const action = screen.getByRole('button', {
-        name: overProvisioned.recommendedAction.label,
-      });
-      expect((action as HTMLButtonElement).disabled).toBe(false);
-    });
-    expect(screen.queryByRole('status', { name: 'Queued' })).toBeNull();
-  });
 });

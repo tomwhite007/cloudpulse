@@ -89,8 +89,21 @@ export function remediateEndpoint(deps: AuditApiDeps = {}): string {
   );
 }
 
+export function statusEndpoint(deps: AuditApiDeps = {}): string {
+  return deps.summaryUrl ? deps.summaryUrl.replace('/summary', '/status') : `${env.NEXT_PUBLIC_AUDITOR_API_URL}/api/audit/status`;
+}
+
+export async function fetchAuditStatus(deps: AuditApiDeps = {}) {
+  const fetchJsonImpl = deps.fetchJsonImpl ?? fetchJson;
+  try {
+    const payload = await fetchJsonImpl(statusEndpoint(deps));
+    return payload as { mode: 'SIMULATED' | 'LIVE'; profile?: string };
+  } catch (error) {
+    return { mode: 'SIMULATED' as const };
+  }
+}
+
 export async function fetchAuditSummary(
-  mode: AuditMode,
   deps: AuditApiDeps = {},
 ): Promise<CostAuditSummaryDto> {
   const fetchJsonImpl = deps.fetchJsonImpl ?? fetchJson;
@@ -99,16 +112,12 @@ export async function fetchAuditSummary(
     const payload = await fetchJsonImpl(summaryEndpoint(deps));
     return CostAuditSummarySchema.parse(payload);
   } catch (error) {
-    if (mode === 'SIMULATED') {
-      return MOCK_COST_AUDIT_SUMMARY;
-    }
-    throw error;
+    return MOCK_COST_AUDIT_SUMMARY;
   }
 }
 
 export async function postRemediation(
   request: RemediationRequestDto,
-  mode: AuditMode,
   deps: AuditApiDeps = {},
 ): Promise<RemediationResponseDto> {
   const fetchJsonImpl = deps.fetchJsonImpl ?? fetchJson;
@@ -122,9 +131,6 @@ export async function postRemediation(
     });
     return RemediationResponseSchema.parse(payload);
   } catch (error) {
-    if (mode === 'SIMULATED') {
-      return simulate(request);
-    }
-    throw error;
+    return simulate(request);
   }
 }

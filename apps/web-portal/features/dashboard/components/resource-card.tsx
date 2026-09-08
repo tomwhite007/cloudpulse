@@ -62,6 +62,9 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
   const reviewingRemediations = useDashboardStore(
     (state) => state.reviewingRemediations,
   );
+  const setReviewingRemediation = useDashboardStore(
+    (state) => state.setReviewingRemediation,
+  );
   const severity = SEVERITY_STYLES[resource.status];
   const isQueued = queuedRemediations.includes(resource.id);
   const isReviewing = reviewingRemediations.includes(resource.id);
@@ -70,10 +73,8 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
     remediate.variables?.resourceId === resource.id;
 
   async function handleRemediate() {
-    triggerAdvisorPrompt(
-      `Request PR proposal for ${resource.resourceName}`,
-      resource
-    );
+    setReviewingRemediation(resource.id);
+    triggerAdvisorPrompt(`Request PR proposal for ${resource.resourceName}`, resource);
   }
 
   return (

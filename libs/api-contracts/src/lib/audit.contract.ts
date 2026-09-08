@@ -52,3 +52,9 @@ export type SpendCategoryDto = z.infer<typeof SpendCategorySchema>;
 export type CostAuditSummaryDto = z.infer<typeof CostAuditSummarySchema>;
 export type RemediationRequestDto = z.infer<typeof RemediationRequestSchema>;
 export type RemediationResponseDto = z.infer<typeof RemediationResponseSchema>;
+
+export const AuditStatusSchema = z.object({
+  mode: z.enum(["SIMULATED", "LIVE"]),
+  profile: z.string().optional(),
+});
+export type AuditStatusDto = z.infer<typeof AuditStatusSchema>;
