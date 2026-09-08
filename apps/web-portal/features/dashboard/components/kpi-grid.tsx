@@ -8,7 +8,7 @@ import {
   ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuditSummary, useAuditStatus } from '../hooks/use-audit-data';
@@ -22,12 +22,12 @@ function formatCompliancePercent(summary: CostAuditSummaryDto) {
 
 function kpiValueClassName(tone: KpiTone | undefined) {
   if (tone === 'warning') {
-    return 'mt-2 text-2xl font-semibold tracking-tight text-amber-300';
+    return 'text-2xl font-semibold tracking-tight text-amber-300';
   }
   if (tone === 'success') {
-    return 'mt-2 text-2xl font-semibold tracking-tight text-emerald-300';
+    return 'text-2xl font-semibold tracking-tight text-emerald-300';
   }
-  return 'mt-2 text-2xl font-semibold tracking-tight text-foreground';
+  return 'text-2xl font-semibold tracking-tight text-foreground';
 }
 
 const KPI_ITEMS: readonly KpiItem[] = [
@@ -93,33 +93,35 @@ export function KpiGrid({
         {KPI_ITEMS.map((item) => {
           const Icon = KPI_ICONS[item.key];
           return (
-            <Card key={item.key} className="bg-card/80">
-              <CardHeader className="flex flex-row items-start justify-between gap-3">
-                <div>
-                  <CardTitle className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                    {item.label}
-                  </CardTitle>
-                  {summary ? (
-                    <p className={kpiValueClassName(item.tone)}>
-                      {item.format(summary)}
-                    </p>
-                  ) : (
-                    <Skeleton className="mt-2 h-8 w-28" />
-                  )}
-                </div>
-                <div className="flex size-8 items-center justify-center rounded-lg bg-muted/70">
-                  <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
-                </div>
+            <Card key={item.key} className="h-full gap-2 bg-card/80">
+              <CardHeader className="gap-1">
+                <CardTitle className="line-clamp-2 min-h-9 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                  {item.label}
+                </CardTitle>
+                {summary ? (
+                  <p className={kpiValueClassName(item.tone)}>
+                    {item.format(summary)}
+                  </p>
+                ) : (
+                  <Skeleton className="h-8 w-28" />
+                )}
+                <CardAction>
+                  <div className="flex size-8 items-center justify-center rounded-lg bg-muted/70">
+                    <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
+                  </div>
+                </CardAction>
               </CardHeader>
-              <CardContent>
-                {item.key === 'complianceScorePercent' && summary && summary.activeAssetCount > 0 ? (
-                  <Progress 
-                    value={summary.complianceScorePercent} 
-                    trackClassName={summary.complianceScorePercent === 0 ? "bg-rose-500/20" : undefined}
-                    indicatorClassName={summary.complianceScorePercent === 0 ? "bg-rose-500" : undefined}
-                  />
-                ) : null}
-                <p className="mt-2 text-xs text-muted-foreground">
+              <CardContent className="mt-auto">
+                <div className="min-h-1.5">
+                  {item.key === 'complianceScorePercent' && summary && summary.activeAssetCount > 0 ? (
+                    <Progress
+                      value={summary.complianceScorePercent}
+                      trackClassName={summary.complianceScorePercent === 0 ? 'bg-rose-500/20' : undefined}
+                      indicatorClassName={summary.complianceScorePercent === 0 ? 'bg-rose-500' : undefined}
+                    />
+                  ) : null}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
                   {typeof item.hint === 'function' ? (summary ? item.hint(summary) : '') : item.hint}
                 </p>
               </CardContent>
