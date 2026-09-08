@@ -1,80 +1,22 @@
 'use client';
 
-import { useChat } from '@ai-sdk/react';
-import { DefaultChatTransport } from 'ai';
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDashboardStore } from '../../features/dashboard/store/dashboard-store';
-import { useAuditSummary } from '../../features/dashboard/hooks/use-audit-data';
+import { useAdvisorChat } from '../../features/dashboard/hooks/use-advisor-chat';
 import { Send, Bot, Loader2, CheckCircle, RefreshCcw } from 'lucide-react';
 import { RemediationProposalCard } from './remediation-proposal-card';
 
-function auditChatBody(auditContext: unknown) {
-  return {
-    auditContext,
-    data: { auditContext },
-  };
-}
-
 export function PulseAdvisor() {
-  const auditSummary = useAuditSummary();
-  const auditContextRef = useRef(auditSummary.data);
-  auditContextRef.current = auditSummary.data;
-
-  const transport = useMemo(
-    () =>
-      new DefaultChatTransport({
-        api: '/api/chat',
-        // Resolved at request time so we never POST the empty mount-time snapshot.
-        body: () => auditChatBody(auditContextRef.current),
-        fetch: async (input, init) => {
-          if (init?.body && typeof init.body === 'string') {
-            try {
-              const parsed = JSON.parse(init.body) as Record<string, unknown>;
-              const existingData =
-                parsed.data !== null &&
-                typeof parsed.data === 'object' &&
-                !Array.isArray(parsed.data)
-                  ? (parsed.data as Record<string, unknown>)
-                  : {};
-
-              return fetch(input, {
-                ...init,
-                body: JSON.stringify({
-                  ...parsed,
-                  ...auditChatBody(auditContextRef.current),
-                  data: {
-                    ...existingData,
-                    auditContext: auditContextRef.current,
-                  },
-                }),
-              });
-            } catch {
-              // Non-JSON bodies should pass through unchanged.
-            }
-          }
-
-          return fetch(input, init);
-        },
-      }),
-    [],
-  );
-
-  const { messages, status, sendMessage, setMessages } = useChat({
-    transport,
-  });
-  const isLoading = status === 'submitted' || status === 'streaming';
+  const {
+    messages,
+    status,
+    isLoading,
+    setMessages,
+    sendAdvisorMessage,
+    auditSummary,
+  } = useAdvisorChat();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const sendAdvisorMessage = useCallback(
-    (content: string) => {
-      void sendMessage(
-        { role: 'user', content } as never,
-        { body: auditChatBody(auditContextRef.current) },
-      );
-    },
-    [sendMessage],
-  );
   
   const advisorPrompt = useDashboardStore(state => state.advisorPrompt);
   const triggerAdvisorPrompt = useDashboardStore(state => state.triggerAdvisorPrompt);
