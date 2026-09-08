@@ -5,6 +5,29 @@ import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 import { streamText, tool } from "ai";
 import { z } from "zod";
 
+function createProposalFromFinding(finding: any) {
+  const name = finding.resourceName || finding.name || finding.id || 'unknown';
+  const type = finding.resourceType || 'EBS';
+  const actionType = finding.recommendedAction?.actionType || finding.actionType || 'TERMINATE';
+  const savings = finding.potentialMonthlySavings || finding.potentialSavings || 0;
+  
+  return {
+    resourceId: finding.id,
+    resourceName: name,
+    actionType: actionType,
+    monthlySavingsUsd: savings,
+    branchName: `finops/remediate-${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+    commitMessage: `fix(infra): remediate ${type.toLowerCase()} ${name}`,
+    hclDiff: `- resource "aws_${type.toLowerCase()}_volume" "${name.replace(/[^a-zA-Z0-9_]/g, '_')}" {\n-   id = "${finding.id}"\n- }`,
+    safetyChecks: [
+      `Finding classification: ${finding.findingType || finding.status || 'Waste'} (${finding.severity || 'HIGH'})`,
+      `${finding.details || finding.telemetrySummary || 'Identified as idle/zombie resource'}`,
+      'Final snapshot verification required prior to apply'
+    ],
+    isSimulated: true
+  };
+}
+
 function createMockModel(auditContext: any) {
   return {
     specificationVersion: "v4",
@@ -38,51 +61,79 @@ function createMockModel(auditContext: any) {
               let toolInput: any = {};
               let responseText = "";
 
-              if (lastMessageText.includes("Find zombie storage")) {
-                responseText =
-                  "I found an unattached EBS volume `analytics-scratch-vol-08f2` costing $950/mo. I can propose a PR to terminate it.";
-                toolName = "propose_terraform_remediation_pr";
-                toolInput = {
-                  resourceId: "res-ebs-02",
-                  resourceType: "EBS",
-                  actionType: "TERMINATE",
-                };
-              } else if (lastMessageText.includes("How can I cut $2k?")) {
-                responseText =
-                  "You can resize `prod-payments-aurora` to save $2,100/mo. Should I draft a PR?";
-                toolName = "propose_terraform_remediation_pr";
-                toolInput = {
-                  resourceId: "res-rds-01",
-                  resourceType: "RDS",
-                  actionType: "RESIZE",
-                };
-              } else if (lastMessageText.includes("Review RDS spend")) {
-                responseText =
-                  "Your RDS instance `prod-payments-aurora` is underutilized at 11% CPU. Resizing it will save significant costs. Here is the proposed patch:";
-                toolName = "propose_terraform_remediation_pr";
-                toolInput = {
-                  resourceId: "res-rds-01",
-                  resourceType: "RDS",
-                  actionType: "RESIZE",
-                };
-              } else if (lastMessageText.includes("Request PR proposal for")) {
-                const resourceName = lastMessageText
-                  .replace("Request PR proposal for ", "")
-                  .trim();
-                const resource = auditContext?.resources?.find(
-                  (r: any) => r.resourceName === resourceName,
-                );
-                const resourceId = resource?.id || "res-ebs-02";
-                toolName = "propose_terraform_remediation_pr";
-                toolInput = {
-                  resourceId,
-                  resourceType: resource?.resourceType || "EBS",
-                  actionType:
-                    resource?.recommendedAction?.actionType || "TERMINATE",
-                };
+              const findings = auditContext?.resources || auditContext?.findings || [];
+              const prMatch = lastMessageText.match(/Request PR proposal for (.+)/i);
+
+              if (prMatch) {
+                const resourceName = prMatch[1].trim();
+                const finding = findings.find((r: any) => (r.resourceName || r.name) === resourceName);
+                if (finding) {
+                  responseText = `Prepared remediation proposal for ${finding.resourceName || finding.name}.`;
+                  toolName = "propose_terraform_remediation_pr";
+                  toolInput = {
+                    resourceId: finding.id,
+                    resourceType: finding.resourceType || "EBS",
+                    actionType: finding.recommendedAction?.actionType || "TERMINATE",
+                  };
+                } else {
+                  responseText = `I couldn't find a resource named ${resourceName}.`;
+                }
+              } else if (lastMessageText.includes("Find zombie storage")) {
+                const finding = findings.find((r: any) => r.status === 'ZOMBIE' || r.findingType === 'Zombie' || r.resourceType === 'EBS');
+                if (finding) {
+                  responseText = `I found an unattached ${finding.resourceType} volume \`${finding.resourceName || finding.name}\` costing $${finding.potentialMonthlySavings || finding.potentialSavings}/mo. I can propose a PR to terminate it.`;
+                  toolName = "propose_terraform_remediation_pr";
+                  toolInput = {
+                    resourceId: finding.id,
+                    resourceType: finding.resourceType || "EBS",
+                    actionType: finding.recommendedAction?.actionType || "TERMINATE",
+                  };
+                } else {
+                  responseText = "No zombie storage was detected in your infrastructure.";
+                }
+              } else if (lastMessageText.includes("Explain waste findings")) {
+                const sorted = [...findings].sort((a, b) => ((b.potentialMonthlySavings || b.potentialSavings) || 0) - ((a.potentialMonthlySavings || a.potentialSavings) || 0));
+                const topFinding = sorted[0];
+                if (topFinding) {
+                  responseText = `You have ${findings.length} findings. The largest contributor is \`${topFinding.resourceName || topFinding.name}\` wasting $${topFinding.potentialMonthlySavings || topFinding.potentialSavings}/mo. I can propose a PR to fix it.`;
+                  toolName = "propose_terraform_remediation_pr";
+                  toolInput = {
+                    resourceId: topFinding.id,
+                    resourceType: topFinding.resourceType,
+                    actionType: topFinding.recommendedAction?.actionType || "TERMINATE",
+                  };
+                } else {
+                  responseText = "You have no waste findings at the moment!";
+                }
+              } else if (lastMessageText.includes("Explain compliance score")) {
+                const activeCount = auditContext?.activeAssetCount || 0;
+                const score = auditContext?.complianceScorePercent || 0;
+                const wasteCount = findings.length;
+                responseText = `Your score is ${score}% because ${wasteCount} of ${activeCount} monitored assets is flagged as non-compliant waste.`;
+                const finding = findings[0];
+                if (finding) {
+                  toolName = "propose_terraform_remediation_pr";
+                  toolInput = {
+                    resourceId: finding.id,
+                    resourceType: finding.resourceType,
+                    actionType: finding.recommendedAction?.actionType || "TERMINATE",
+                  };
+                }
+              } else if (lastMessageText.includes("Review RDS spend") || lastMessageText.includes("How can I cut")) {
+                const finding = findings.find((r: any) => r.resourceType === 'RDS') || findings[0];
+                if (finding) {
+                  responseText = `I found an issue with \`${finding.resourceName || finding.name}\` wasting $${finding.potentialMonthlySavings || finding.potentialSavings}/mo. Should I draft a PR?`;
+                  toolName = "propose_terraform_remediation_pr";
+                  toolInput = {
+                    resourceId: finding.id,
+                    resourceType: finding.resourceType,
+                    actionType: finding.recommendedAction?.actionType || "RESIZE",
+                  };
+                } else {
+                  responseText = "I couldn't find any significant waste to review right now.";
+                }
               } else {
-                responseText =
-                  "I'm currently in demo mode and don't have the capability to process this specific request.";
+                responseText = "I'm currently in demo mode and don't have the capability to process this specific request.";
                 toolName = "inspectWasteSummary";
               }
               // --- VERCEL AI SDK v4 CUSTOM PROVIDER COMPATIBILITY NOTES ---
@@ -194,8 +245,9 @@ function createMockModel(auditContext: any) {
 
 export async function POST(req: Request) {
   try {
-    const { messages, auditContext }: { messages: any[]; auditContext?: any } =
-      await req.json();
+    const body = await req.json();
+    const messages = body.messages || [];
+    const auditContext = body.auditContext || (body.data && body.data.auditContext) || undefined;
 
     const isDemoMode = !process.env.OPENAI_API_KEY;
 
@@ -243,48 +295,23 @@ export async function POST(req: Request) {
           }),
           execute: async (args: any): Promise<any> => {
             if (isDemoMode) {
-              if (args.resourceId === "res-rds-01") {
-                return {
-                  resourceId: "res-rds-01",
-                  resourceName: "prod-payments-aurora",
-                  actionType: "RESIZE",
-                  monthlySavingsUsd: 2100.0,
-                  branchName: "finops/resize-rds-01",
-                  commitMessage:
-                    "fix(infra): resize underutilized aurora cluster",
-                  hclDiff:
-                    '- instance_class = "db.r6g.8xlarge"\\n+ instance_class = "db.r6g.2xlarge"',
-                  safetyChecks: [
-                    "CPU < 15% for 30 days",
-                    "Connection count within limits for 2xlarge",
-                    "Automated backups enabled",
-                  ],
-                  isSimulated: true,
-                };
+              const findings = auditContext?.resources || auditContext?.findings || [];
+              const targetResource = findings.find((r: any) => r.id === args.resourceId);
+
+              if (targetResource) {
+                return createProposalFromFinding(targetResource);
               }
 
-              const targetResource = auditContext?.resources?.find(
-                (r: any) => r.id === args.resourceId,
-              );
-
-              return {
-                resourceId: args.resourceId,
-                resourceName:
-                  targetResource?.resourceName || "analytics-scratch-vol-08f2",
-                actionType: args.actionType || "TERMINATE",
-                monthlySavingsUsd:
-                  targetResource?.potentialMonthlySavings || 950.0,
-                branchName: `finops/remediate-${args.resourceId}`,
-                commitMessage: `fix(infra): ${args.actionType?.toLowerCase()} resource`,
-                hclDiff:
-                  '- resource "aws_ebs_volume" "analytics_scratch" {\\n-   availability_zone = "us-west-2a"\\n-   size              = 2048\\n-   type              = "io2"\\n- }',
-                safetyChecks: [
-                  "Volume detached > 30 days",
-                  "Zero read/write IOPS recorded",
-                  "Final EBS snapshot initiated",
-                ],
-                isSimulated: true,
-              };
+              return createProposalFromFinding({
+                id: args.resourceId,
+                resourceName: args.resourceId,
+                resourceType: args.resourceType,
+                recommendedAction: { actionType: args.actionType },
+                potentialSavings: 0,
+                findingType: 'Unknown',
+                severity: 'LOW',
+                details: 'No details available'
+              });
             }
 
             try {

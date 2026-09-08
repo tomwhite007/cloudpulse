@@ -131,7 +131,7 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
             aria-label="Queued"
             className="border-emerald-400/30 bg-emerald-500/15 text-emerald-300"
           >
-            ✓ PR Drafted
+            ✓ PR #104 Drafted
           </Badge>
         ) : isReviewing ? (
           <Badge
