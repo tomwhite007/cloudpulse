@@ -16,6 +16,7 @@ import { formatInteger, formatUsd } from '../utils/format';
 import type { KpiItem, KpiMetricKey, KpiTone } from './kpi-grid.types';
 
 function formatCompliancePercent(summary: CostAuditSummaryDto) {
+  if (summary.activeAssetCount === 0) return 'N/A';
   return `${summary.complianceScorePercent}%`;
 }
 
@@ -71,7 +72,6 @@ export function KpiGrid({
   summary: CostAuditSummaryDto | undefined;
 }) {
   const { data: statusData } = useAuditStatus();
-  const isSimulated = statusData?.mode === 'SIMULATED';
 
   return (
     <section aria-label="FinOps KPI metrics">
@@ -85,7 +85,7 @@ export function KpiGrid({
                   <CardTitle className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                     {item.label}
                   </CardTitle>
-                  {isSimulated && summary ? (
+                  {summary ? (
                     <p className={kpiValueClassName(item.tone)}>
                       {item.format(summary)}
                     </p>
@@ -98,7 +98,7 @@ export function KpiGrid({
                 </div>
               </CardHeader>
               <CardContent>
-                {item.key === 'complianceScorePercent' && isSimulated && summary ? (
+                {item.key === 'complianceScorePercent' && summary && summary.activeAssetCount > 0 ? (
                   <Progress value={summary.complianceScorePercent} />
                 ) : null}
                 <p className="mt-2 text-xs text-muted-foreground">{item.hint}</p>
