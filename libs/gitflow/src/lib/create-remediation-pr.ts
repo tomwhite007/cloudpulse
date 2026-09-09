@@ -1,21 +1,20 @@
 import { Octokit } from '@octokit/rest';
 import {
   buildRemediationPrBody,
-  sanitizeBranchName,
   type DraftPrRequest,
   type DraftPrResponse,
 } from './draft-pr';
+import {
+  DEFAULT_TERRAFORM_PATH,
+  gitFlowEnvFromProcess,
+  resolveGitFlowBranchName,
+  resolveTerraformPath,
+  shouldUseSandboxFallback,
+  type GitFlowEnv,
+} from './gitflow-config';
 import { tombstoneTargetedResource } from './hcl-tombstone';
 
-export type GitFlowEnv = {
-  GITHUB_TOKEN?: string;
-  GITHUB_REPO_OWNER?: string;
-  GITHUB_REPO_NAME?: string;
-  DEMO_MODE?: string;
-};
-
-export const SANDBOX_STORAGE_PATH =
-  'apps/infra/environments/sandbox/storage.tf';
+export const SANDBOX_STORAGE_PATH = DEFAULT_TERRAFORM_PATH;
 
 export const FALLBACK_SANDBOX_STORAGE = `# CloudPulse Monitored Storage
 resource "aws_ebs_volume" "cloudpulse_test_waste" {
@@ -31,15 +30,6 @@ resource "aws_ebs_volume" "cloudpulse_test_waste" {
 }
 `;
 
-function gitFlowEnvFromProcess(): GitFlowEnv {
-  return {
-    GITHUB_TOKEN: process.env['GITHUB_TOKEN'],
-    GITHUB_REPO_OWNER: process.env['GITHUB_REPO_OWNER'],
-    GITHUB_REPO_NAME: process.env['GITHUB_REPO_NAME'],
-    DEMO_MODE: process.env['DEMO_MODE'],
-  };
-}
-
 export async function createGitHubRemediationPr(
   input: DraftPrRequest,
   env: GitFlowEnv = gitFlowEnvFromProcess(),
@@ -49,6 +39,7 @@ export async function createGitHubRemediationPr(
   const owner =
     env.GITHUB_REPO_OWNER ||
     (await octokit.rest.users.getAuthenticated()).data.login;
+  const terraformPath = resolveTerraformPath(env);
 
   const { sha: baseSha, branch: baseBranch } = await resolveBaseBranch(
     octokit,
@@ -59,11 +50,17 @@ export async function createGitHubRemediationPr(
     octokit,
     owner,
     repo,
-    sanitizeBranchName(input.branchName),
+    resolveGitFlowBranchName(input, env),
     baseSha,
   );
 
-  const existing = await readSandboxStorage(octokit, owner, repo, branchName);
+  const existing = await readTerraformFile(
+    octokit,
+    owner,
+    repo,
+    branchName,
+    terraformPath,
+  );
   const patched = tombstoneTargetedResource(
     existing.content ?? FALLBACK_SANDBOX_STORAGE,
     {
@@ -76,7 +73,7 @@ export async function createGitHubRemediationPr(
   await octokit.rest.repos.createOrUpdateFileContents({
     owner,
     repo,
-    path: SANDBOX_STORAGE_PATH,
+    path: terraformPath,
     message: input.commitMessage,
     content: Buffer.from(patched, 'utf8').toString('base64'),
     branch: branchName,
@@ -159,22 +156,23 @@ async function createUniqueBranch(
   return uniqueName;
 }
 
-async function readSandboxStorage(
+async function readTerraformFile(
   octokit: Octokit,
   owner: string,
   repo: string,
   branch: string,
+  path: string,
 ): Promise<{ content: string; sha?: string }> {
   try {
     const { data } = await octokit.rest.repos.getContent({
       owner,
       repo,
-      path: SANDBOX_STORAGE_PATH,
+      path,
       ref: branch,
     });
 
     if (Array.isArray(data) || data.type !== 'file' || !('content' in data)) {
-      throw new Error(`Expected a file at ${SANDBOX_STORAGE_PATH}`);
+      throw new Error(`Expected a file at ${path}`);
     }
 
     const encoding = data.encoding === 'base64' ? 'base64' : 'utf8';
@@ -185,7 +183,10 @@ async function readSandboxStorage(
     };
   } catch (error) {
     if (getHttpStatus(error) === 404) {
-      return { content: FALLBACK_SANDBOX_STORAGE };
+      if (shouldUseSandboxFallback(path)) {
+        return { content: FALLBACK_SANDBOX_STORAGE };
+      }
+      throw new Error(`Terraform file not found at ${path}`);
     }
     throw error;
   }
