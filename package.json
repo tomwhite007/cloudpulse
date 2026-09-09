@@ -9,7 +9,8 @@
     "serve-web-portal": "nx dev web-portal --port 4000",
     "test-web-portal": "nx test web-portal",
     "test-api-contracts": "nx run api-contracts:test",
-    "test-auditor-api": "nx test auditor-api"
+    "test-auditor-api": "nx test auditor-api",
+    "test-gitflow": "nx test gitflow"
   },
   "private": true,
   "devDependencies": {

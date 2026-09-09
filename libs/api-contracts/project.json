@@ -4,6 +4,14 @@
   "sourceRoot": "libs/api-contracts/src",
   "projectType": "library",
   "tags": [],
-  "// targets": "to see all targets run: nx show project api-contracts --web",
-  "targets": {}
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/coverage/libs/api-contracts"],
+      "options": {
+        "command": "vitest",
+        "cwd": "libs/api-contracts"
+      }
+    }
+  }
 }
