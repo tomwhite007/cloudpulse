@@ -51,3 +51,10 @@ out
 
 vitest.config.*.timestamp*
 apps/web-portal/.env.local
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log

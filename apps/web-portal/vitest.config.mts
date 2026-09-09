@@ -16,6 +16,7 @@ export default defineConfig(() => ({
         root,
         '../../libs/api-contracts/src/index.ts',
       ),
+      '@cloudpulse/gitflow': resolve(root, '../../libs/gitflow/src/index.ts'),
     },
   },
   test: {

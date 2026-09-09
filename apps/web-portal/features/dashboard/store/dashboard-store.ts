@@ -11,15 +11,21 @@ import {
 
 export type { AuditMode, ResourceTypeFilter, StatusFilter };
 
+export type QueuedRemediationPr = {
+  prNumber: number;
+  prUrl: string;
+};
+
 interface DashboardStore {
   selectedResourceType: ResourceTypeFilter;
   statusFilter: StatusFilter;
   queuedRemediations: string[];
+  queuedRemediationPrs: Record<string, QueuedRemediationPr>;
   reviewingRemediations: string[];
   advisorPrompt: { prompt: string; resource?: any } | null;
   setSelectedResourceType: (type: string) => void;
   setStatusFilter: (status: string) => void;
-  queueRemediation: (resourceId: string) => void;
+  queueRemediation: (resourceId: string, pr?: QueuedRemediationPr) => void;
   removeQueuedRemediation: (resourceId: string) => void;
   setReviewingRemediation: (resourceId: string) => void;
   removeReviewingRemediation: (resourceId: string) => void;
@@ -30,6 +36,7 @@ const initialChrome = {
   selectedResourceType: 'ALL' as ResourceTypeFilter,
   statusFilter: 'all' as StatusFilter,
   queuedRemediations: [] as string[],
+  queuedRemediationPrs: {} as Record<string, QueuedRemediationPr>,
   reviewingRemediations: [] as string[],
   advisorPrompt: null as { prompt: string; resource?: any } | null,
 };
@@ -48,18 +55,26 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
     }
     set({ statusFilter: status });
   },
-  queueRemediation: (resourceId) =>
+  queueRemediation: (resourceId, pr) =>
     set((state) => ({
       queuedRemediations: state.queuedRemediations.includes(resourceId)
         ? state.queuedRemediations
         : [...state.queuedRemediations, resourceId],
+      queuedRemediationPrs: pr
+        ? { ...state.queuedRemediationPrs, [resourceId]: pr }
+        : state.queuedRemediationPrs,
     })),
   removeQueuedRemediation: (resourceId) =>
-    set((state) => ({
-      queuedRemediations: state.queuedRemediations.filter(
-        (id) => id !== resourceId,
-      ),
-    })),
+    set((state) => {
+      const nextPrs = { ...state.queuedRemediationPrs };
+      delete nextPrs[resourceId];
+      return {
+        queuedRemediations: state.queuedRemediations.filter(
+          (id) => id !== resourceId,
+        ),
+        queuedRemediationPrs: nextPrs,
+      };
+    }),
   setReviewingRemediation: (resourceId) =>
     set((state) => ({
       reviewingRemediations: state.reviewingRemediations.includes(resourceId)

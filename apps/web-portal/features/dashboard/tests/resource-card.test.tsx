@@ -2,6 +2,7 @@ import { MOCK_AUDIT_RESOURCES } from '@cloudpulse/api-contracts';
 import { screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { ResourceCard } from '../components/resource-card';
+import { useDashboardStore } from '../store/dashboard-store';
 import {
   clickControl,
   renderPresenter,
@@ -32,5 +33,20 @@ describe('ResourceCard', () => {
     ).toBeNull();
   });
 
+  it('shows a disabled PR open CTA after a draft is queued', async () => {
+    useDashboardStore.getState().queueRemediation(overProvisioned.id, {
+      prNumber: 42,
+      prUrl: 'https://github.com/example/cloudpulse/pull/42',
+    });
 
+    await renderPresenter(<ResourceCard resource={overProvisioned} />);
+
+    const cta = screen.getByRole('button', { name: 'PR #42 Open' });
+    expect(cta).toHaveProperty('disabled', true);
+    expect(
+      screen.queryByRole('button', {
+        name: overProvisioned.recommendedAction.label,
+      }),
+    ).toBeNull();
+  });
 });

@@ -1,6 +1,10 @@
+'use client';
+
 import { useDashboardStore } from '../../features/dashboard/store/dashboard-store';
-import { CheckCircle, GitBranch, ShieldCheck } from 'lucide-react';
+import { CheckCircle, GitBranch, Loader2, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
+import type { DraftPrResponse } from '@cloudpulse/gitflow';
 
 export interface RemediationProposalProps {
   resourceId: string;
@@ -17,6 +21,11 @@ export interface RemediationProposalProps {
   actionType?: string;
 }
 
+type DraftState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; prNumber: number; prUrl: string };
+
 export function RemediationProposalCard({
   resourceId,
   resourceName,
@@ -32,11 +41,55 @@ export function RemediationProposalCard({
   actionType
 }: RemediationProposalProps) {
   const queueRemediation = useDashboardStore(state => state.queueRemediation);
-  const [isApproved, setIsApproved] = useState(false);
+  const [draftState, setDraftState] = useState<DraftState>({ status: 'idle' });
 
-  const handleApprove = () => {
-    queueRemediation(resourceId);
-    setIsApproved(true);
+  const savingsUsd = monthlySavingsUsd ?? estimatedMonthlySavingsUsd;
+
+  const handleApprove = async () => {
+    if (draftState.status === 'loading') {
+      return;
+    }
+
+    setDraftState({ status: 'loading' });
+
+    try {
+      const response = await fetch('/api/remediation/draft-pr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resourceId,
+          resourceName,
+          actionType: actionType ?? actionLabel ?? 'TERMINATE',
+          branchName,
+          commitMessage,
+          hclDiff,
+          monthlySavingsUsd: savingsUsd,
+        }),
+      });
+
+      const payload = (await response.json()) as DraftPrResponse & {
+        error?: string;
+      };
+
+      if (!response.ok || !payload.success || !payload.prUrl) {
+        throw new Error(payload.error || 'Failed to create draft pull request');
+      }
+
+      queueRemediation(resourceId, {
+        prNumber: payload.prNumber,
+        prUrl: payload.prUrl,
+      });
+      setDraftState({
+        status: 'success',
+        prNumber: payload.prNumber,
+        prUrl: payload.prUrl,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to create draft pull request';
+      toast.error(message);
+      setDraftState({ status: 'idle' });
+    }
   };
 
   return (
@@ -49,7 +102,7 @@ export function RemediationProposalCard({
       <div className="mb-3 flex items-center justify-between">
         <h4 className="text-lg font-medium text-white">{prTitle || commitMessage || actionLabel || actionType}</h4>
         <span className="rounded-full bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-300">
-          +${monthlySavingsUsd || estimatedMonthlySavingsUsd}/mo
+          +${savingsUsd}/mo
         </span>
       </div>
       
@@ -88,20 +141,33 @@ export function RemediationProposalCard({
       </div>
 
       <div className="flex justify-end">
-        {isApproved ? (
-          <button
-            disabled
-            className="flex items-center gap-2 rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 transition-colors"
+        {draftState.status === 'success' ? (
+          <a
+            href={draftState.prUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
           >
             <CheckCircle className="size-4" />
-            ✓ PR #104 Drafted
-          </button>
+            Open PR #{draftState.prNumber} ↗
+          </a>
         ) : (
           <button
-            onClick={handleApprove}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900 transition-all active:scale-95"
+            onClick={() => {
+              void handleApprove();
+            }}
+            disabled={draftState.status === 'loading'}
+            aria-busy={draftState.status === 'loading'}
+            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900 transition-all active:scale-95 disabled:cursor-wait disabled:opacity-80"
           >
-            Draft Pull Request
+            {draftState.status === 'loading' ? (
+              <>
+                <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
+                Creating branch & PR...
+              </>
+            ) : (
+              'Draft Pull Request'
+            )}
           </button>
         )}
       </div>

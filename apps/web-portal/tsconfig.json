@@ -33,7 +33,8 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "@cloudpulse/api-contracts": ["../../libs/api-contracts/src/index.ts"]
+      "@cloudpulse/api-contracts": ["../../libs/api-contracts/src/index.ts"],
+      "@cloudpulse/gitflow": ["../../libs/gitflow/src/index.ts"]
     }
   },
   "include": [

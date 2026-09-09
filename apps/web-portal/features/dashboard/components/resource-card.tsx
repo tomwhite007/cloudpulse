@@ -52,9 +52,8 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
   const queuedRemediations = useDashboardStore(
     (state) => state.queuedRemediations,
   );
-  const queueRemediation = useDashboardStore((state) => state.queueRemediation);
-  const removeQueuedRemediation = useDashboardStore(
-    (state) => state.removeQueuedRemediation,
+  const queuedRemediationPrs = useDashboardStore(
+    (state) => state.queuedRemediationPrs,
   );
   const triggerAdvisorPrompt = useDashboardStore(
     (state) => state.triggerAdvisorPrompt,
@@ -67,6 +66,7 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
   );
   const severity = SEVERITY_STYLES[resource.status];
   const isQueued = queuedRemediations.includes(resource.id);
+  const queuedPr = queuedRemediationPrs[resource.id];
   const isReviewing = reviewingRemediations.includes(resource.id);
   const isMutating =
     remediate.isPending &&
@@ -125,14 +125,13 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
           1-click remediation · {resource.recommendedAction.actionType}
         </p>
         {isQueued && !isMutating ? (
-          <Badge
-            role="status"
-            aria-live="polite"
-            aria-label="Queued"
-            className="border-emerald-400/30 bg-emerald-500/15 text-emerald-300"
+          <Button
+            size="sm"
+            disabled
+            aria-label={`PR #${queuedPr?.prNumber ?? 104} Open`}
           >
-            ✓ PR #104 Drafted
-          </Badge>
+            ✓ PR #{queuedPr?.prNumber ?? 104} Open
+          </Button>
         ) : isReviewing ? (
           <Badge
             role="status"

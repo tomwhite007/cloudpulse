@@ -1,0 +1,23 @@
+{
+  "name": "infra",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/infra",
+  "projectType": "application",
+  "tags": ["type:infra", "scope:sandbox"],
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "terraform fmt -check -recursive",
+        "cwd": "apps/infra"
+      }
+    },
+    "validate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "terraform init -backend=false -input=false && terraform validate",
+        "cwd": "apps/infra/environments/sandbox"
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "gitflow",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/gitflow/src",
+  "projectType": "library",
+  "tags": [
+    "type:lib",
+    "scope:shared"
+  ],
+  "// targets": "to see all targets run: nx show project gitflow --web",
+  "targets": {}
+}
