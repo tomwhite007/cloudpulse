@@ -10,7 +10,9 @@
     "test-web-portal": "nx test web-portal",
     "test-api-contracts": "nx run api-contracts:test",
     "test-auditor-api": "nx test auditor-api",
-    "test-gitflow": "nx test gitflow"
+    "test-gitflow": "nx test gitflow",
+    "test-all": "npx nx run-many -t test",
+    "test-all-affected": "npx nx affected -t test"
   },
   "private": true,
   "devDependencies": {
