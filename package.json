@@ -69,6 +69,7 @@
     "webpack-dev-server": "^5.2.1"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.49",
     "@ai-sdk/openai": "^4.0.60",
     "@ai-sdk/react": "^4.0.96",
     "@aws-sdk/client-cloudwatch": "^3.1127.0",

@@ -16,6 +16,8 @@ jest.mock('@aws-sdk/client-cloudwatch');
 
 describe('AwsCloudAuditorService', () => {
   let service: AwsCloudAuditorService;
+  const originalProfile = process.env.AWS_PROFILE;
+  const originalRegion = process.env.AWS_REGION;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -27,6 +29,16 @@ describe('AwsCloudAuditorService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    if (originalProfile === undefined) {
+      delete process.env.AWS_PROFILE;
+    } else {
+      process.env.AWS_PROFILE = originalProfile;
+    }
+    if (originalRegion === undefined) {
+      delete process.env.AWS_REGION;
+    } else {
+      process.env.AWS_REGION = originalRegion;
+    }
   });
 
   it('should be defined', () => {

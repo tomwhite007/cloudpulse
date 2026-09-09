@@ -156,7 +156,10 @@ export function PulseAdvisor() {
                     
                     const toolCallId = toolPayload.toolCallId || index;
                     
-                    if (toolName === 'propose_terraform_remediation_pr') {
+                    if (
+                      toolName === 'propose_terraform_remediation_pr' ||
+                      toolName === 'proposeTerraformRemediation'
+                    ) {
                       const outputData = toolPayload.output || toolPayload.result;
                       if (outputData) {
                         return <RemediationProposalCard key={toolCallId} {...outputData} />;

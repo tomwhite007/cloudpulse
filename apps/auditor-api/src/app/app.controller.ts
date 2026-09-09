@@ -9,6 +9,7 @@ import {
   CLOUD_AUDITOR_SERVICE,
   ICloudAuditorService,
 } from './cloud-auditor.interface';
+import { resolveLiveAwsProfile } from '../auditor/aws-client-config';
 
 @Controller()
 export class AppController {
@@ -28,7 +29,7 @@ export class AppController {
     const isLive = process.env.USE_LIVE_AWS === 'true';
     return {
       mode: isLive ? 'LIVE' : 'SIMULATED',
-      profile: isLive ? process.env.AWS_PROFILE || 'default' : undefined,
+      profile: isLive ? resolveLiveAwsProfile() : undefined,
     };
   }
 

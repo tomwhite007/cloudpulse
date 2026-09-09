@@ -1,34 +1,313 @@
-import { openai } from "@ai-sdk/openai";
-import { MOCK_COST_AUDIT_SUMMARY } from "@cloudpulse/api-contracts";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
-import { streamText, tool } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
+import {
+  MOCK_COST_AUDIT_SUMMARY,
+  type CostAuditSummaryDto,
+} from "@cloudpulse/api-contracts";
+import {
+  APICallError,
+  convertToModelMessages,
+  stepCountIs,
+  streamText,
+  tool,
+} from "ai";
+import type { ModelMessage } from "ai";
 import { z } from "zod";
 
-function createProposalFromFinding(finding: any) {
-  const name = finding.resourceName || finding.name || finding.id || 'unknown';
-  const type = finding.resourceType || 'EBS';
-  const actionType = finding.recommendedAction?.actionType || finding.actionType || 'TERMINATE';
+const DEMO_MODE_NOTICE = "PulseAdvisor running in deterministic DEMO mode";
+const PULSE_ADVISOR_MODEL = "claude-sonnet-5";
+
+const remediationProposalSchema = z.object({
+  resourceId: z.string().describe("Real cloud resource ID from the audit findings"),
+  resourceName: z.string().describe("Human-readable resource name"),
+  actionType: z
+    .enum(["RESIZE", "TERMINATE", "SCHEDULE_SLEEP"])
+    .describe("Remediation action to apply"),
+  monthlySavingsUsd: z.number().describe("Estimated monthly savings in USD"),
+  branchName: z.string().describe("Git branch name for the remediation PR"),
+  commitMessage: z.string().describe("Commit message for the Terraform change"),
+  hclDiff: z.string().describe("Terraform HCL patch preview"),
+  safetyChecks: z
+    .array(z.string())
+    .describe("Safety checks the operator should verify before apply"),
+  isSimulated: z
+    .boolean()
+    .optional()
+    .describe("Whether this proposal is a simulated/demo card"),
+});
+
+type RemediationProposal = z.infer<typeof remediationProposalSchema>;
+
+type AuditFinding = {
+  id?: string;
+  resourceName?: string;
+  name?: string;
+  resourceType?: string;
+  status?: string;
+  findingType?: string;
+  severity?: string;
+  details?: string;
+  telemetrySummary?: string;
+  potentialMonthlySavings?: number;
+  potentialSavings?: number;
+  recommendedAction?: { actionType?: string };
+};
+
+type ChatRequestMessage = {
+  role?: string;
+  content?: unknown;
+  parts?: Array<{ type?: string; text?: string }>;
+};
+
+type AdvisorRequest = {
+  messages: ChatRequestMessage[];
+  auditContext: unknown;
+};
+
+function getAuditFindings(auditContext: unknown): AuditFinding[] {
+  if (!auditContext || typeof auditContext !== "object") {
+    return [];
+  }
+
+  const ctx = auditContext as {
+    resources?: AuditFinding[];
+    findings?: AuditFinding[];
+  };
+
+  return ctx.resources ?? ctx.findings ?? [];
+}
+
+function createProposalFromFinding(finding: AuditFinding): RemediationProposal {
+  const name = finding.resourceName || finding.name || finding.id || "unknown";
+  const type = finding.resourceType || "EBS";
+  const actionType =
+    finding.recommendedAction?.actionType === "RESIZE" ||
+    finding.recommendedAction?.actionType === "SCHEDULE_SLEEP"
+      ? finding.recommendedAction.actionType
+      : "TERMINATE";
   const savings = finding.potentialMonthlySavings || finding.potentialSavings || 0;
-  
+
   return {
-    resourceId: finding.id,
+    resourceId: finding.id || name,
     resourceName: name,
-    actionType: actionType,
+    actionType,
     monthlySavingsUsd: savings,
-    branchName: `finops/remediate-${name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+    branchName: `finops/remediate-${name.toLowerCase().replace(/[^a-z0-9]/g, "-")}`,
     commitMessage: `fix(infra): remediate ${type.toLowerCase()} ${name}`,
-    hclDiff: `- resource "aws_${type.toLowerCase()}_volume" "${name.replace(/[^a-zA-Z0-9_]/g, '_')}" {\n-   id = "${finding.id}"\n- }`,
+    hclDiff: `- resource "aws_${type.toLowerCase()}_volume" "${name.replace(/[^a-zA-Z0-9_]/g, "_")}" {\n-   id = "${finding.id}"\n- }`,
     safetyChecks: [
-      `Finding classification: ${finding.findingType || finding.status || 'Waste'} (${finding.severity || 'HIGH'})`,
-      `${finding.details || finding.telemetrySummary || 'Identified as idle/zombie resource'}`,
-      'Final snapshot verification required prior to apply'
+      `Finding classification: ${finding.findingType || finding.status || "Waste"} (${finding.severity || "HIGH"})`,
+      `${finding.details || finding.telemetrySummary || "Identified as idle/zombie resource"}`,
+      "Final snapshot verification required prior to apply",
     ],
-    isSimulated: true
+    isSimulated: true,
   };
 }
 
-function createMockModel(auditContext: any) {
+function formatAuditContextMarkdown(auditContext: unknown): string {
+  const ctx = (auditContext ?? MOCK_COST_AUDIT_SUMMARY) as CostAuditSummaryDto & {
+    findings?: CostAuditSummaryDto["resources"];
+  };
+  const findings = ctx.resources ?? ctx.findings ?? [];
+
+  const metrics = [
+    `- Total monthly spend: $${ctx.totalMonthlySpend ?? "n/a"} ${ctx.currency ?? "USD"}`,
+    `- Identified waste: $${ctx.totalIdentifiedWaste ?? "n/a"}`,
+    `- Active assets: ${ctx.activeAssetCount ?? "n/a"}`,
+    `- Compliance score: ${ctx.complianceScorePercent ?? "n/a"}%`,
+  ].join("\n");
+
+  const findingLines =
+    findings
+      .map((finding) => {
+        const id = finding.id ?? "unknown-id";
+        const name = finding.resourceName ?? "unnamed";
+        const savings = finding.potentialMonthlySavings ?? 0;
+        const action = finding.recommendedAction?.actionType ?? "REVIEW";
+        return `- \`${id}\` ${name} (${finding.resourceType}, ${finding.status}): $${savings}/mo — recommended ${action}`;
+      })
+      .join("\n") || "- None";
+
+  return [
+    "## Audit metrics",
+    metrics,
+    "",
+    "## Findings (use these real resource IDs)",
+    findingLines,
+    "",
+    "## Full auditContext JSON",
+    "```json",
+    JSON.stringify(auditContext ?? MOCK_COST_AUDIT_SUMMARY, null, 2),
+    "```",
+  ].join("\n");
+}
+
+function buildLiveSystemPrompt(auditContext: unknown): string {
+  return [
+    "You are an Elite Enterprise FinOps Copilot (PulseAdvisor).",
+    "Help the operator analyze cloud waste and propose safe Terraform remediations.",
+    "Always reference real resource IDs from the audit findings below.",
+    "Whenever you suggest an infrastructure change, you MUST execute the proposeTerraformRemediation tool so the UI can render a proposal card.",
+    "Do not invent resources that are not present in the audit context.",
+    "",
+    "Situational grounding:",
+    formatAuditContextMarkdown(auditContext),
+  ].join("\n");
+}
+
+function messageText(message: ChatRequestMessage | undefined): string {
+  if (!message) {
+    return "";
+  }
+
+  if (typeof message.content === "string") {
+    return message.content;
+  }
+
+  return (message.parts ?? [])
+    .filter((part) => part.type === "text")
+    .map((part) => part.text ?? "")
+    .join("");
+}
+
+function toFallbackModelMessages(messages: ChatRequestMessage[]): ModelMessage[] {
+  return messages
+    .filter((message) => message.role === "user" || message.role === "assistant")
+    .map((message) => ({
+      role: message.role as "user" | "assistant",
+      content: messageText(message),
+    }))
+    .filter(
+      (message) =>
+        message.role === "user" ||
+        (message.role === "assistant" && message.content.length > 0),
+    );
+}
+
+async function toLiveModelMessages(
+  messages: ChatRequestMessage[],
+): Promise<ModelMessage[]> {
+  try {
+    if (messages.some((message) => Array.isArray(message.parts))) {
+      return await convertToModelMessages(messages as never);
+    }
+  } catch (error) {
+    console.warn(
+      "PulseAdvisor failed to convert UI messages; using text fallback",
+      error,
+    );
+  }
+
+  return toFallbackModelMessages(messages);
+}
+
+function isAnthropicFallbackError(error: unknown): boolean {
+  if (APICallError.isInstance(error)) {
+    const status = error.statusCode;
+    if (status === 401 || status === 403 || status === 402 || status === 429 || status === 404) {
+      return true;
+    }
+  }
+
+  const status =
+    typeof error === "object" && error !== null && "statusCode" in error
+      ? Number((error as { statusCode?: number }).statusCode)
+      : typeof error === "object" && error !== null && "status" in error
+        ? Number((error as { status?: number }).status)
+        : undefined;
+
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : JSON.stringify(error ?? "");
+  const normalized = message.toLowerCase();
+
+  return (
+    status === 401 ||
+    status === 403 ||
+    status === 402 ||
+    status === 429 ||
+    status === 404 ||
+    normalized.includes("authentication") ||
+    normalized.includes("unauthorized") ||
+    normalized.includes("invalid api key") ||
+    normalized.includes("invalid x-api-key") ||
+    normalized.includes("rate limit") ||
+    normalized.includes("rate-limit") ||
+    normalized.includes("too many requests") ||
+    normalized.includes("quota") ||
+    normalized.includes("insufficient_quota") ||
+    normalized.includes("credit balance") ||
+    normalized.includes("not_found")
+  );
+}
+
+function inspectWasteSummaryTool(auditContext: unknown) {
+  return tool({
+    description:
+      "Fetches the current audit summary of the cloud infrastructure, detailing all active resources, spend, and potential savings.",
+    inputSchema: z.object({}),
+    execute: async () => auditContext || MOCK_COST_AUDIT_SUMMARY,
+  });
+}
+
+function demoRemediationTool(auditContext: unknown) {
+  return tool({
+    description:
+      "Proposes a terraform remediation pull request for a cloud resource. Returns structured patch metadata for the UI to render.",
+    inputSchema: z.object({
+      resourceId: z.string(),
+      resourceType: z.enum(["RDS", "EBS", "ECS", "EC2", "LAMBDA"]),
+      actionType: z.enum(["RESIZE", "TERMINATE", "SCHEDULE_SLEEP"]),
+      targetBranch: z.string().optional(),
+    }),
+    execute: async (args): Promise<RemediationProposal> => {
+      const findings = getAuditFindings(auditContext);
+      const targetResource = findings.find((finding) => finding.id === args.resourceId);
+
+      if (targetResource) {
+        return createProposalFromFinding(targetResource);
+      }
+
+      return createProposalFromFinding({
+        id: args.resourceId,
+        resourceName: args.resourceId,
+        resourceType: args.resourceType,
+        recommendedAction: { actionType: args.actionType },
+        potentialSavings: 0,
+        findingType: "Unknown",
+        severity: "LOW",
+        details: "No details available",
+      });
+    },
+  });
+}
+
+function liveRemediationTool() {
+  return tool({
+    description:
+      "Propose a Terraform remediation for a real audited resource. Call this whenever you suggest an infrastructure change so the UI can render a proposal card.",
+    inputSchema: remediationProposalSchema,
+    execute: async (params): Promise<RemediationProposal> => ({
+      ...params,
+      isSimulated: params.isSimulated ?? false,
+    }),
+  });
+}
+
+function toAdvisorDataStreamResponse(result: {
+  toDataStreamResponse?: () => Response;
+  toUIMessageStreamResponse: () => Response;
+}): Response {
+  if (typeof result.toDataStreamResponse === "function") {
+    return result.toDataStreamResponse();
+  }
+
+  return result.toUIMessageStreamResponse();
+}
+
+function createMockModel(auditContext: unknown) {
   return {
     specificationVersion: "v4",
     provider: "cloudpulse-mock",
@@ -37,14 +316,22 @@ function createMockModel(auditContext: any) {
     async doGenerate() {
       throw new Error("Not implemented");
     },
-    async doStream(options: any) {
+    async doStream(options: {
+      prompt?: Array<{ role?: string; content?: unknown }>;
+    }) {
       return {
         stream: new ReadableStream({
           start(controller) {
             const prompt = options.prompt || [];
-            const lastMessage = prompt.findLast((m: any) => m.role === "user");
+            const lastMessage = prompt.findLast((m) => m.role === "user");
             const lastMessageText = Array.isArray(lastMessage?.content)
-              ? lastMessage.content.map((c: any) => c.text || "").join("")
+              ? lastMessage.content
+                  .map((c) =>
+                    typeof c === "object" && c && "text" in c
+                      ? String((c as { text?: string }).text || "")
+                      : "",
+                  )
+                  .join("")
               : typeof lastMessage?.content === "string"
                 ? lastMessage.content
                 : "";
@@ -58,15 +345,17 @@ function createMockModel(auditContext: any) {
 
             if (!isToolFollowUp) {
               let toolName = "";
-              let toolInput: any = {};
+              let toolInput: Record<string, unknown> = {};
               let responseText = "";
 
-              const findings = auditContext?.resources || auditContext?.findings || [];
+              const findings = getAuditFindings(auditContext);
               const prMatch = lastMessageText.match(/Request PR proposal for (.+)/i);
 
               if (prMatch) {
                 const resourceName = prMatch[1].trim();
-                const finding = findings.find((r: any) => (r.resourceName || r.name) === resourceName);
+                const finding = findings.find(
+                  (r) => (r.resourceName || r.name) === resourceName,
+                );
                 if (finding) {
                   responseText = `Prepared remediation proposal for ${finding.resourceName || finding.name}.`;
                   toolName = "propose_terraform_remediation_pr";
@@ -79,7 +368,12 @@ function createMockModel(auditContext: any) {
                   responseText = `I couldn't find a resource named ${resourceName}.`;
                 }
               } else if (lastMessageText.includes("Find zombie storage")) {
-                const finding = findings.find((r: any) => r.status === 'ZOMBIE' || r.findingType === 'Zombie' || r.resourceType === 'EBS');
+                const finding = findings.find(
+                  (r) =>
+                    r.status === "ZOMBIE" ||
+                    r.findingType === "Zombie" ||
+                    r.resourceType === "EBS",
+                );
                 if (finding) {
                   responseText = `I found an unattached ${finding.resourceType} volume \`${finding.resourceName || finding.name}\` costing $${finding.potentialMonthlySavings || finding.potentialSavings}/mo. I can propose a PR to terminate it.`;
                   toolName = "propose_terraform_remediation_pr";
@@ -92,7 +386,11 @@ function createMockModel(auditContext: any) {
                   responseText = "No zombie storage was detected in your infrastructure.";
                 }
               } else if (lastMessageText.includes("Explain waste findings")) {
-                const sorted = [...findings].sort((a, b) => ((b.potentialMonthlySavings || b.potentialSavings) || 0) - ((a.potentialMonthlySavings || a.potentialSavings) || 0));
+                const sorted = [...findings].sort(
+                  (a, b) =>
+                    (b.potentialMonthlySavings || b.potentialSavings || 0) -
+                    (a.potentialMonthlySavings || a.potentialSavings || 0),
+                );
                 const topFinding = sorted[0];
                 if (topFinding) {
                   responseText = `You have ${findings.length} findings. The largest contributor is \`${topFinding.resourceName || topFinding.name}\` wasting $${topFinding.potentialMonthlySavings || topFinding.potentialSavings}/mo. I can propose a PR to fix it.`;
@@ -106,8 +404,9 @@ function createMockModel(auditContext: any) {
                   responseText = "You have no waste findings at the moment!";
                 }
               } else if (lastMessageText.includes("Explain compliance score")) {
-                const activeCount = auditContext?.activeAssetCount || 0;
-                const score = auditContext?.complianceScorePercent || 0;
+                const summary = auditContext as CostAuditSummaryDto | undefined;
+                const activeCount = summary?.activeAssetCount || 0;
+                const score = summary?.complianceScorePercent || 0;
                 const wasteCount = findings.length;
                 responseText = `Your score is ${score}% because ${wasteCount} of ${activeCount} monitored assets is flagged as non-compliant waste.`;
                 const finding = findings[0];
@@ -119,8 +418,12 @@ function createMockModel(auditContext: any) {
                     actionType: finding.recommendedAction?.actionType || "TERMINATE",
                   };
                 }
-              } else if (lastMessageText.includes("Review RDS spend") || lastMessageText.includes("How can I cut")) {
-                const finding = findings.find((r: any) => r.resourceType === 'RDS') || findings[0];
+              } else if (
+                lastMessageText.includes("Review RDS spend") ||
+                lastMessageText.includes("How can I cut")
+              ) {
+                const finding =
+                  findings.find((r) => r.resourceType === "RDS") || findings[0];
                 if (finding) {
                   responseText = `I found an issue with \`${finding.resourceName || finding.name}\` wasting $${finding.potentialMonthlySavings || finding.potentialSavings}/mo. Should I draft a PR?`;
                   toolName = "propose_terraform_remediation_pr";
@@ -133,7 +436,8 @@ function createMockModel(auditContext: any) {
                   responseText = "I couldn't find any significant waste to review right now.";
                 }
               } else {
-                responseText = "I'm currently in demo mode and don't have the capability to process this specific request.";
+                responseText =
+                  "I'm currently in demo mode and don't have the capability to process this specific request.";
                 toolName = "inspectWasteSummary";
               }
               // --- VERCEL AI SDK v4 CUSTOM PROVIDER COMPATIBILITY NOTES ---
@@ -152,29 +456,25 @@ function createMockModel(auditContext: any) {
               if (responseText) {
                 const textId = `text_${Date.now()}`;
 
-                // Initialize the text part so the AI SDK parser doesn't crash
-                controller.enqueue({ type: "text-start", id: textId } as any);
+                controller.enqueue({ type: "text-start", id: textId });
 
-                // Stream the actual delta using the identical ID and both delta properties
                 controller.enqueue({
                   type: "text-delta",
                   id: textId,
                   textDelta: responseText,
                   delta: responseText,
-                } as any);
+                });
               }
 
-              // --- TOOL CALL COMPATIBILITY ---
-              // Tool calls in AI SDK v4 expect `args` as a stringified JSON string.
               if (toolName) {
-                const toolCallId = `call_${Date.now()}_${toolInput.resourceId || "inspect"}`;
+                const toolCallId = `call_${Date.now()}_${String(toolInput.resourceId || "inspect")}`;
                 controller.enqueue({
                   type: "tool-call",
                   toolCallId,
                   toolName,
                   input: JSON.stringify(toolInput),
                   args: JSON.stringify(toolInput),
-                } as any);
+                });
                 controller.enqueue({
                   type: "finish",
                   finishReason: { unified: "tool-calls", raw: "tool-calls" },
@@ -212,9 +512,12 @@ function createMockModel(auditContext: any) {
                 });
               }
             } else {
+              const followUpId = `text_followup_${Date.now()}`;
+              controller.enqueue({ type: "text-start", id: followUpId });
               controller.enqueue({
                 type: "text-delta",
-                id: `text_followup_${Date.now()}`,
+                id: followUpId,
+                textDelta: "Tool execution complete.",
                 delta: "Tool execution complete.",
               });
               controller.enqueue({
@@ -243,123 +546,86 @@ function createMockModel(auditContext: any) {
   };
 }
 
+function createDemoAdvisorResponse({
+  messages,
+  auditContext,
+}: AdvisorRequest): Response {
+  const result = streamText({
+    model: createMockModel(auditContext) as never,
+    stopWhen: stepCountIs(5),
+    onError: ({ error }) => {
+      console.error("STREAM ERROR:", error);
+    },
+    system:
+      "You are a FinOps PulseAdvisor Copilot. Your goal is to help users analyze their cloud waste and remediate issues to save costs. You have access to the current waste summary, and can propose remediations. Context: " +
+      JSON.stringify(auditContext || MOCK_COST_AUDIT_SUMMARY),
+    messages: toFallbackModelMessages(messages),
+    tools: {
+      inspectWasteSummary: inspectWasteSummaryTool(auditContext),
+      propose_terraform_remediation_pr: demoRemediationTool(auditContext),
+    },
+  });
+
+  return toAdvisorDataStreamResponse(result);
+}
+
+async function createLiveAdvisorResponse({
+  messages,
+  auditContext,
+}: AdvisorRequest): Promise<Response> {
+  const result = streamText({
+    model: anthropic(PULSE_ADVISOR_MODEL),
+    // AI SDK 7 equivalent of maxSteps: 3
+    stopWhen: stepCountIs(3),
+    onError: ({ error }) => {
+      console.error("PulseAdvisor Anthropic stream error:", error);
+    },
+    system: buildLiveSystemPrompt(auditContext),
+    messages: await toLiveModelMessages(messages),
+    tools: {
+      inspectWasteSummary: inspectWasteSummaryTool(auditContext),
+      proposeTerraformRemediation: liveRemediationTool(),
+    },
+  });
+
+  return toAdvisorDataStreamResponse(result);
+}
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = (await req.json()) as {
+      messages?: ChatRequestMessage[];
+      auditContext?: unknown;
+      data?: { auditContext?: unknown };
+    };
     const messages = body.messages || [];
-    const auditContext = body.auditContext || (body.data && body.data.auditContext) || undefined;
+    const auditContext =
+      body.auditContext || (body.data && body.data.auditContext) || undefined;
 
-    const isDemoMode = !process.env.OPENAI_API_KEY;
+    const isDemoMode =
+      process.env.DEMO_MODE === "true" || !process.env.ANTHROPIC_API_KEY;
 
-    const result = streamText({
-      model: isDemoMode
-        ? (createMockModel(auditContext) as any)
-        : openai("gpt-4o-mini"),
-      // @ts-ignore - 'maxSteps' is supported by Vercel AI SDK 3.3.0+ but may cause type errors in mismatched local environments
-      maxSteps: 5,
-      onError: (error: any) => {
-        console.error("STREAM ERROR:", error);
-        require("fs").writeFileSync(
-          "/tmp/stream-error.log",
-          `Error name: ${error?.name}, message: ${error?.message}, stack: ${error?.stack}, cause: ${error?.cause}`,
+    if (isDemoMode) {
+      console.log(DEMO_MODE_NOTICE);
+      return createDemoAdvisorResponse({ messages, auditContext });
+    }
+
+    try {
+      return await createLiveAdvisorResponse({ messages, auditContext });
+    } catch (error) {
+      if (isAnthropicFallbackError(error)) {
+        console.error(
+          "PulseAdvisor Anthropic error, falling back to deterministic DEMO mode",
+          error,
         );
-      },
-      system:
-        "You are a FinOps PulseAdvisor Copilot. Your goal is to help users analyze their cloud waste and remediate issues to save costs. You have access to the current waste summary, and can propose remediations. Context: " +
-        JSON.stringify(auditContext || MOCK_COST_AUDIT_SUMMARY),
-      messages: (messages || [])
-        .filter(
-          (m: any) =>
-            m.role === "user" ||
-            (m.role === "assistant" &&
-              typeof m.content === "string" &&
-              m.content),
-        )
-        .map((m: any) => ({ role: m.role, content: m.content })),
-      tools: {
-        inspectWasteSummary: tool({
-          description:
-            "Fetches the current audit summary of the cloud infrastructure, detailing all active resources, spend, and potential savings.",
-          parameters: z.object({}),
-          execute: async (_args: any): Promise<any> =>
-            auditContext || MOCK_COST_AUDIT_SUMMARY,
-        } as any),
-        propose_terraform_remediation_pr: tool({
-          description:
-            "Proposes a terraform remediation pull request for a cloud resource. Returns structured patch metadata for the UI to render.",
-          parameters: z.object({
-            resourceId: z.string(),
-            resourceType: z.enum(["RDS", "EBS", "ECS", "EC2", "LAMBDA"]),
-            actionType: z.enum(["RESIZE", "TERMINATE", "SCHEDULE_SLEEP"]),
-            targetBranch: z.string().optional(),
-          }),
-          execute: async (args: any): Promise<any> => {
-            if (isDemoMode) {
-              const findings = auditContext?.resources || auditContext?.findings || [];
-              const targetResource = findings.find((r: any) => r.id === args.resourceId);
+        console.log(DEMO_MODE_NOTICE);
+        return createDemoAdvisorResponse({ messages, auditContext });
+      }
 
-              if (targetResource) {
-                return createProposalFromFinding(targetResource);
-              }
-
-              return createProposalFromFinding({
-                id: args.resourceId,
-                resourceName: args.resourceId,
-                resourceType: args.resourceType,
-                recommendedAction: { actionType: args.actionType },
-                potentialSavings: 0,
-                findingType: 'Unknown',
-                severity: 'LOW',
-                details: 'No details available'
-              });
-            }
-
-            try {
-              const transport = new SSEClientTransport(
-                new URL("http://localhost:3000/api/mcp/sse"),
-              );
-              const client = new Client(
-                { name: "web-portal", version: "1.0.0" },
-                { capabilities: {} },
-              );
-              await client.connect(transport);
-
-              const result = await client.callTool({
-                name: "propose_terraform_remediation_pr",
-                arguments: args,
-              });
-
-              const content = (result as any).content[0] as {
-                type: "text";
-                text: string;
-              };
-              const payload = JSON.parse(content.text);
-
-              const resource = (
-                auditContext || MOCK_COST_AUDIT_SUMMARY
-              ).resources.find((r: any) => r.id === args.resourceId);
-
-              return {
-                ...payload,
-                resourceId: args.resourceId,
-                resourceName: resource?.resourceName || args.resourceId,
-                actionLabel:
-                  resource?.recommendedAction?.label || args.actionType,
-              };
-            } catch (e) {
-              console.error("MCP Tool Call Error:", e);
-              throw e;
-            }
-          },
-        } as any),
-      },
-    });
-
-    // @ts-ignore - toUIMessageStreamResponse exists in newer AI SDK versions, but the local type definition may not recognize it.
-    return result.toUIMessageStreamResponse
-      ? result.toUIMessageStreamResponse()
-      : (result as any).toDataStreamResponse();
-  } catch (e: any) {
-    return new Response(e.stack || e.message, { status: 500 });
+      throw error;
+    }
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.stack || e.message : String(e);
+    return new Response(message, { status: 500 });
   }
 }

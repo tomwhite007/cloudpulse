@@ -11,16 +11,25 @@ import { CostExplorerClient, GetCostAndUsageCommand } from '@aws-sdk/client-cost
 import { EC2Client, DescribeVolumesCommand } from '@aws-sdk/client-ec2';
 import { RDSClient, DescribeDBInstancesCommand } from '@aws-sdk/client-rds';
 import { CloudWatchClient, GetMetricStatisticsCommand } from '@aws-sdk/client-cloudwatch';
+import { awsClientConfig, resolveLiveAwsProfile } from './aws-client-config';
 
 @Injectable()
 export class AwsCloudAuditorService implements ICloudAuditorService {
   private readonly logger = new Logger(AwsCloudAuditorService.name);
   
-  private readonly region = process.env.AWS_REGION || 'eu-west-1';
-  private ceClient = new CostExplorerClient({ region: this.region });
-  private ec2Client = new EC2Client({ region: this.region });
-  private rdsClient = new RDSClient({ region: this.region });
-  private cwClient = new CloudWatchClient({ region: this.region });
+  private readonly clientConfig = awsClientConfig();
+  private readonly region = this.clientConfig.region;
+  private readonly profile = resolveLiveAwsProfile();
+  private ceClient = new CostExplorerClient(this.clientConfig);
+  private ec2Client = new EC2Client(this.clientConfig);
+  private rdsClient = new RDSClient(this.clientConfig);
+  private cwClient = new CloudWatchClient(this.clientConfig);
+
+  constructor() {
+    this.logger.log(
+      `Live AWS clients using profile "${this.profile}" in ${this.region}`,
+    );
+  }
 
   async getAuditSummary(): Promise<CostAuditSummaryDto> {
     try {

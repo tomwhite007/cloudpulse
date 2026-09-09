@@ -3,6 +3,7 @@ import { McpController } from './mcp.controller';
 import { GitFlowMcpServer } from './gitflow-mcp.server';
 import { MockCloudAuditorService } from '../app/mock-cloud-auditor.service';
 import { AwsCloudAuditorService } from '../auditor/aws-cloud-auditor.service';
+import { applyLiveAwsEnv } from '../auditor/aws-client-config';
 import { CLOUD_AUDITOR_SERVICE } from '../app/cloud-auditor.interface';
 
 @Module({
@@ -13,6 +14,7 @@ import { CLOUD_AUDITOR_SERVICE } from '../app/cloud-auditor.interface';
       provide: CLOUD_AUDITOR_SERVICE,
       useFactory: () => {
         if (process.env.USE_LIVE_AWS === 'true') {
+          applyLiveAwsEnv();
           return new AwsCloudAuditorService();
         }
         return new MockCloudAuditorService();
