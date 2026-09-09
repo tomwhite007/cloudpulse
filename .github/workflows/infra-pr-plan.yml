@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'apps/infra/**'
+      - "apps/infra/**"
 
 permissions:
   contents: read
@@ -16,6 +16,8 @@ env:
   TF_WORKING_DIR: apps/infra/environments/sandbox
   TF_TARGET_PATH: apps/infra/environments/sandbox/storage.tf
   AWS_REGION: ${{ secrets.AWS_REGION || 'eu-west-1' }}
+  TF_IN_AUTOMATION: true
+  TF_CLI_ARGS: -no-color
 
 jobs:
   terraform-plan:
@@ -28,7 +30,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: '1.9.0'
+          terraform_version: "1.9.0"
           terraform_wrapper: false
 
       - name: Detect AWS credentials
@@ -67,8 +69,8 @@ jobs:
           AWS_MODE: ${{ steps.aws.outputs.mode }}
         run: |
           set -o pipefail
-          terraform init -backend=false
-          terraform validate | tee "${GITHUB_WORKSPACE}/tf-validate.txt"
+          terraform init -no-color
+          terraform validate -no-color | tee "${GITHUB_WORKSPACE}/tf-validate.txt"
 
           if [ "$AWS_MODE" = "offline" ]; then
             echo "STATUS=Validated Offline (no AWS credentials)" >> "$GITHUB_ENV"
@@ -111,6 +113,8 @@ jobs:
             } catch {
               // Keep the default message when the plan/validate step never wrote a file.
             }
+
+            output = output.replace(/\u001b\[[0-9;]*[A-Za-z]/g, '');
 
             if (output.length > 60000) {
               output = `${output.slice(0, 60000)}\n...[truncated]`;
