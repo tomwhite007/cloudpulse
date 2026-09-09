@@ -1,0 +1,44 @@
+name: CloudPulse Terraform Apply
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/infra/**"
+
+permissions:
+  contents: read
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_CLI_ARGS: "-no-color"
+  AWS_REGION: ${{ secrets.AWS_REGION || 'eu-west-1' }}
+
+jobs:
+  terraform-apply:
+    name: Apply sandbox Terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Initialize Terraform
+        working-directory: apps/infra/environments/sandbox
+        run: terraform init -no-color
+
+      - name: Apply Terraform Changes
+        working-directory: apps/infra/environments/sandbox
+        run: terraform apply -auto-approve -no-color
