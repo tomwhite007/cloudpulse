@@ -1,6 +1,9 @@
+import { DEFAULT_TERRAFORM_PATH } from './gitflow-config';
 import {
   commentOutLines,
   findResourceBlocks,
+  generateTombstoneDiffPreview,
+  hclResourceIdentifier,
   tombstoneTargetedResource,
 } from './hcl-tombstone';
 
@@ -58,5 +61,59 @@ describe('tombstoneTargetedResource', () => {
 describe('commentOutLines', () => {
   it('prefixes each line with a hash comment', () => {
     expect(commentOutLines('foo\nbar')).toBe('# foo\n# bar');
+  });
+});
+
+describe('generateTombstoneDiffPreview', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('formats a tombstone diff against the default terraform path', () => {
+    const preview = generateTombstoneDiffPreview(
+      'cloudpulse-test-waste',
+      DEFAULT_TERRAFORM_PATH,
+    );
+
+    expect(preview).toBe(
+      [
+        `# ${DEFAULT_TERRAFORM_PATH}`,
+        '- resource "aws_ebs_volume" "cloudpulse_test_waste" {',
+        '-   ...',
+        '- }',
+        '+ # TOMBSTONED by CloudPulse (FinOps Remediation)',
+        '+ # resource "aws_ebs_volume" "cloudpulse_test_waste" { ... }',
+      ].join('\n'),
+    );
+  });
+
+  it('uses an explicit file path when provided', () => {
+    const preview = generateTombstoneDiffPreview(
+      'cloudpulse-test-waste',
+      'infra/live/ebs.tf',
+    );
+
+    expect(preview.startsWith('# infra/live/ebs.tf\n')).toBe(true);
+    expect(preview).toContain(
+      '+ # TOMBSTONED by CloudPulse (FinOps Remediation)',
+    );
+  });
+
+  it('resolves GITFLOW_TERRAFORM_PATH when filePath is omitted', () => {
+    vi.stubEnv('GITFLOW_TERRAFORM_PATH', 'infra/live/ebs.tf');
+
+    expect(
+      generateTombstoneDiffPreview('cloudpulse-test-waste').startsWith(
+        '# infra/live/ebs.tf\n',
+      ),
+    ).toBe(true);
+  });
+});
+
+describe('hclResourceIdentifier', () => {
+  it('converts hyphens into terraform identifiers', () => {
+    expect(hclResourceIdentifier('cloudpulse-test-waste')).toBe(
+      'cloudpulse_test_waste',
+    );
   });
 });

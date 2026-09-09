@@ -1,3 +1,5 @@
+import { getGitFlowConfig } from './gitflow-config';
+
 export type HclResourceBlock = {
   type: string;
   name: string;
@@ -5,6 +7,29 @@ export type HclResourceBlock = {
   end: number;
   text: string;
 };
+
+export function hclResourceIdentifier(resourceName: string): string {
+  const identifier = resourceName.replace(/[^A-Za-z0-9_]/g, '_');
+  return identifier.length > 0 ? identifier : 'resource';
+}
+
+export function generateTombstoneDiffPreview(
+  resourceName: string,
+  filePath?: string,
+): string {
+  const resolvedPath =
+    filePath?.trim() || getGitFlowConfig().terraformPath;
+  const hclName = hclResourceIdentifier(resourceName);
+
+  return [
+    `# ${resolvedPath}`,
+    `- resource "aws_ebs_volume" "${hclName}" {`,
+    `-   ...`,
+    `- }`,
+    `+ # TOMBSTONED by CloudPulse (FinOps Remediation)`,
+    `+ # resource "aws_ebs_volume" "${hclName}" { ... }`,
+  ].join('\n');
+}
 
 export function findResourceBlocks(hcl: string): HclResourceBlock[] {
   const headerRe = /resource\s+"([^"]+)"\s+"([^"]+)"\s*\{/g;

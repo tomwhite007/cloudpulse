@@ -4,6 +4,13 @@ import {
   type CostAuditSummaryDto,
 } from "@cloudpulse/api-contracts";
 import {
+  generateTombstoneDiffPreview,
+  gitFlowEnvFromProcess,
+  resolveGitFlowBranchName,
+  resolveTerraformPath,
+  slugResourceName,
+} from "@cloudpulse/gitflow";
+import {
   APICallError,
   convertToModelMessages,
   stepCountIs,
@@ -76,6 +83,23 @@ function getAuditFindings(auditContext: unknown): AuditFinding[] {
   return ctx.resources ?? ctx.findings ?? [];
 }
 
+function alignProposalWithGitFlow(
+  proposal: Pick<
+    RemediationProposal,
+    "branchName" | "actionType" | "resourceId" | "resourceName"
+  >,
+): Pick<RemediationProposal, "branchName" | "hclDiff"> {
+  const env = gitFlowEnvFromProcess();
+
+  return {
+    branchName: resolveGitFlowBranchName(proposal, env),
+    hclDiff: generateTombstoneDiffPreview(
+      proposal.resourceName,
+      resolveTerraformPath(env),
+    ),
+  };
+}
+
 function createProposalFromFinding(finding: AuditFinding): RemediationProposal {
   const name = finding.resourceName || finding.name || finding.id || "unknown";
   const type = finding.resourceType || "EBS";
@@ -85,15 +109,22 @@ function createProposalFromFinding(finding: AuditFinding): RemediationProposal {
       ? finding.recommendedAction.actionType
       : "TERMINATE";
   const savings = finding.potentialMonthlySavings || finding.potentialSavings || 0;
+  const resourceId = finding.id || name;
+  const gitFlow = alignProposalWithGitFlow({
+    resourceId,
+    resourceName: name,
+    actionType,
+    branchName: `${actionType.toLowerCase()}-vol-${slugResourceName(name)}`,
+  });
 
   return {
-    resourceId: finding.id || name,
+    resourceId,
     resourceName: name,
     actionType,
     monthlySavingsUsd: savings,
-    branchName: `finops/remediate-${name.toLowerCase().replace(/[^a-z0-9]/g, "-")}`,
+    branchName: gitFlow.branchName,
     commitMessage: `fix(infra): remediate ${type.toLowerCase()} ${name}`,
-    hclDiff: `- resource "aws_${type.toLowerCase()}_volume" "${name.replace(/[^a-zA-Z0-9_]/g, "_")}" {\n-   id = "${finding.id}"\n- }`,
+    hclDiff: gitFlow.hclDiff,
     safetyChecks: [
       `Finding classification: ${finding.findingType || finding.status || "Waste"} (${finding.severity || "HIGH"})`,
       `${finding.details || finding.telemetrySummary || "Identified as idle/zombie resource"}`,
@@ -142,12 +173,15 @@ function formatAuditContextMarkdown(auditContext: unknown): string {
 }
 
 function buildLiveSystemPrompt(auditContext: unknown): string {
+  const terraformPath = resolveTerraformPath(gitFlowEnvFromProcess());
+
   return [
     "You are an Elite Enterprise FinOps Copilot (PulseAdvisor).",
     "Help the operator analyze cloud waste and propose safe Terraform remediations.",
     "Always reference real resource IDs from the audit findings below.",
     "Whenever you suggest an infrastructure change, you MUST execute the proposeTerraformRemediation tool so the UI can render a proposal card.",
     "Do not invent resources that are not present in the audit context.",
+    `Infrastructure files live at \`${terraformPath}\` (operator-configured GitFlow Terraform path; default is \`apps/infra/environments/sandbox/storage.tf\`). Align conversational explanations and HCL previews with that file. Remediation PRs tombstone the matching aws_ebs_volume block rather than deleting it.`,
     "",
     "Situational grounding:",
     formatAuditContextMarkdown(auditContext),
@@ -287,12 +321,18 @@ function demoRemediationTool(auditContext: unknown) {
 function liveRemediationTool() {
   return tool({
     description:
-      "Propose a Terraform remediation for a real audited resource. Call this whenever you suggest an infrastructure change so the UI can render a proposal card.",
+      "Propose a Terraform remediation for a real audited resource. Call this whenever you suggest an infrastructure change so the UI can render a proposal card. branchName and hclDiff are aligned with the operator-configured GitFlow Terraform path and branch prefix.",
     inputSchema: remediationProposalSchema,
-    execute: async (params): Promise<RemediationProposal> => ({
-      ...params,
-      isSimulated: params.isSimulated ?? false,
-    }),
+    execute: async (params): Promise<RemediationProposal> => {
+      const gitFlow = alignProposalWithGitFlow(params);
+
+      return {
+        ...params,
+        branchName: gitFlow.branchName,
+        hclDiff: gitFlow.hclDiff,
+        isSimulated: params.isSimulated ?? false,
+      };
+    },
   });
 }
 

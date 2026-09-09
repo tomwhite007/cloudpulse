@@ -1,0 +1,154 @@
+name: CloudPulse Terraform Plan
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'apps/infra/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+env:
+  TF_WORKING_DIR: apps/infra/environments/sandbox
+  TF_TARGET_PATH: apps/infra/environments/sandbox/storage.tf
+  AWS_REGION: ${{ secrets.AWS_REGION || 'eu-west-1' }}
+
+jobs:
+  terraform-plan:
+    name: Validate and plan sandbox Terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.9.0'
+          terraform_wrapper: false
+
+      - name: Detect AWS credentials
+        id: aws
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+        run: |
+          if [ -n "$AWS_ROLE_ARN" ]; then
+            echo "mode=oidc" >> "$GITHUB_OUTPUT"
+          elif [ -n "$AWS_ACCESS_KEY_ID" ]; then
+            echo "mode=keys" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=offline" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure AWS credentials (OIDC)
+        if: steps.aws.outputs.mode == 'oidc'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS credentials (access keys)
+        if: steps.aws.outputs.mode == 'keys'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Validate & Plan
+        id: tf
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        env:
+          AWS_MODE: ${{ steps.aws.outputs.mode }}
+        run: |
+          set -o pipefail
+          terraform init -backend=false
+          terraform validate | tee "${GITHUB_WORKSPACE}/tf-validate.txt"
+
+          if [ "$AWS_MODE" = "offline" ]; then
+            echo "STATUS=Validated Offline (no AWS credentials)" >> "$GITHUB_ENV"
+            {
+              echo "Terraform validate completed without a live AWS connection."
+              echo ""
+              cat "${GITHUB_WORKSPACE}/tf-validate.txt"
+            } > "${GITHUB_WORKSPACE}/tf-output.txt"
+            exit 0
+          fi
+
+          set +e
+          terraform plan -no-color -out=tfplan > "${GITHUB_WORKSPACE}/tf-output.txt" 2>&1
+          status=$?
+          set -e
+
+          if [ "$status" -eq 0 ]; then
+            echo "STATUS=Plan Generated Successfully" >> "$GITHUB_ENV"
+          else
+            echo "STATUS=Plan Failed (exit ${status})" >> "$GITHUB_ENV"
+            exit "$status"
+          fi
+
+      - name: Post Terraform plan comment
+        if: always() && github.event.pull_request.number
+        uses: actions/github-script@v7
+        env:
+          STATUS: ${{ env.STATUS }}
+          TF_TARGET_PATH: ${{ env.TF_TARGET_PATH }}
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '### ⚡ CloudPulse Terraform Plan Verification';
+            const targetPath = process.env.TF_TARGET_PATH;
+            const status = process.env.STATUS || 'Validation did not complete';
+            let output = 'No Terraform output was captured.';
+
+            try {
+              output = fs.readFileSync('tf-output.txt', 'utf8').trim() || output;
+            } catch {
+              // Keep the default message when the plan/validate step never wrote a file.
+            }
+
+            if (output.length > 60000) {
+              output = `${output.slice(0, 60000)}\n...[truncated]`;
+            }
+
+            const body = [
+              marker,
+              `**Target Path:** \`${targetPath}\``,
+              `**Status:** \`${status}\``,
+              '',
+              '```terraform',
+              output,
+              '```',
+              '',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(
+              (comment) => comment.body && comment.body.includes(marker),
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+              return;
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });

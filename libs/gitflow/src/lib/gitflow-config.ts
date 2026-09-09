@@ -29,6 +29,24 @@ export function gitFlowEnvFromProcess(
   };
 }
 
+export type GitFlowConfig = {
+  terraformPath: string;
+  branchPrefix: string;
+  branchTemplate?: string;
+};
+
+export function getGitFlowConfig(
+  env: GitFlowEnv = gitFlowEnvFromProcess(),
+): GitFlowConfig {
+  const branchTemplate = env.GITFLOW_BRANCH_TEMPLATE?.trim();
+
+  return {
+    terraformPath: resolveTerraformPath(env),
+    branchPrefix: resolveBranchPrefix(env),
+    ...(branchTemplate ? { branchTemplate } : {}),
+  };
+}
+
 export function resolveTerraformPath(env: GitFlowEnv): string {
   const path = env.GITFLOW_TERRAFORM_PATH?.trim().replace(/^\/+/, '');
   return path && path.length > 0 ? path : DEFAULT_TERRAFORM_PATH;
@@ -67,9 +85,9 @@ export function interpolateBranchTemplate(
   input: Pick<DraftPrRequest, 'actionType' | 'resourceId' | 'resourceName'>,
 ): string {
   return template
-    .replaceAll('{actionType}', input.actionType.toLowerCase())
-    .replaceAll('{resourceId}', input.resourceId)
-    .replaceAll('{resourceName}', slugResourceName(input.resourceName));
+    .replace(/\{actionType\}/g, input.actionType.toLowerCase())
+    .replace(/\{resourceId\}/g, input.resourceId)
+    .replace(/\{resourceName\}/g, slugResourceName(input.resourceName));
 }
 
 export function resolveGitFlowBranchName(

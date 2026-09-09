@@ -1,6 +1,7 @@
 import {
   DEFAULT_BRANCH_PREFIX,
   DEFAULT_TERRAFORM_PATH,
+  getGitFlowConfig,
   interpolateBranchTemplate,
   lastBranchSegment,
   resolveBranchPrefix,
@@ -106,5 +107,28 @@ describe('shouldUseSandboxFallback', () => {
   it('allows the dogfood HCL only for the default sandbox path', () => {
     expect(shouldUseSandboxFallback(DEFAULT_TERRAFORM_PATH)).toBe(true);
     expect(shouldUseSandboxFallback('infra/live/ebs.tf')).toBe(false);
+  });
+});
+
+describe('getGitFlowConfig', () => {
+  it('exposes the resolved terraform path and branch prefix', () => {
+    expect(getGitFlowConfig({})).toEqual({
+      terraformPath: DEFAULT_TERRAFORM_PATH,
+      branchPrefix: DEFAULT_BRANCH_PREFIX,
+    });
+  });
+
+  it('includes a custom branch template when configured', () => {
+    expect(
+      getGitFlowConfig({
+        GITFLOW_TERRAFORM_PATH: 'infra/live/ebs.tf',
+        GITFLOW_BRANCH_PREFIX: 'remediation',
+        GITFLOW_BRANCH_TEMPLATE: '{actionType}-{resourceName}',
+      }),
+    ).toEqual({
+      terraformPath: 'infra/live/ebs.tf',
+      branchPrefix: 'remediation',
+      branchTemplate: '{actionType}-{resourceName}',
+    });
   });
 });
