@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useDashboardStore } from '../../features/dashboard/store/dashboard-store';
 import { useAdvisorChat } from '../../features/dashboard/hooks/use-advisor-chat';
 import { Send, Bot, Loader2, CheckCircle, RefreshCcw } from 'lucide-react';
+import { advisorMessageMarkdown } from '../../features/dashboard/utils/advisor-markdown';
+import { AdvisorMarkdown } from './advisor-markdown';
 import { RemediationProposalCard } from './remediation-proposal-card';
 
 export function PulseAdvisor() {
@@ -131,18 +133,26 @@ export function PulseAdvisor() {
                     ? 'bg-blue-600 text-white rounded-tr-sm' 
                     : 'bg-zinc-800/80 text-zinc-200 rounded-tl-sm border border-white/5'
                 }`}>
-                  {m.content && <p className="whitespace-pre-wrap">{m.content}</p>}
+                  {m.role === 'user' ? (
+                    m.content && <p className="whitespace-pre-wrap">{m.content}</p>
+                  ) : (
+                    <AdvisorMarkdown>{advisorMessageMarkdown(m)}</AdvisorMarkdown>
+                  )}
                   
                   {/* --- VERCEL AI SDK v4 COMPATIBILITY NOTES ---
                       When an assistant message contains BOTH text and tool invocations, 
                       the AI SDK `useChat` hook often leaves `m.content` empty and instead pushes
                       the text payload into the `m.parts` array as a `{ type: 'text', text: '...' }` object.
-                      To ensure the text is actually rendered, we must explicitly check for `part.type === 'text'` 
-                      while mapping over `m.parts` below. Otherwise, the text will be completely invisible. 
+                      Text is collected via advisorMessageMarkdown so GFM tables render as one document.
+                      Tool parts are still mapped below. 
                   */}
                   {(m.parts || m.toolInvocations || [])?.map((partOrTool: any, index: number) => {
                     let toolName = partOrTool.toolName;
                     let toolPayload = partOrTool;
+
+                    if (partOrTool.type === 'text') {
+                      return null;
+                    }
 
                     if (partOrTool.type?.startsWith('tool-')) {
                       toolName = partOrTool.type.replace('tool-', '');
@@ -150,8 +160,6 @@ export function PulseAdvisor() {
                     } else if (partOrTool.type === 'tool-invocation') {
                       toolPayload = partOrTool.toolInvocation;
                       toolName = toolPayload.toolName;
-                    } else if (partOrTool.type === 'text') {
-                      return <p key={index} className="whitespace-pre-wrap">{partOrTool.text}</p>;
                     }
                     
                     const toolCallId = toolPayload.toolCallId || index;
