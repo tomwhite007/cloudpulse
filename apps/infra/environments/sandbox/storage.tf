@@ -11,3 +11,10 @@
 #     ManagedBy   = "Terraform"
 #   }
 # }
+# TOMBSTONED by CloudPulse — analytics-scratch-vol-08f2 (res-ebs-analytics-scratch)
+# apps/infra/environments/sandbox/storage.tf
+# - resource "aws_ebs_volume" "analytics_scratch_vol_08f2" {
+# -   ...
+# - }
+# + # TOMBSTONED by CloudPulse (FinOps Remediation)
+# + # resource "aws_ebs_volume" "analytics_scratch_vol_08f2" { ... }
