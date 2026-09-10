@@ -1,12 +1,51 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useDashboardStore } from '../../features/dashboard/store/dashboard-store';
 import { useAdvisorChat } from '../../features/dashboard/hooks/use-advisor-chat';
 import { Send, Bot, Loader2, CheckCircle, RefreshCcw } from 'lucide-react';
 import { advisorMessageMarkdown } from '../../features/dashboard/utils/advisor-markdown';
+import type { AdvisorUIMessage } from '../../features/dashboard/utils/pulse-advisor-tools';
 import { AdvisorMarkdown } from './advisor-markdown';
 import { RemediationProposalCard } from './remediation-proposal-card';
+
+function renderAdvisorToolParts(message: AdvisorUIMessage): ReactNode {
+  return message.parts.map((part) => {
+    if (part.type === 'tool-proposeTerraformRemediation') {
+      if (part.state === 'output-available') {
+        return (
+          <RemediationProposalCard key={part.toolCallId} {...part.output} />
+        );
+      }
+
+      return (
+        <div key={part.toolCallId} className="mt-2 flex items-center gap-2 text-xs text-zinc-400">
+          <Loader2 className="size-3 animate-spin" />
+          Generating remediation proposal...
+        </div>
+      );
+    }
+
+    if (part.type === 'tool-inspectWasteSummary') {
+      const done = part.state === 'output-available';
+      return (
+        <div
+          key={part.toolCallId}
+          className="mt-2 flex items-center gap-2 rounded-md bg-zinc-900/50 p-2 text-xs text-zinc-400 border border-white/5"
+        >
+          {done ? (
+            <CheckCircle className="size-3 text-emerald-400" />
+          ) : (
+            <Loader2 className="size-3 animate-spin" />
+          )}
+          {done ? 'Analyzed Waste Summary' : 'Analyzing Waste Summary...'}
+        </div>
+      );
+    }
+
+    return null;
+  });
+}
 
 export function PulseAdvisor() {
   const {
@@ -121,81 +160,24 @@ export function PulseAdvisor() {
           </div>
         ) : (
           <div className="flex flex-col gap-6">
-            {(messages || []).map((m: any) => (
-              <div key={m.id} className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {m.role !== 'user' && (
+            {messages.map((message) => (
+              <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                {message.role !== 'user' && (
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400">
                     <Bot className="size-5" />
                   </div>
                 )}
                 <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
-                  m.role === 'user' 
+                  message.role === 'user' 
                     ? 'bg-blue-600 text-white rounded-tr-sm' 
                     : 'bg-zinc-800/80 text-zinc-200 rounded-tl-sm border border-white/5'
                 }`}>
-                  {m.role === 'user' ? (
-                    m.content && <p className="whitespace-pre-wrap">{m.content}</p>
+                  {message.role === 'user' ? (
+                    <p className="whitespace-pre-wrap">{advisorMessageMarkdown(message)}</p>
                   ) : (
-                    <AdvisorMarkdown>{advisorMessageMarkdown(m)}</AdvisorMarkdown>
+                    <AdvisorMarkdown>{advisorMessageMarkdown(message)}</AdvisorMarkdown>
                   )}
-                  
-                  {/* --- VERCEL AI SDK v4 COMPATIBILITY NOTES ---
-                      When an assistant message contains BOTH text and tool invocations, 
-                      the AI SDK `useChat` hook often leaves `m.content` empty and instead pushes
-                      the text payload into the `m.parts` array as a `{ type: 'text', text: '...' }` object.
-                      Text is collected via advisorMessageMarkdown so GFM tables render as one document.
-                      Tool parts are still mapped below. 
-                  */}
-                  {(m.parts || m.toolInvocations || [])?.map((partOrTool: any, index: number) => {
-                    let toolName = partOrTool.toolName;
-                    let toolPayload = partOrTool;
-
-                    if (partOrTool.type === 'text') {
-                      return null;
-                    }
-
-                    if (partOrTool.type?.startsWith('tool-')) {
-                      toolName = partOrTool.type.replace('tool-', '');
-                      toolPayload = partOrTool;
-                    } else if (partOrTool.type === 'tool-invocation') {
-                      toolPayload = partOrTool.toolInvocation;
-                      toolName = toolPayload.toolName;
-                    }
-                    
-                    const toolCallId = toolPayload.toolCallId || index;
-                    
-                    if (
-                      toolName === 'propose_terraform_remediation_pr' ||
-                      toolName === 'proposeTerraformRemediation'
-                    ) {
-                      const outputData = toolPayload.output || toolPayload.result;
-                      if (outputData) {
-                        return <RemediationProposalCard key={toolCallId} {...outputData} />;
-                      }
-                      return (
-                        <div key={toolCallId} className="mt-2 flex items-center gap-2 text-xs text-zinc-400">
-                          <Loader2 className="size-3 animate-spin" />
-                          Generating remediation proposal...
-                        </div>
-                      );
-                    }
-                    
-                    if (toolName === 'inspectWasteSummary') {
-                      const outputData = toolPayload.output || toolPayload.result;
-                      return (
-                        <div key={toolCallId} className="mt-2 flex items-center gap-2 rounded-md bg-zinc-900/50 p-2 text-xs text-zinc-400 border border-white/5">
-                          {outputData ? (
-                            <CheckCircle className="size-3 text-emerald-400" />
-                          ) : (
-                            <Loader2 className="size-3 animate-spin" />
-                          )}
-                          {outputData ? 'Analyzed Waste Summary' : 'Analyzing Waste Summary...'}
-                        </div>
-                      );
-                    }
-                    
-                    return null;
-                  })}
+                  {renderAdvisorToolParts(message)}
                 </div>
               </div>
             ))}

@@ -1,9 +1,11 @@
 import { DEFAULT_TERRAFORM_PATH } from './gitflow-config';
 import {
   commentOutLines,
+  commentOutResourceBlocks,
   findResourceBlocks,
   generateTombstoneDiffPreview,
   hclResourceIdentifier,
+  parseResourceHeadersFromHcl,
   tombstoneTargetedResource,
 } from './hcl-tombstone';
 
@@ -18,6 +20,17 @@ resource "aws_ebs_volume" "cloudpulse_test_waste" {
     Environment = "sandbox"
     ManagedBy   = "Terraform"
   }
+}
+`;
+
+const INSTANCE_WITH_EIP_ASSOCIATION = `resource "aws_instance" "web" {
+  ami           = "ami-12345678"
+  instance_type = "t3.micro"
+}
+
+resource "aws_eip_association" "web_eip" {
+  instance_id   = aws_instance.web.id
+  allocation_id = aws_eip.web.id
 }
 `;
 
@@ -46,6 +59,25 @@ describe('tombstoneTargetedResource', () => {
     expect(patched).not.toMatch(/^resource "aws_ebs_volume"/m);
   });
 
+  it('comments out an aws_instance and its aws_eip_association satellite', () => {
+    const patched = tombstoneTargetedResource(INSTANCE_WITH_EIP_ASSOCIATION, {
+      resourceName: 'web',
+      resourceId: 'i-0123456789abcdefg',
+    });
+
+    expect(patched).toContain(
+      '# TOMBSTONED by CloudPulse — web (i-0123456789abcdefg)',
+    );
+    expect(patched).toContain(
+      '# TOMBSTONED by CloudPulse — coupled satellite of web (i-0123456789abcdefg)',
+    );
+    expect(patched).toContain('# resource "aws_instance" "web" {');
+    expect(patched).toContain('# resource "aws_eip_association" "web_eip" {');
+    expect(patched).toContain('#   instance_id   = aws_instance.web.id');
+    expect(patched).not.toMatch(/^resource "aws_instance"/m);
+    expect(patched).not.toMatch(/^resource "aws_eip_association"/m);
+  });
+
   it('appends a commented patch when no resource block matches', () => {
     const patched = tombstoneTargetedResource('locals { env = "sandbox" }\n', {
       resourceName: 'missing-volume',
@@ -61,6 +93,21 @@ describe('tombstoneTargetedResource', () => {
 describe('commentOutLines', () => {
   it('prefixes each line with a hash comment', () => {
     expect(commentOutLines('foo\nbar')).toBe('# foo\n# bar');
+  });
+});
+
+describe('commentOutResourceBlocks', () => {
+  it('comments out an array of blocks from last to first', () => {
+    const blocks = findResourceBlocks(INSTANCE_WITH_EIP_ASSOCIATION);
+    const patched = commentOutResourceBlocks(
+      INSTANCE_WITH_EIP_ASSOCIATION,
+      blocks,
+      '# TOMBSTONED\n',
+    );
+
+    expect(patched).toContain('# TOMBSTONED\n# resource "aws_instance" "web" {');
+    expect(patched).toContain('# resource "aws_eip_association" "web_eip" {');
+    expect(patched).not.toMatch(/^resource "/m);
   });
 });
 
@@ -87,6 +134,23 @@ describe('generateTombstoneDiffPreview', () => {
     );
   });
 
+  it('formats a multi-block preview when passed an array of targets', () => {
+    const preview = generateTombstoneDiffPreview(
+      [
+        { resourceName: 'web', resourceType: 'aws_instance' },
+        { resourceName: 'web_eip', resourceType: 'aws_eip_association' },
+      ],
+      'apps/infra/environments/sandbox/compute.tf',
+    );
+
+    expect(preview).toContain('- resource "aws_instance" "web" {');
+    expect(preview).toContain('- resource "aws_eip_association" "web_eip" {');
+    expect(preview).toContain('+ # resource "aws_instance" "web" { ... }');
+    expect(preview).toContain(
+      '+ # resource "aws_eip_association" "web_eip" { ... }',
+    );
+  });
+
   it('uses an explicit file path when provided', () => {
     const preview = generateTombstoneDiffPreview(
       'cloudpulse-test-waste',
@@ -107,6 +171,23 @@ describe('generateTombstoneDiffPreview', () => {
         '# infra/live/ebs.tf\n',
       ),
     ).toBe(true);
+  });
+});
+
+describe('parseResourceHeadersFromHcl', () => {
+  it('extracts unique resource headers from a composite diff', () => {
+    expect(
+      parseResourceHeadersFromHcl(
+        [
+          '- resource "aws_instance" "web" {',
+          '+ # resource "aws_instance" "web" { ... }',
+          '- resource "aws_eip_association" "web_eip" {',
+        ].join('\n'),
+      ),
+    ).toEqual([
+      { type: 'aws_instance', name: 'web' },
+      { type: 'aws_eip_association', name: 'web_eip' },
+    ]);
   });
 });
 

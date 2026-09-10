@@ -6,6 +6,7 @@ import {
   auditChatBody,
   createAdvisorChatTransport,
 } from '../utils/advisor-chat';
+import type { AdvisorUIMessage } from '../utils/pulse-advisor-tools';
 import { useAuditSummary } from './use-audit-data';
 
 export function useAdvisorChat() {
@@ -22,14 +23,14 @@ export function useAdvisorChat() {
     );
   }
 
-  const { messages, status, sendMessage, setMessages } = useChat({
+  const { messages, status, sendMessage, setMessages } = useChat<AdvisorUIMessage>({
     transport: transportRef.current,
   });
 
   const sendAdvisorMessage = useCallback(
     (content: string) => {
       void sendMessage(
-        { role: 'user', content } as never,
+        { text: content },
         { body: auditChatBody(auditContextRef.current) },
       );
     },

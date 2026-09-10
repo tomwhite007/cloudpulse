@@ -51,6 +51,30 @@ describe('buildRemediationPrBody', () => {
     expect(body).toContain('cloudpulse-test-waste');
     expect(body).toContain('+$4.50/mo');
     expect(body).toContain(validPayload.hclDiff);
+    expect(body).toContain('### Remediated Resources');
+    expect(body).toContain('`aws_ebs_volume.cloudpulse_test_waste` (primary)');
+  });
+
+  it('lists every resource from a composite HCL diff', () => {
+    const body = buildRemediationPrBody({
+      ...validPayload,
+      resourceName: 'web',
+      resourceId: 'i-0123456789abcdefg',
+      hclDiff: [
+        '- resource "aws_instance" "web" {',
+        '-   ...',
+        '- }',
+        '- resource "aws_eip_association" "web_eip" {',
+        '-   ...',
+        '- }',
+      ].join('\n'),
+    });
+
+    expect(body).toContain('### Remediated Resources');
+    expect(body).toContain(
+      '`aws_instance.web` (primary) — `i-0123456789abcdefg`',
+    );
+    expect(body).toContain('`aws_eip_association.web_eip` (coupled satellite)');
   });
 });
 

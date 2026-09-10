@@ -12,7 +12,7 @@ import {
   shouldUseSandboxFallback,
   type GitFlowEnv,
 } from './gitflow-config';
-import { tombstoneTargetedResource } from './hcl-tombstone';
+import { collectTombstoneTargets, tombstoneTargetedResource } from './hcl-tombstone';
 
 export const SANDBOX_STORAGE_PATH = DEFAULT_TERRAFORM_PATH;
 
@@ -61,14 +61,14 @@ export async function createGitHubRemediationPr(
     branchName,
     terraformPath,
   );
-  const patched = tombstoneTargetedResource(
-    existing.content ?? FALLBACK_SANDBOX_STORAGE,
-    {
-      resourceName: input.resourceName,
-      resourceId: input.resourceId,
-      hclDiff: input.hclDiff,
-    },
-  );
+  const currentHcl = existing.content ?? FALLBACK_SANDBOX_STORAGE;
+  const tombstoneOptions = {
+    resourceName: input.resourceName,
+    resourceId: input.resourceId,
+    hclDiff: input.hclDiff,
+  };
+  const remediatedTargets = collectTombstoneTargets(currentHcl, tombstoneOptions);
+  const patched = tombstoneTargetedResource(currentHcl, tombstoneOptions);
 
   await octokit.rest.repos.createOrUpdateFileContents({
     owner,
@@ -86,7 +86,17 @@ export async function createGitHubRemediationPr(
     title: input.commitMessage,
     head: branchName,
     base: baseBranch,
-    body: buildRemediationPrBody(input),
+    body: buildRemediationPrBody({
+      ...input,
+      remediatedResources:
+        remediatedTargets.length > 0
+          ? remediatedTargets.map((target) => ({
+              type: target.type,
+              name: target.name,
+              role: target.role,
+            }))
+          : input.remediatedResources,
+    }),
   });
 
   return {

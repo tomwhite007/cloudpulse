@@ -5,21 +5,7 @@ import { CheckCircle, GitBranch, Loader2, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { DraftPrResponse } from '@cloudpulse/gitflow';
-
-export interface RemediationProposalProps {
-  resourceId: string;
-  resourceName: string;
-  estimatedMonthlySavingsUsd: number;
-  hclDiff: string;
-  actionLabel: string;
-  branchName: string;
-  prTitle?: string;
-  commitMessage: string;
-  safetyChecks: string[];
-  isSimulated?: boolean;
-  monthlySavingsUsd?: number;
-  actionType?: string;
-}
+import type { RemediationProposal } from '../../features/dashboard/utils/pulse-advisor-tools';
 
 type DraftState =
   | { status: 'idle' }
@@ -29,21 +15,16 @@ type DraftState =
 export function RemediationProposalCard({
   resourceId,
   resourceName,
-  estimatedMonthlySavingsUsd,
+  monthlySavingsUsd,
   hclDiff,
-  actionLabel,
+  actionType,
   branchName,
-  prTitle,
   commitMessage,
   safetyChecks,
   isSimulated,
-  monthlySavingsUsd,
-  actionType
-}: RemediationProposalProps) {
+}: RemediationProposal) {
   const queueRemediation = useDashboardStore(state => state.queueRemediation);
   const [draftState, setDraftState] = useState<DraftState>({ status: 'idle' });
-
-  const savingsUsd = monthlySavingsUsd ?? estimatedMonthlySavingsUsd;
 
   const handleApprove = async () => {
     if (draftState.status === 'loading') {
@@ -59,11 +40,11 @@ export function RemediationProposalCard({
         body: JSON.stringify({
           resourceId,
           resourceName,
-          actionType: actionType ?? actionLabel ?? 'TERMINATE',
+          actionType,
           branchName,
           commitMessage,
           hclDiff,
-          monthlySavingsUsd: savingsUsd,
+          monthlySavingsUsd,
         }),
       });
 
@@ -100,9 +81,9 @@ export function RemediationProposalCard({
         </div>
       )}
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-lg font-medium text-white">{prTitle || commitMessage || actionLabel || actionType}</h4>
+        <h4 className="text-lg font-medium text-white">{commitMessage}</h4>
         <span className="rounded-full bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-300">
-          +${savingsUsd}/mo
+          +${monthlySavingsUsd}/mo
         </span>
       </div>
       

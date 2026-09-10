@@ -13,11 +13,9 @@ usePresenterTestLifecycle();
 const proposal = {
   resourceId: 'vol-0123456789abcdefg',
   resourceName: 'cloudpulse-test-waste',
-  estimatedMonthlySavingsUsd: 4.5,
   monthlySavingsUsd: 4.5,
   hclDiff: '- resource "aws_ebs_volume" "cloudpulse_test_waste" {}',
-  actionLabel: 'Terminate volume',
-  actionType: 'TERMINATE',
+  actionType: 'TERMINATE' as const,
   branchName: 'finops/terminate-vol-0123456789',
   commitMessage: 'fix(infra): tombstone unused EBS volume',
   safetyChecks: ['Pre-flight snapshot confirmed'],
