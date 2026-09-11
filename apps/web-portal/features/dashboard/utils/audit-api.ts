@@ -43,20 +43,43 @@ export interface AuditApiDeps {
   summaryUrl?: string;
   remediateUrl?: string;
   simulated?: typeof createMockRemediationResponse;
+  baseUrl?: string;
+}
+
+export function resolveAuditorApiBaseUrl(source: {
+  auditorApiUrl?: string;
+  publicAuditorApiUrl: string;
+  isBrowser: boolean;
+}): string {
+  if (!source.isBrowser && source.auditorApiUrl && source.auditorApiUrl.length > 0) {
+    return source.auditorApiUrl.replace(/\/$/, '');
+  }
+  return source.publicAuditorApiUrl.replace(/\/$/, '');
+}
+
+export function auditorApiBaseUrl(deps: AuditApiDeps = {}): string {
+  if (deps.baseUrl && deps.baseUrl.length > 0) {
+    return deps.baseUrl.replace(/\/$/, '');
+  }
+  return resolveAuditorApiBaseUrl({
+    auditorApiUrl: process.env.AUDITOR_API_URL,
+    publicAuditorApiUrl: env.NEXT_PUBLIC_AUDITOR_API_URL,
+    isBrowser: typeof window !== 'undefined',
+  });
 }
 
 export function summaryEndpoint(deps: AuditApiDeps = {}): string {
-  return deps.summaryUrl ?? `${env.NEXT_PUBLIC_AUDITOR_API_URL}/api/audit/summary`;
+  return deps.summaryUrl ?? `${auditorApiBaseUrl(deps)}/api/audit/summary`;
 }
 
 export function remediateEndpoint(deps: AuditApiDeps = {}): string {
-  return deps.remediateUrl ?? `${env.NEXT_PUBLIC_AUDITOR_API_URL}/api/audit/remediate`;
+  return deps.remediateUrl ?? `${auditorApiBaseUrl(deps)}/api/audit/remediate`;
 }
 
 export function statusEndpoint(deps: AuditApiDeps = {}): string {
   return deps.summaryUrl
     ? deps.summaryUrl.replace('/summary', '/status')
-    : `${env.NEXT_PUBLIC_AUDITOR_API_URL}/api/audit/status`;
+    : `${auditorApiBaseUrl(deps)}/api/audit/status`;
 }
 
 export async function fetchAuditStatus(deps: AuditApiDeps = {}) {

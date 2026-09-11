@@ -6,6 +6,7 @@ import {
   fetchJson,
   postRemediation,
   remediateEndpoint,
+  resolveAuditorApiBaseUrl,
   summaryEndpoint,
 } from '../utils/audit-api';
 import { createMockRemediationResponse } from '../mocks/audit-api.mock';
@@ -21,6 +22,38 @@ const matchingRequest: RemediationRequestDto = {
   resourceId: MOCK_AUDIT_RESOURCES[0].id,
   actionId: MOCK_AUDIT_RESOURCES[0].recommendedAction.actionId,
 };
+
+describe('resolveAuditorApiBaseUrl', () => {
+  it('uses the public URL in the browser even when a server URL is set', () => {
+    expect(
+      resolveAuditorApiBaseUrl({
+        auditorApiUrl: 'http://cloudpulse-auditor-api:3333',
+        publicAuditorApiUrl: 'http://localhost:3333',
+        isBrowser: true,
+      }),
+    ).toBe('http://localhost:3333');
+  });
+
+  it('prefers the server URL on the server', () => {
+    expect(
+      resolveAuditorApiBaseUrl({
+        auditorApiUrl: 'http://cloudpulse-auditor-api:3333/',
+        publicAuditorApiUrl: 'http://localhost:3333',
+        isBrowser: false,
+      }),
+    ).toBe('http://cloudpulse-auditor-api:3333');
+  });
+
+  it('falls back to the public URL on the server when the server URL is empty', () => {
+    expect(
+      resolveAuditorApiBaseUrl({
+        auditorApiUrl: '',
+        publicAuditorApiUrl: 'http://localhost:3000',
+        isBrowser: false,
+      }),
+    ).toBe('http://localhost:3000');
+  });
+});
 
 describe('summaryEndpoint', () => {
   it('uses the env API base by default', () => {
