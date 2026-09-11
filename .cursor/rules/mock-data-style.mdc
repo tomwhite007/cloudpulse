@@ -24,6 +24,6 @@ CloudPulse mocks are **runtime demo doubles** and shared canned datasets, not Je
 
 ## Product flags
 
-Do **not** rename mode switches or API enums: `DEMO_MODE`, `USE_LIVE_AWS`, `AuditStatusDto.mode` (`SIMULATED` / `LIVE`). Those are flags, not datasets.
+Do **not** rename mode switches or API enums: `DEMO_MODE`, `USE_LIVE_AWS`, `AuditStatusDto.mode` (`SIMULATED` / `LIVE`). Those are flags, not datasets. Skip live I/O in composition roots using those flags (see react-nextjs-style, nestjs-backend-style, gitflow-style).
 
 Leave one-off objects that exist only inside a single spec in that spec unless they are reused.

@@ -4,6 +4,8 @@ globs: '**/mocks/**/*.ts,**/*.mock.ts,apps/auditor-api/src/**/*.module.ts,apps/w
 alwaysApply: false
 ---
 
+<!-- Mirror of .cursor/rules/mock-data-style.mdc -->
+
 # Mock data convention
 
 CloudPulse mocks are **runtime demo doubles** and shared canned datasets, not Jest automocks. Put them in a dedicated `mocks/` folder with a `*.mock.ts` suffix. Do **not** use `__mocks__/` (Jest/Vitest module substitution) or `__fixtures__/` for this data.
@@ -24,6 +26,6 @@ CloudPulse mocks are **runtime demo doubles** and shared canned datasets, not Je
 
 ## Product flags
 
-Do **not** rename mode switches or API enums: `DEMO_MODE`, `USE_LIVE_AWS`, `AuditStatusDto.mode` (`SIMULATED` / `LIVE`). Those are flags, not datasets.
+Do **not** rename mode switches or API enums: `DEMO_MODE`, `USE_LIVE_AWS`, `AuditStatusDto.mode` (`SIMULATED` / `LIVE`). Those are flags, not datasets. Skip live I/O in composition roots using those flags (see react-nextjs-style, nestjs-backend-style, gitflow-style).
 
 Leave one-off objects that exist only inside a single spec in that spec unless they are reused.
