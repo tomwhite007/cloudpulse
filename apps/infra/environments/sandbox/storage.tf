@@ -13,15 +13,16 @@
 # }
 
 # CloudPulse live zombie fixture — cloudpulse-test-waste-2
-resource "aws_ebs_volume" "cloudpulse_test_waste_2" {
-  availability_zone = "eu-west-1a"
-  size              = 1
-  type              = "gp3"
-
-  tags = {
-    Name        = "cloudpulse-test-waste-2"
-    Environment = "sandbox"
-    ManagedBy   = "Terraform"
-    Purpose     = "CloudPulseZombieTest"
-  }
-}
+# TOMBSTONED by CloudPulse — cloudpulse-test-waste-2 (vol-01eff4e7fb155d1a8)
+# resource "aws_ebs_volume" "cloudpulse_test_waste_2" {
+#   availability_zone = "eu-west-1a"
+#   size              = 1
+#   type              = "gp3"
+#
+#   tags = {
+#     Name        = "cloudpulse-test-waste-2"
+#     Environment = "sandbox"
+#     ManagedBy   = "Terraform"
+#     Purpose     = "CloudPulseZombieTest"
+#   }
+# }
