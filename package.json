@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "build-web-portal": "nx build web-portal",
     "serve-mock-api": "nx serve auditor-api",
     "serve-live-api": "USE_LIVE_AWS=true AWS_PROFILE=cloudpulse AWS_REGION=eu-west-1 nx serve auditor-api",
     "serve-web-portal": "nx dev web-portal --port 4000",
@@ -14,7 +13,11 @@
     "test-all": "npx nx run-many -t test",
     "test-all-affected": "npx nx affected -t test",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "build-web-portal": "nx build web-portal",
+    "docker-build-auditor-api": "docker build -f apps/auditor-api/Dockerfile -t cloudpulse-auditor-api:local .",
+    "docker-build-web-portal": "docker build -f apps/web-portal/Dockerfile -t cloudpulse-web-portal:local .",
+    "docker-build-all": "pnpm docker-build-auditor-api && pnpm docker-build-web-portal"
   },
   "private": true,
   "devDependencies": {
