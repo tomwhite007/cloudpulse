@@ -1,0 +1,7 @@
+# This project is Terraform. Format with `terraform fmt`, not Prettier.
+**/*.tf
+**/*.tfvars
+**/*.hcl
+**/.terraform
+*.tfstate
+*.tfstate.*

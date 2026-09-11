@@ -1,0 +1,27 @@
+# compiled output
+dist
+tmp
+out-tsc
+coverage
+.next
+out
+
+# tooling / deps
+.nx
+.pnpm-store
+node_modules
+pnpm-lock.yaml
+
+# env and generated timestamps
+**/.env.local
+vitest.config.*.timestamp*
+
+# Terraform is formatted by `terraform fmt`, not Prettier
+**/.terraform
+**/*.tf
+**/*.tfvars
+**/*.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
