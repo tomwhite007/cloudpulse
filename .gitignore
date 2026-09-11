@@ -35,6 +35,9 @@ yarn-error.log
 testem.log
 /typings
 
+# local operator scripts (may contain machine-specific settings)
+/private-tooling/
+
 # System Files
 .DS_Store
 Thumbs.db
