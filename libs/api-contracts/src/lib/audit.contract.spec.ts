@@ -1,4 +1,5 @@
 import {
+  CloudResourceTypeSchema,
   CostAuditSummarySchema,
   RemediationRequestSchema,
   ResourceStatusCardSchema,
@@ -24,6 +25,32 @@ describe('audit contracts', () => {
     });
 
     expect(card.resourceType).toBe('RDS');
+  });
+
+  it('accepts ELASTIC_IP as a cloud resource type in audit payloads', () => {
+    expect(CloudResourceTypeSchema.parse('ELASTIC_IP')).toBe('ELASTIC_IP');
+    expect(() => CloudResourceTypeSchema.parse('EIP')).toThrow();
+
+    const card = ResourceStatusCardSchema.parse({
+      id: 'eipalloc-0123456789abcdef0',
+      resourceName: '54.216.0.12',
+      resourceType: 'ELASTIC_IP',
+      status: 'ZOMBIE',
+      region: 'eu-west-1',
+      monthlyCost: 3.65,
+      potentialMonthlySavings: 3.65,
+      telemetrySummary: 'Unattached Elastic IP incurring hourly IPv4 idle reservation penalty.',
+      recommendedAction: {
+        actionId: 'act-terminate-eip',
+        label: 'Release Elastic IP',
+        actionType: 'TERMINATE',
+        terraformPatchPreview: '# Release unattached Elastic IP',
+      },
+    });
+
+    expect(card.resourceType).toBe('ELASTIC_IP');
+    expect(card.status).toBe('ZOMBIE');
+    expect(card.monthlyCost).toBe(3.65);
   });
 
   it('parses a cost audit summary with the Day 2 KPI targets', () => {

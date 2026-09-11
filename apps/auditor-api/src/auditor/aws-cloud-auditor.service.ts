@@ -8,10 +8,19 @@ import {
 } from '@cloudpulse/api-contracts';
 import { ICloudAuditorService } from '../app/cloud-auditor.interface';
 import { CostExplorerClient, GetCostAndUsageCommand } from '@aws-sdk/client-cost-explorer';
-import { EC2Client, DescribeVolumesCommand } from '@aws-sdk/client-ec2';
+import {
+  type Address,
+  DescribeAddressesCommand,
+  DescribeVolumesCommand,
+  EC2Client,
+} from '@aws-sdk/client-ec2';
 import { RDSClient, DescribeDBInstancesCommand } from '@aws-sdk/client-rds';
 import { CloudWatchClient, GetMetricStatisticsCommand } from '@aws-sdk/client-cloudwatch';
 import { awsClientConfig, resolveLiveAwsProfile } from './aws-client-config';
+
+const UNATTACHED_ELASTIC_IP_MONTHLY_COST = 3.65;
+const UNATTACHED_ELASTIC_IP_REASON =
+  'Unattached Elastic IP incurring hourly IPv4 idle reservation penalty.';
 
 @Injectable()
 export class AwsCloudAuditorService implements ICloudAuditorService {
@@ -171,6 +180,10 @@ export class AwsCloudAuditorService implements ICloudAuditorService {
       this.logger.error('Failed to describe volumes', e);
     }
 
+    const elasticIpAudit = await this.auditElasticIps();
+    findings.push(...elasticIpAudit.findings);
+    monitoredCount += elasticIpAudit.monitoredCount;
+
     // RDS Instances
     const rdsCmd = new DescribeDBInstancesCommand({});
     try {
@@ -233,5 +246,53 @@ export class AwsCloudAuditorService implements ICloudAuditorService {
     }
 
     return { findings, monitoredCount };
+  }
+
+  private async auditElasticIps(): Promise<{
+    findings: ResourceStatusCardDto[];
+    monitoredCount: number;
+  }> {
+    const findings: ResourceStatusCardDto[] = [];
+    let monitoredCount = 0;
+
+    try {
+      const response = await this.ec2Client.send(new DescribeAddressesCommand({}));
+      const addresses = response.Addresses ?? [];
+      monitoredCount = addresses.length;
+
+      for (const address of addresses) {
+        if (!this.isUnattachedElasticIp(address) || !address.AllocationId) {
+          continue;
+        }
+
+        const allocationId = address.AllocationId;
+        const publicIp = address.PublicIp || allocationId;
+
+        findings.push({
+          id: allocationId,
+          resourceName: publicIp,
+          resourceType: 'ELASTIC_IP',
+          status: 'ZOMBIE',
+          region: this.region,
+          monthlyCost: UNATTACHED_ELASTIC_IP_MONTHLY_COST,
+          potentialMonthlySavings: UNATTACHED_ELASTIC_IP_MONTHLY_COST,
+          telemetrySummary: UNATTACHED_ELASTIC_IP_REASON,
+          recommendedAction: {
+            actionId: `act-terminate-eip-${allocationId}`,
+            label: 'Release Elastic IP',
+            actionType: 'TERMINATE',
+            terraformPatchPreview: `# Release unattached Elastic IP ${allocationId} (${publicIp})`,
+          },
+        });
+      }
+    } catch (e) {
+      this.logger.error('Failed to describe Elastic IPs', e);
+    }
+
+    return { findings, monitoredCount };
+  }
+
+  private isUnattachedElasticIp(address: Address): boolean {
+    return !address.AssociationId && !address.InstanceId;
   }
 }

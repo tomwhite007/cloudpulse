@@ -43,6 +43,24 @@ export function createMockResourceStatusCard(
   });
 }
 
+export const MOCK_DETACHED_ELASTIC_IP: ResourceStatusCardDto = createMockResourceStatusCard({
+  id: 'eipalloc-0123456789abcdef0',
+  resourceName: '54.216.0.12',
+  resourceType: 'ELASTIC_IP',
+  status: 'ZOMBIE',
+  region: 'eu-west-1',
+  monthlyCost: 3.65,
+  potentialMonthlySavings: 3.65,
+  telemetrySummary: 'Unattached Elastic IP incurring hourly IPv4 idle reservation penalty.',
+  recommendedAction: {
+    actionId: 'act-terminate-eip-unattached',
+    label: 'Release Elastic IP',
+    actionType: 'TERMINATE',
+    terraformPatchPreview: `# DELETE unattached Elastic IP eipalloc-0123456789abcdef0 (54.216.0.12)
+# resource "aws_eip" "unattached" { ... }`,
+  },
+});
+
 export const MOCK_AUDIT_RESOURCES: ResourceStatusCardDto[] = [
   createMockResourceStatusCard(),
   createMockResourceStatusCard({
@@ -81,6 +99,7 @@ export const MOCK_AUDIT_RESOURCES: ResourceStatusCardDto[] = [
 }`,
     },
   }),
+  MOCK_DETACHED_ELASTIC_IP,
 ];
 
 export function createMockCostAuditSummary(

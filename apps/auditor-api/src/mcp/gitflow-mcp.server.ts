@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { Inject, Injectable } from '@nestjs/common';
 import { z } from 'zod';
+import { CloudResourceTypeSchema } from '@cloudpulse/api-contracts';
 import { CLOUD_AUDITOR_SERVICE, ICloudAuditorService } from '../app/cloud-auditor.interface';
 
 @Injectable()
@@ -23,7 +24,7 @@ export class GitFlowMcpServer {
       'Propose a terraform remediation pull request for a cloud resource.',
       {
         resourceId: z.string(),
-        resourceType: z.enum(['RDS', 'EBS', 'ECS', 'EC2', 'LAMBDA']),
+        resourceType: CloudResourceTypeSchema,
         actionType: z.enum(['RESIZE', 'TERMINATE', 'SCHEDULE_SLEEP']),
         targetBranch: z.string().optional().default('main'),
       },

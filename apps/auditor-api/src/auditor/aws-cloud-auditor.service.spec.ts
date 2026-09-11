@@ -85,6 +85,18 @@ describe('AwsCloudAuditorService', () => {
             VolumeType: 'gp3',
           },
         ],
+        Addresses: [
+          {
+            AllocationId: 'eipalloc-0123456789abcdef0',
+            PublicIp: '54.216.0.12',
+          },
+          {
+            AllocationId: 'eipalloc-attached',
+            PublicIp: '1.2.3.4',
+            AssociationId: 'eipassoc-123',
+            InstanceId: 'i-123',
+          },
+        ],
       });
 
       RDSClient.prototype.send = jest.fn().mockResolvedValue({
@@ -106,10 +118,21 @@ describe('AwsCloudAuditorService', () => {
       const result = await service.getAuditSummary();
 
       expect(result.totalMonthlySpend).toBe(100.5);
-      expect(result.resources).toHaveLength(2); // 1 EBS, 1 RDS
+      expect(result.resources).toHaveLength(3); // 1 EBS, 1 unattached EIP, 1 RDS
       expect(result.spendByService).toHaveLength(1);
-      expect(result.activeAssetCount).toBe(2);
-      expect(result.complianceScorePercent).toBe(0); // 2 assets, both are waste -> 0%
+      expect(result.activeAssetCount).toBe(4); // 1 EBS + 2 EIPs + 1 RDS
+      expect(result.complianceScorePercent).toBe(25); // 4 assets, 3 waste -> 25%
+
+      const elasticIp = result.resources.find((resource) => resource.resourceType === 'ELASTIC_IP');
+      expect(elasticIp).toMatchObject({
+        id: 'eipalloc-0123456789abcdef0',
+        resourceName: '54.216.0.12',
+        status: 'ZOMBIE',
+        monthlyCost: 3.65,
+        potentialMonthlySavings: 3.65,
+        telemetrySummary: 'Unattached Elastic IP incurring hourly IPv4 idle reservation penalty.',
+      });
+      expect(result.resources.some((resource) => resource.id === 'eipalloc-attached')).toBe(false);
     });
   });
 

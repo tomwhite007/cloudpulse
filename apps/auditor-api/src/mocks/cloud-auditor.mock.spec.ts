@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import type { RemediationRequestDto } from '@cloudpulse/api-contracts';
+import { MOCK_DETACHED_ELASTIC_IP } from '@cloudpulse/api-contracts/mocks';
 import { MockCloudAuditorService } from './cloud-auditor.mock';
 
 describe('MockCloudAuditorService', () => {
@@ -23,6 +24,11 @@ describe('MockCloudAuditorService', () => {
       expect(summary).toBeDefined();
       expect(summary.resources).toBeInstanceOf(Array);
       expect(summary.totalMonthlySpend).toBeDefined();
+    });
+
+    it('includes the detached Elastic IP fixture', async () => {
+      const summary = await service.getAuditSummary();
+      expect(summary.resources).toContainEqual(MOCK_DETACHED_ELASTIC_IP);
     });
   });
 

@@ -19,6 +19,7 @@ export const RESOURCE_TYPE_FILTER_OPTIONS: readonly {
   { value: 'ECS', label: 'ECS' },
   { value: 'EC2', label: 'EC2' },
   { value: 'LAMBDA', label: 'Lambda' },
+  { value: 'ELASTIC_IP', label: 'Elastic IP' },
 ];
 
 export const STATUS_FILTER_OPTIONS: readonly {

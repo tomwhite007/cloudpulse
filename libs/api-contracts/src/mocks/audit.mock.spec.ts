@@ -2,6 +2,7 @@ import {
   createMockCostAuditSummary,
   createMockResourceStatusCard,
   MOCK_COST_AUDIT_SUMMARY,
+  MOCK_DETACHED_ELASTIC_IP,
 } from './audit.mock';
 
 describe('audit mock fixtures', () => {
@@ -10,7 +11,19 @@ describe('audit mock fixtures', () => {
     expect(MOCK_COST_AUDIT_SUMMARY.totalIdentifiedWaste).toBe(4850);
     expect(MOCK_COST_AUDIT_SUMMARY.activeAssetCount).toBe(142);
     expect(MOCK_COST_AUDIT_SUMMARY.complianceScorePercent).toBe(94);
-    expect(MOCK_COST_AUDIT_SUMMARY.resources).toHaveLength(3);
+    expect(MOCK_COST_AUDIT_SUMMARY.resources).toHaveLength(4);
+    expect(MOCK_COST_AUDIT_SUMMARY.resources).toContainEqual(MOCK_DETACHED_ELASTIC_IP);
+  });
+
+  it('exposes a detached Elastic IP zombie fixture', () => {
+    expect(MOCK_DETACHED_ELASTIC_IP).toMatchObject({
+      id: 'eipalloc-0123456789abcdef0',
+      resourceName: '54.216.0.12',
+      resourceType: 'ELASTIC_IP',
+      status: 'ZOMBIE',
+      monthlyCost: 3.65,
+      potentialMonthlySavings: 3.65,
+    });
   });
 
   it('creates a resource card with overrides', () => {

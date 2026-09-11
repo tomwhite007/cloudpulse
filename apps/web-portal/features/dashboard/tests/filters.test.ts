@@ -112,6 +112,7 @@ describe('filter option catalogs', () => {
       'ECS',
       'EC2',
       'LAMBDA',
+      'ELASTIC_IP',
     ]);
   });
 

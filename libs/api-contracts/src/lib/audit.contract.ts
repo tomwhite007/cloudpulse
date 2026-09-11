@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+export const CloudResourceTypeSchema = z.enum(['RDS', 'EBS', 'ECS', 'EC2', 'LAMBDA', 'ELASTIC_IP']);
+export type CloudResourceType = z.infer<typeof CloudResourceTypeSchema>;
+
 export const RecommendedActionSchema = z.object({
   actionId: z.string(),
   label: z.string(),
@@ -10,7 +13,7 @@ export const RecommendedActionSchema = z.object({
 export const ResourceStatusCardSchema = z.object({
   id: z.string(),
   resourceName: z.string(),
-  resourceType: z.enum(['RDS', 'EBS', 'ECS', 'EC2', 'LAMBDA']),
+  resourceType: CloudResourceTypeSchema,
   status: z.enum(['HEALTHY', 'IDLE', 'OVER_PROVISIONED', 'ZOMBIE']),
   region: z.string(),
   monthlyCost: z.number(),
