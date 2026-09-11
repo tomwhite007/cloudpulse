@@ -16,6 +16,7 @@ describe('NavHeader', () => {
     expect(screen.getByRole('heading', { name: 'CloudPulse' })).toBeDefined();
 
     expect(screen.getByRole('button', { name: 'Sync Telemetry' })).toBeDefined();
+    expect(screen.getByRole('status', { name: /Auditor Engine: Connected/ })).toBeDefined();
   });
 
   it('has no WCAG 2.1 AA axe violations', async () => {

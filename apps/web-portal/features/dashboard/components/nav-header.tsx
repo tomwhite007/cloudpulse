@@ -44,7 +44,7 @@ export function NavHeader() {
           </div>
         </div>
 
-        <div className="flex min-w-0 items-center gap-2 justify-self-start text-xs text-muted-foreground md:justify-self-end">
+        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 justify-self-start text-xs text-muted-foreground md:justify-self-end">
           <Button
             type="button"
             variant="outline"
@@ -60,19 +60,26 @@ export function NavHeader() {
             />
             Sync Telemetry
           </Button>
-          <span
-            className={cn(
-              'size-2 shrink-0 rounded-full',
-              isSimulated || statusData?.profile
-                ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
-                : 'bg-amber-400',
-            )}
-            aria-hidden="true"
-          />
-          <Cloud className="size-3.5 shrink-0" aria-hidden="true" />
-          <span className="truncate" role="status" aria-live="polite" aria-label={engineStatus}>
-            {engineStatus}
-          </span>
+          <p className="flex min-w-0 max-w-full items-center gap-2">
+            <span
+              className={cn(
+                'size-2 shrink-0 rounded-full',
+                isSimulated || statusData?.profile
+                  ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
+                  : 'bg-amber-400',
+              )}
+              aria-hidden="true"
+            />
+            <Cloud className="size-3.5 shrink-0" aria-hidden="true" />
+            <span
+              className="min-w-0 text-pretty"
+              role="status"
+              aria-live="polite"
+              aria-label={engineStatus}
+            >
+              {engineStatus}
+            </span>
+          </p>
         </div>
       </div>
       <Separator />

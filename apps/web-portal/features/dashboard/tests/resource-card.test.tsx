@@ -15,6 +15,12 @@ usePresenterTestLifecycle();
 const overProvisioned = MOCK_AUDIT_RESOURCES[0];
 
 describe('ResourceCard', () => {
+  it('shows the full severity badge without clipping the status label', async () => {
+    await renderPresenter(<ResourceCard resource={overProvisioned} />);
+
+    expect(screen.getByText('OVER PROVISIONED · Warning')).toBeDefined();
+  });
+
   it('sets the reviewing status when clicking remediate', async () => {
     await renderPresenter(<ResourceCard resource={overProvisioned} />);
 

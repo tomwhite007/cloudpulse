@@ -69,7 +69,7 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
     >
       <span className={cn('absolute inset-y-0 left-0 w-1', severity.bar)} aria-hidden="true" />
       <CardHeader className="pl-5">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
           <div className="min-w-0">
             <CardTitle className="truncate font-semibold">
               <h3 className="truncate font-semibold">{resource.resourceName}</h3>
@@ -83,7 +83,7 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
               </span>
             </CardDescription>
           </div>
-          <Badge variant="outline" className={severity.badge}>
+          <Badge variant="outline" className={cn('self-start', severity.badge)}>
             {resource.status.replaceAll('_', ' ')} · {severity.label}
           </Badge>
         </div>
