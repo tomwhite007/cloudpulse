@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import type { RemediationRequestDto } from '@cloudpulse/api-contracts';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CLOUD_AUDITOR_SERVICE } from './cloud-auditor.interface';
@@ -41,7 +42,10 @@ describe('AppController', () => {
 
   describe('audit/remediate', () => {
     it('should remediate resource via cloud auditor', async () => {
-      const request: any = { resourceId: 'res-1', actionType: 'TERMINATE' };
+      const request: RemediationRequestDto = {
+        resourceId: 'res-1',
+        actionId: 'act-terminate',
+      };
       const response = await appController.remediateResource(request);
       expect(response).toEqual({ success: true });
       expect(mockCloudAuditorService.remediateResource).toHaveBeenCalledWith(request);

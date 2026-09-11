@@ -1,7 +1,8 @@
 /// <reference types="@nx/next/typings/style.d.ts" />
-/* eslint-disable @typescript-eslint/no-explicit-any */
 declare module '*.svg' {
-  const content: any;
-  export const ReactComponent: any;
-  export default content;
+  import type { FC, SVGProps } from 'react';
+
+  export const ReactComponent: FC<SVGProps<SVGSVGElement>>;
+  const src: string;
+  export default src;
 }

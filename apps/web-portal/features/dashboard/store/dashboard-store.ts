@@ -1,6 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
+import type { ResourceStatusCardDto } from '@cloudpulse/api-contracts';
 import {
   isResourceTypeFilter,
   isStatusFilter,
@@ -16,20 +17,28 @@ export type QueuedRemediationPr = {
   prUrl: string;
 };
 
+export type AdvisorPrompt = {
+  prompt: string;
+  resource?: ResourceStatusCardDto;
+};
+
 interface DashboardStore {
   selectedResourceType: ResourceTypeFilter;
   statusFilter: StatusFilter;
   queuedRemediations: string[];
   queuedRemediationPrs: Record<string, QueuedRemediationPr>;
   reviewingRemediations: string[];
-  advisorPrompt: { prompt: string; resource?: any } | null;
+  advisorPrompt: AdvisorPrompt | null;
   setSelectedResourceType: (type: string) => void;
   setStatusFilter: (status: string) => void;
   queueRemediation: (resourceId: string, pr?: QueuedRemediationPr) => void;
   removeQueuedRemediation: (resourceId: string) => void;
   setReviewingRemediation: (resourceId: string) => void;
   removeReviewingRemediation: (resourceId: string) => void;
-  triggerAdvisorPrompt: (prompt: string | null, resource?: any) => void;
+  triggerAdvisorPrompt: (
+    prompt: string | null,
+    resource?: ResourceStatusCardDto,
+  ) => void;
 }
 
 const initialChrome = {
@@ -38,7 +47,7 @@ const initialChrome = {
   queuedRemediations: [] as string[],
   queuedRemediationPrs: {} as Record<string, QueuedRemediationPr>,
   reviewingRemediations: [] as string[],
-  advisorPrompt: null as { prompt: string; resource?: any } | null,
+  advisorPrompt: null as AdvisorPrompt | null,
 };
 
 export const useDashboardStore = create<DashboardStore>((set) => ({

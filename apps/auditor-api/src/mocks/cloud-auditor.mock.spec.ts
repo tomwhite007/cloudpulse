@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import type { RemediationRequestDto } from '@cloudpulse/api-contracts';
 import { MockCloudAuditorService } from './cloud-auditor.mock';
 
 describe('MockCloudAuditorService', () => {
@@ -27,7 +28,10 @@ describe('MockCloudAuditorService', () => {
 
   describe('remediateResource', () => {
     it('should simulate a successful remediation', async () => {
-      const request: any = { resourceId: 'res-test-123', actionId: 'TERMINATE' };
+      const request: RemediationRequestDto = {
+        resourceId: 'res-test-123',
+        actionId: 'TERMINATE',
+      };
       const response = await service.remediateResource(request);
 
       expect(response).toBeDefined();
