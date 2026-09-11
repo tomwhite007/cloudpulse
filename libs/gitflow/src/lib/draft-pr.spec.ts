@@ -2,6 +2,7 @@ import {
   buildRemediationPrBody,
   draftPrRequestSchema,
   isGitFlowDemoMode,
+  remediationPrTitle,
   sanitizeBranchName,
 } from './draft-pr';
 import { MOCK_DRAFT_PR } from '../mocks/draft-pr.mock';
@@ -23,6 +24,22 @@ describe('draftPrRequestSchema', () => {
 
   it('rejects a missing resource id', () => {
     expect(() => draftPrRequestSchema.parse({ ...validPayload, resourceId: '' })).toThrow();
+  });
+});
+
+describe('remediationPrTitle', () => {
+  it('uses only the first line of a multiline commit message', () => {
+    expect(
+      remediationPrTitle(
+        'fix(infra): tombstone unused EBS volume\n\nRemove the zombie volume and its satellites.',
+      ),
+    ).toBe('fix(infra): tombstone unused EBS volume');
+  });
+
+  it('supports CRLF commit messages and trims the title', () => {
+    expect(remediationPrTitle('  fix(infra): tombstone volume  \r\n\r\nDetails')).toBe(
+      'fix(infra): tombstone volume',
+    );
   });
 });
 

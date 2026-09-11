@@ -28,6 +28,10 @@ export type DraftPrResponse = {
   prUrl: string;
 };
 
+export function remediationPrTitle(commitMessage: string): string {
+  return commitMessage.split(/\r?\n/, 1)[0].trim();
+}
+
 export function isGitFlowDemoMode(options: {
   githubToken?: string;
   demoMode?: string;

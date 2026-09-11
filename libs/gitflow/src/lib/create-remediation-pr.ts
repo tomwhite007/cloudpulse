@@ -1,5 +1,10 @@
 import { Octokit } from '@octokit/rest';
-import { buildRemediationPrBody, type DraftPrRequest, type DraftPrResponse } from './draft-pr';
+import {
+  buildRemediationPrBody,
+  remediationPrTitle,
+  type DraftPrRequest,
+  type DraftPrResponse,
+} from './draft-pr';
 import {
   gitFlowEnvFromProcess,
   resolveGitFlowBranchName,
@@ -64,7 +69,7 @@ export async function createGitHubRemediationPr(
   const { data: prData } = await octokit.rest.pulls.create({
     owner,
     repo,
-    title: input.commitMessage,
+    title: remediationPrTitle(input.commitMessage),
     head: branchName,
     base: baseBranch,
     body: buildRemediationPrBody({
