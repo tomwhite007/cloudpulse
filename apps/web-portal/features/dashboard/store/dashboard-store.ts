@@ -1,5 +1,3 @@
-'use client';
-
 import { create } from 'zustand';
 import type { ResourceStatusCardDto } from '@cloudpulse/api-contracts';
 import {

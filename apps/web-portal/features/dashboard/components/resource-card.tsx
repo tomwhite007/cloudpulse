@@ -1,5 +1,3 @@
-'use client';
-
 import type { ResourceStatusCardDto } from '@cloudpulse/api-contracts';
 import { MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';

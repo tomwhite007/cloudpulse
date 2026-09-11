@@ -1,5 +1,3 @@
-'use client';
-
 import { useDashboardStore } from '../../features/dashboard/store/dashboard-store';
 import { CheckCircle, GitBranch, Loader2, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';

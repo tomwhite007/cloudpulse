@@ -1,5 +1,3 @@
-'use client';
-
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { useDashboardStore } from '../../features/dashboard/store/dashboard-store';
 import { useAdvisorChat } from '../../features/dashboard/hooks/use-advisor-chat';

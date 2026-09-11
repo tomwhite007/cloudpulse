@@ -1,5 +1,3 @@
-'use client';
-
 import { useChat } from '@ai-sdk/react';
 import { useCallback, useRef } from 'react';
 import { auditChatBody, createAdvisorChatTransport } from '../utils/advisor-chat';

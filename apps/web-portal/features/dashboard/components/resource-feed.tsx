@@ -1,5 +1,3 @@
-'use client';
-
 import { useMemo } from 'react';
 import type { ResourceStatusCardDto } from '@cloudpulse/api-contracts';
 import { Badge } from '@/components/ui/badge';

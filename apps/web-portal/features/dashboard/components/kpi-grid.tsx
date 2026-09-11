@@ -1,5 +1,3 @@
-'use client';
-
 import type { CostAuditSummaryDto } from '@cloudpulse/api-contracts';
 import { DollarSign, Leaf, Server, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

@@ -14,7 +14,7 @@ MUST is React / Next.js. PREFER is the CloudPulse enterprise default: one librar
 
 ## Hard constraints
 
-- Server Components by default. `'use client'` only on interactive leaves.
+- Server Components by default. `'use client'` only on the client-island boundary (the first file a Server Component imports that needs the browser), plus Next-required client files (`error.tsx`) and providers imported from a server `layout.tsx`. Descendants of that island do not repeat the directive.
 - Do not put `'use client'` on `page.tsx` or `layout.tsx`.
 - `app/` is routing only. Domain logic lives in `features/<name>/` from the first feature.
 - Do not put a workspace-root `store/` or `hooks/` folder. Feature-scoped Zustand and Query hooks live inside that feature.
@@ -63,9 +63,9 @@ RSCs are route containers. A feature screen may be a client island under that se
 
 - MUST default to Server Components.
 - MUST use RSCs for DB/ORM, auth, headers, and cookies.
-- MUST add `'use client'` for event handlers, browser APIs, local UI state, Query hooks, or Zustand.
+- MUST add `'use client'` at the client-island boundary: the first module a Server Component imports that needs event handlers, browser APIs, local UI state, Query hooks, or Zustand. Descendants imported only from that island MUST NOT repeat `'use client'`.
 - MUST NOT put `'use client'` on `page.tsx` or `layout.tsx`. Isolate interactivity in a child (the feature screen is allowed to be that child).
-- MUST NOT treat "leaf presenter" as "every card is its own client boundary". One client island per interactive screen is allowed.
+- MUST NOT treat "leaf presenter" as "every card is its own client boundary". One client island per interactive screen is allowed. If a later Server Component imports a leaf directly, add `'use client'` on that new boundary.
 - MUST add `import 'server-only'` at the top of Server Actions, `lib/` DB clients, and other server-only utilities.
 
 ```tsx
