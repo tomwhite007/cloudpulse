@@ -30,17 +30,36 @@ describe('draftPrRequestSchema', () => {
 
 describe('isGitFlowDemoMode', () => {
   it('simulates when no GitHub token is configured', () => {
-    expect(isGitFlowDemoMode({})).toBe(true);
+    expect(isGitFlowDemoMode({ auditorMode: 'LIVE' })).toBe(true);
   });
 
   it('simulates when DEMO_MODE is true even with a token', () => {
     expect(
-      isGitFlowDemoMode({ GITHUB_TOKEN: 'token', DEMO_MODE: 'true' }),
+      isGitFlowDemoMode({
+        githubToken: 'token',
+        demoMode: 'true',
+        auditorMode: 'LIVE',
+      }),
     ).toBe(true);
   });
 
-  it('runs live when a token is present and demo mode is off', () => {
-    expect(isGitFlowDemoMode({ GITHUB_TOKEN: 'token' })).toBe(false);
+  it('simulates when the auditor is not live, even with a token', () => {
+    expect(
+      isGitFlowDemoMode({
+        githubToken: 'token',
+        auditorMode: 'SIMULATED',
+      }),
+    ).toBe(true);
+    expect(isGitFlowDemoMode({ githubToken: 'token' })).toBe(true);
+  });
+
+  it('runs live only when a token is present and the auditor is live', () => {
+    expect(
+      isGitFlowDemoMode({
+        githubToken: 'token',
+        auditorMode: 'LIVE',
+      }),
+    ).toBe(false);
   });
 });
 

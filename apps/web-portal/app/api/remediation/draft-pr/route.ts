@@ -5,6 +5,10 @@ import {
 } from '@cloudpulse/gitflow';
 import { MOCK_DRAFT_PR } from '@cloudpulse/gitflow/mocks';
 import { NextResponse } from 'next/server';
+import { fetchAuditStatus } from '@/features/dashboard/utils/audit-api';
+
+const DEMO_MODE_NOTICE =
+  'GitFlow draft PR running in deterministic DEMO mode; skipping GitHub';
 
 export async function POST(req: Request) {
   try {
@@ -22,7 +26,15 @@ export async function POST(req: Request) {
       );
     }
 
-    if (isGitFlowDemoMode(process.env)) {
+    const auditorStatus = await fetchAuditStatus();
+    if (
+      isGitFlowDemoMode({
+        githubToken: process.env.GITHUB_TOKEN,
+        demoMode: process.env.DEMO_MODE,
+        auditorMode: auditorStatus.mode,
+      })
+    ) {
+      console.log(DEMO_MODE_NOTICE);
       return NextResponse.json(MOCK_DRAFT_PR);
     }
 

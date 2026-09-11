@@ -28,10 +28,20 @@ export type DraftPrResponse = {
   prUrl: string;
 };
 
-export function isGitFlowDemoMode(
-  env: Record<string, string | undefined>,
-): boolean {
-  return !env['GITHUB_TOKEN'] || env['DEMO_MODE'] === 'true';
+export function isGitFlowDemoMode(options: {
+  githubToken?: string;
+  demoMode?: string;
+  auditorMode?: 'SIMULATED' | 'LIVE';
+}): boolean {
+  if (options.demoMode === 'true') {
+    return true;
+  }
+
+  if (!options.githubToken) {
+    return true;
+  }
+
+  return options.auditorMode !== 'LIVE';
 }
 
 export function listRemediatedResources(
