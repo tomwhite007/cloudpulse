@@ -1,8 +1,7 @@
 'use client';
 
 import type { ResourceStatusCardDto } from '@cloudpulse/api-contracts';
-import { Loader2, MapPin } from 'lucide-react';
-import { toast } from 'sonner';
+import { MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +13,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { useRemediateResource } from '../hooks/use-audit-data';
 import { useDashboardStore } from '../store/dashboard-store';
 import { formatUsd } from '../utils/format';
 
@@ -48,7 +46,6 @@ const SEVERITY_STYLES: Record<ResourceStatusCardDto['status'], SeverityStyle> = 
 };
 
 export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) {
-  const remediate = useRemediateResource();
   const queuedRemediations = useDashboardStore(
     (state) => state.queuedRemediations,
   );
@@ -68,11 +65,8 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
   const isQueued = queuedRemediations.includes(resource.id);
   const queuedPr = queuedRemediationPrs[resource.id];
   const isReviewing = reviewingRemediations.includes(resource.id);
-  const isMutating =
-    remediate.isPending &&
-    remediate.variables?.resourceId === resource.id;
 
-  async function handleRemediate() {
+  function handleRemediate() {
     setReviewingRemediation(resource.id);
     triggerAdvisorPrompt(`Request PR proposal for ${resource.resourceName}`, resource);
   }
@@ -124,7 +118,7 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
         <p className="text-xs text-muted-foreground">
           1-click remediation · {resource.recommendedAction.actionType}
         </p>
-        {isQueued && !isMutating ? (
+        {isQueued ? (
           <Button
             size="sm"
             disabled
@@ -144,16 +138,10 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
           <Button
             size="sm"
             onClick={() => {
-              void handleRemediate();
+              handleRemediate();
             }}
-            disabled={isQueued || isMutating || isReviewing}
+            disabled={isQueued || isReviewing}
           >
-            {isMutating ? (
-              <Loader2
-                className="size-3.5 animate-spin motion-reduce:animate-none"
-                aria-hidden="true"
-              />
-            ) : null}
             {resource.recommendedAction.label}
           </Button>
         )}

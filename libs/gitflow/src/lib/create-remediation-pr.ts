@@ -5,7 +5,6 @@ import {
   type DraftPrResponse,
 } from './draft-pr';
 import {
-  DEFAULT_TERRAFORM_PATH,
   gitFlowEnvFromProcess,
   resolveGitFlowBranchName,
   resolveTerraformPath,
@@ -14,9 +13,7 @@ import {
 } from './gitflow-config';
 import { collectTombstoneTargets, tombstoneTargetedResource } from './hcl-tombstone';
 
-export const SANDBOX_STORAGE_PATH = DEFAULT_TERRAFORM_PATH;
-
-export const FALLBACK_SANDBOX_STORAGE = `# CloudPulse Monitored Storage
+const FALLBACK_SANDBOX_STORAGE = `# CloudPulse Monitored Storage
 resource "aws_ebs_volume" "cloudpulse_test_waste" {
   availability_zone = "eu-west-1a"
   size              = 1

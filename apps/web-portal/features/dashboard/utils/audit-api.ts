@@ -65,7 +65,7 @@ export async function fetchAuditStatus(deps: AuditApiDeps = {}) {
   try {
     const payload = await fetchJsonImpl(statusEndpoint(deps));
     return payload as { mode: 'SIMULATED' | 'LIVE'; profile?: string };
-  } catch (error) {
+  } catch {
     return { mode: 'SIMULATED' as const };
   }
 }
@@ -78,7 +78,7 @@ export async function fetchAuditSummary(
   try {
     const payload = await fetchJsonImpl(summaryEndpoint(deps));
     return CostAuditSummarySchema.parse(payload);
-  } catch (error) {
+  } catch {
     return MOCK_COST_AUDIT_SUMMARY;
   }
 }
@@ -97,7 +97,7 @@ export async function postRemediation(
       body: JSON.stringify(request),
     });
     return RemediationResponseSchema.parse(payload);
-  } catch (error) {
+  } catch {
     return simulate(request);
   }
 }

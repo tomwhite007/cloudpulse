@@ -1,11 +1,9 @@
 'use client';
 
-import type { RemediationRequestDto } from '@cloudpulse/api-contracts';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   fetchAuditSummary,
   fetchAuditStatus,
-  postRemediation,
   type AuditApiDeps,
 } from '../utils/audit-api';
 
@@ -29,20 +27,5 @@ export function useAuditSummary(deps?: AuditApiDeps) {
     queryFn: () => fetchAuditSummary(deps),
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
     refetchOnWindowFocus: false, // Don't refetch on window focus
-  });
-}
-
-export function useRemediateResource(deps?: AuditApiDeps) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (variables: { resourceId: string; actionId: string }) =>
-      postRemediation(variables, deps),
-    onSuccess: () => {
-      // Refresh the audit summary after a successful remediation queue
-      void queryClient.invalidateQueries({
-        queryKey: auditKeys.summary(),
-      });
-    },
   });
 }

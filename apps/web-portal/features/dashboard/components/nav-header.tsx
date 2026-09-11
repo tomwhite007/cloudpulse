@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useAuditSummary, useAuditStatus } from '../hooks/use-audit-data';
-import { useDashboardStore } from '../store/dashboard-store';
 
 export function NavHeader() {
   const { data: statusData } = useAuditStatus();

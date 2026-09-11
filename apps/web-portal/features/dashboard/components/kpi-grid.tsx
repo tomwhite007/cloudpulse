@@ -11,7 +11,6 @@ import {
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuditSummary, useAuditStatus } from '../hooks/use-audit-data';
 import { formatInteger, formatUsd } from '../utils/format';
 import type { KpiItem, KpiMetricKey, KpiTone } from './kpi-grid.types';
 
@@ -85,8 +84,6 @@ export function KpiGrid({
 }: {
   summary: CostAuditSummaryDto | undefined;
 }) {
-  const { data: statusData } = useAuditStatus();
-
   return (
     <section aria-label="FinOps KPI metrics">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
