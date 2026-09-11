@@ -1,13 +1,15 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   CostAuditSummaryDto,
-  MOCK_AUDIT_RESOURCES,
-  MOCK_COST_AUDIT_SUMMARY,
   RemediationRequestDto,
   RemediationRequestSchema,
   RemediationResponseDto,
 } from '@cloudpulse/api-contracts';
-import { ICloudAuditorService } from './cloud-auditor.interface';
+import {
+  MOCK_AUDIT_RESOURCES,
+  MOCK_COST_AUDIT_SUMMARY,
+} from '@cloudpulse/api-contracts/mocks';
+import { ICloudAuditorService } from '../app/cloud-auditor.interface';
 
 @Injectable()
 export class MockCloudAuditorService implements ICloudAuditorService {

@@ -28,13 +28,6 @@ export type DraftPrResponse = {
   prUrl: string;
 };
 
-export const SIMULATED_DRAFT_PR: DraftPrResponse = {
-  success: true,
-  simulated: true,
-  prNumber: 104,
-  prUrl: 'https://github.com/example/cloudpulse/pull/104',
-};
-
 export function isGitFlowDemoMode(
   env: Record<string, string | undefined>,
 ): boolean {

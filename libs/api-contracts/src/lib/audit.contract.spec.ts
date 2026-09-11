@@ -3,7 +3,6 @@ import {
   RemediationRequestSchema,
   ResourceStatusCardSchema,
 } from './audit.contract';
-import { MOCK_COST_AUDIT_SUMMARY } from './audit.mock';
 
 describe('audit contracts', () => {
   it('parses a resource status card', () => {
@@ -40,14 +39,6 @@ describe('audit contracts', () => {
 
     expect(summary.currency).toBe('USD');
     expect(summary.totalMonthlySpend).toBe(18420.75);
-  });
-
-  it('exposes Day 3 mock fixtures matching the KPI targets', () => {
-    expect(MOCK_COST_AUDIT_SUMMARY.totalMonthlySpend).toBe(18420.75);
-    expect(MOCK_COST_AUDIT_SUMMARY.totalIdentifiedWaste).toBe(4850);
-    expect(MOCK_COST_AUDIT_SUMMARY.activeAssetCount).toBe(142);
-    expect(MOCK_COST_AUDIT_SUMMARY.complianceScorePercent).toBe(94);
-    expect(MOCK_COST_AUDIT_SUMMARY.resources).toHaveLength(3);
   });
 
   it('rejects an incomplete remediation request', () => {

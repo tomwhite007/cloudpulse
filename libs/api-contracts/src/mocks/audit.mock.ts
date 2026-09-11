@@ -2,30 +2,53 @@ import {
   CostAuditSummaryDto,
   CostAuditSummarySchema,
   ResourceStatusCardDto,
-} from './audit.contract';
+  ResourceStatusCardSchema,
+} from '../lib/audit.contract';
 
-export const MOCK_AUDIT_RESOURCES: ResourceStatusCardDto[] = [
-  {
-    id: 'res-rds-prod-payments',
-    resourceName: 'prod-payments-aurora',
-    resourceType: 'RDS',
-    status: 'OVER_PROVISIONED',
-    region: 'us-east-1',
-    monthlyCost: 2840,
-    potentialMonthlySavings: 2100,
-    telemetrySummary:
-      'Avg CPU: 11% · Avg memory: 18% · db.r5.4xlarge over 14 days',
-    recommendedAction: {
-      actionId: 'act-resize-rds-r5-xlarge',
-      label: 'Resize Instance',
-      actionType: 'RESIZE',
-      terraformPatchPreview: `resource "aws_db_instance" "prod_payments" {
+const DEFAULT_RESOURCE: ResourceStatusCardDto = {
+  id: 'res-rds-prod-payments',
+  resourceName: 'prod-payments-aurora',
+  resourceType: 'RDS',
+  status: 'OVER_PROVISIONED',
+  region: 'us-east-1',
+  monthlyCost: 2840,
+  potentialMonthlySavings: 2100,
+  telemetrySummary:
+    'Avg CPU: 11% · Avg memory: 18% · db.r5.4xlarge over 14 days',
+  recommendedAction: {
+    actionId: 'act-resize-rds-r5-xlarge',
+    label: 'Resize Instance',
+    actionType: 'RESIZE',
+    terraformPatchPreview: `resource "aws_db_instance" "prod_payments" {
   instance_class    = "db.r5.xlarge" # was db.r5.4xlarge
   allocated_storage = 400
 }`,
-    },
   },
-  {
+};
+
+type MockResourceStatusCardOverrides = Partial<
+  Omit<ResourceStatusCardDto, 'recommendedAction'>
+> & {
+  recommendedAction?: Partial<ResourceStatusCardDto['recommendedAction']>;
+};
+
+export function createMockResourceStatusCard(
+  overrides: MockResourceStatusCardOverrides = {},
+): ResourceStatusCardDto {
+  const { recommendedAction, ...rest } = overrides;
+  return ResourceStatusCardSchema.parse({
+    ...DEFAULT_RESOURCE,
+    ...rest,
+    recommendedAction: {
+      ...DEFAULT_RESOURCE.recommendedAction,
+      ...recommendedAction,
+    },
+  });
+}
+
+export const MOCK_AUDIT_RESOURCES: ResourceStatusCardDto[] = [
+  createMockResourceStatusCard(),
+  createMockResourceStatusCard({
     id: 'res-ebs-analytics-scratch',
     resourceName: 'analytics-scratch-vol-08f2',
     resourceType: 'EBS',
@@ -42,8 +65,8 @@ export const MOCK_AUDIT_RESOURCES: ResourceStatusCardDto[] = [
       terraformPatchPreview: `# DELETE unattached volume vol-08f2abc (io2, 2TB, unused 42 days)
 # resource "aws_ebs_volume" "analytics_scratch" { ... }`,
     },
-  },
-  {
+  }),
+  createMockResourceStatusCard({
     id: 'res-ecs-staging-batch',
     resourceName: 'staging-batch-cluster',
     resourceType: 'ECS',
@@ -62,11 +85,13 @@ export const MOCK_AUDIT_RESOURCES: ResourceStatusCardDto[] = [
   # schedule: scale to 0 from 20:00-08:00 UTC on weekdays and all weekend
 }`,
     },
-  },
+  }),
 ];
 
-export const MOCK_COST_AUDIT_SUMMARY: CostAuditSummaryDto =
-  CostAuditSummarySchema.parse({
+export function createMockCostAuditSummary(
+  overrides: Partial<CostAuditSummaryDto> = {},
+): CostAuditSummaryDto {
+  return CostAuditSummarySchema.parse({
     totalMonthlySpend: 18420.75,
     currency: 'USD',
     totalIdentifiedWaste: 4850,
@@ -80,4 +105,9 @@ export const MOCK_COST_AUDIT_SUMMARY: CostAuditSummaryDto =
       { serviceName: 'AWS Lambda', amount: 1000 },
     ],
     resources: MOCK_AUDIT_RESOURCES,
+    ...overrides,
   });
+}
+
+export const MOCK_COST_AUDIT_SUMMARY: CostAuditSummaryDto =
+  createMockCostAuditSummary();

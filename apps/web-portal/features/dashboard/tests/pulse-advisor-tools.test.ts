@@ -1,7 +1,5 @@
-import {
-  MOCK_COST_AUDIT_SUMMARY,
-  type CostAuditSummaryDto,
-} from '@cloudpulse/api-contracts';
+import type { CostAuditSummaryDto } from '@cloudpulse/api-contracts';
+import { MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts/mocks';
 import { APICallError } from 'ai';
 import type { UIMessage } from 'ai';
 import { describe, expect, it, vi } from 'vitest';

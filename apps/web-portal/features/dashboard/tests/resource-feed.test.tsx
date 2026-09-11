@@ -1,4 +1,4 @@
-import { MOCK_AUDIT_RESOURCES } from '@cloudpulse/api-contracts';
+import { MOCK_AUDIT_RESOURCES } from '@cloudpulse/api-contracts/mocks';
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { ResourceFeed } from '../components/resource-feed';

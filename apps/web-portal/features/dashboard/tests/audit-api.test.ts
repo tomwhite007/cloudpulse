@@ -1,17 +1,17 @@
+import type { RemediationRequestDto } from '@cloudpulse/api-contracts';
 import {
   MOCK_AUDIT_RESOURCES,
   MOCK_COST_AUDIT_SUMMARY,
-  type RemediationRequestDto,
-} from '@cloudpulse/api-contracts';
+} from '@cloudpulse/api-contracts/mocks';
 import { describe, expect, it } from 'vitest';
 import {
   fetchAuditSummary,
   fetchJson,
   postRemediation,
   remediateEndpoint,
-  simulatedRemediation,
   summaryEndpoint,
 } from '../utils/audit-api';
+import { createMockRemediationResponse } from '../mocks/audit-api.mock';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -85,11 +85,11 @@ describe('fetchJson', () => {
   });
 });
 
-describe('simulatedRemediation', () => {
+describe('createMockRemediationResponse', () => {
   it('queues a matching 1-click action', () => {
     const queuedAt = '2026-09-04T12:00:00.000Z';
     expect(
-      simulatedRemediation(matchingRequest, { nowIso: queuedAt }),
+      createMockRemediationResponse(matchingRequest, { nowIso: queuedAt }),
     ).toEqual({
       success: true,
       resourceId: matchingRequest.resourceId,
@@ -102,7 +102,7 @@ describe('simulatedRemediation', () => {
   it('fails when the resource is unknown', () => {
     const queuedAt = '2026-09-04T12:00:00.000Z';
     expect(
-      simulatedRemediation(
+      createMockRemediationResponse(
         { resourceId: 'missing', actionId: 'act-x' },
         { nowIso: queuedAt },
       ),
@@ -115,7 +115,7 @@ describe('simulatedRemediation', () => {
   });
 
   it('fails when the action id does not match', () => {
-    const result = simulatedRemediation(
+    const result = createMockRemediationResponse(
       {
         resourceId: matchingRequest.resourceId,
         actionId: 'wrong-action',
@@ -139,7 +139,7 @@ describe('simulatedRemediation', () => {
     };
 
     expect(
-      simulatedRemediation(
+      createMockRemediationResponse(
         { resourceId: 'custom-rds', actionId: 'act-custom' },
         { resources: [custom], nowIso: queuedAt },
       ),
@@ -202,7 +202,7 @@ describe('postRemediation', () => {
         throw new Error('network down');
       },
       simulated: (request) =>
-        simulatedRemediation(request, { nowIso: '2026-09-04T12:00:00.000Z' }),
+        createMockRemediationResponse(request, { nowIso: '2026-09-04T12:00:00.000Z' }),
     });
     expect(result.success).toBe(true);
     expect(result.resourceId).toBe(matchingRequest.resourceId);

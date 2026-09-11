@@ -40,6 +40,7 @@ apps/web-portal/
         ├── components/           # presenters and the client island
         ├── hooks/                # TanStack Query hooks for auditor-api
         ├── store/                # Zustand (dashboard chrome only)
+        ├── mocks/                # canned data and fake models
         ├── utils/                # pure domain logic
         └── tests/                # isolated unit tests
 ```
@@ -54,6 +55,7 @@ Organize by domain feature, not by framework artifact type.
 - MUST NOT import another feature's private files. Cross-feature use goes through that feature's `index.ts`.
 - MUST enforce boundary rules and prevent internal deep-imports using `@nx/enforce-module-boundaries` or ESLint path rules.
 - MUST colocate a feature's presenters, Query hooks, and Zustand store under `features/<name>/`. MUST NOT add root `store/` or `hooks/` folders.
+- MUST put canned datasets and fake models in `features/<name>/mocks/`, not `utils/`. See mock-data-style.
 
 ## 2. RSC vs client
 

@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CLOUD_AUDITOR_SERVICE } from './cloud-auditor.interface';
-import { MockCloudAuditorService } from './mock-cloud-auditor.service';
+import { MockCloudAuditorService } from '../mocks/cloud-auditor.mock';
 import { AwsCloudAuditorService } from '../auditor/aws-cloud-auditor.service';
 import { applyLiveAwsEnv } from '../auditor/aws-client-config';
 import { McpModule } from '../mcp/mcp.module';

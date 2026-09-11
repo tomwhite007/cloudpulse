@@ -1,9 +1,9 @@
 import {
   CostAuditSummarySchema,
-  MOCK_COST_AUDIT_SUMMARY,
   type CostAuditSummaryDto,
   type ResourceStatusCardDto,
 } from '@cloudpulse/api-contracts';
+import { MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts/mocks';
 import {
   generateTombstoneDiffPreview,
   gitFlowEnvFromProcess,

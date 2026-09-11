@@ -1,9 +1,6 @@
 'use client';
 
-import {
-  MOCK_COST_AUDIT_SUMMARY,
-  type RemediationRequestDto,
-} from '@cloudpulse/api-contracts';
+import type { RemediationRequestDto } from '@cloudpulse/api-contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchAuditSummary,

@@ -11,6 +11,7 @@ Paths below are relative to `apps/auditor-api/`. This is a NestJS application.
 ## 1. Architecture
 - **Layered Architecture**: Enforce a strict layered architecture (Controller -> Service -> Repository).
 - **Controllers**: Avoid business logic in controllers. Controllers should only handle routing, extracting parameters/bodies, calling services, and returning responses.
+- **Mock services**: Fake implementations live in `src/mocks/*.mock.ts` and are wired only from module `useFactory`. See mock-data-style.
 
 ## 2. Data Transfer Objects (DTOs)
 - **Shared Contracts**: Enforce the use of `@cloudpulse/api-contracts` for request/response payloads. Controllers MUST type their bodies and responses using these shared contracts to maintain a single source of truth across the monorepo.

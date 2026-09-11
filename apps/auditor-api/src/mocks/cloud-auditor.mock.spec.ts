@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { MockCloudAuditorService } from './mock-cloud-auditor.service';
+import { MockCloudAuditorService } from './cloud-auditor.mock';
 
 describe('MockCloudAuditorService', () => {
   let service: MockCloudAuditorService;
@@ -29,7 +29,7 @@ describe('MockCloudAuditorService', () => {
     it('should simulate a successful remediation', async () => {
       const request: any = { resourceId: 'res-test-123', actionId: 'TERMINATE' };
       const response = await service.remediateResource(request);
-      
+
       expect(response).toBeDefined();
       expect(response.success).toEqual(false);
       expect(response.message).toContain('No matching 1-click remediation');

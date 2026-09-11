@@ -1,15 +1,13 @@
 import {
-  MOCK_AUDIT_RESOURCES,
-  MOCK_COST_AUDIT_SUMMARY,
   CostAuditSummarySchema,
   RemediationResponseSchema,
   type CostAuditSummaryDto,
   type RemediationRequestDto,
   type RemediationResponseDto,
-  type ResourceStatusCardDto,
 } from '@cloudpulse/api-contracts';
+import { MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts/mocks';
 import { env } from '@/lib/env';
-import type { AuditMode } from './filters';
+import { createMockRemediationResponse } from '../mocks/audit-api.mock';
 
 export const REQUEST_TIMEOUT_MS = 4000;
 
@@ -40,42 +38,11 @@ export async function fetchJson(
   return response.json();
 }
 
-export interface SimulatedRemediationDeps {
-  resources?: ResourceStatusCardDto[];
-  nowIso?: string;
-}
-
-export function simulatedRemediation(
-  request: RemediationRequestDto,
-  deps: SimulatedRemediationDeps = {},
-): RemediationResponseDto {
-  const resources = deps.resources ?? MOCK_AUDIT_RESOURCES;
-  const queuedAt = deps.nowIso ?? new Date().toISOString();
-  const resource = resources.find((item) => item.id === request.resourceId);
-  const actionMatches = resource?.recommendedAction.actionId === request.actionId;
-
-  if (!resource || !actionMatches) {
-    return {
-      success: false,
-      resourceId: request.resourceId,
-      message: `No matching 1-click remediation found for resource ${request.resourceId}.`,
-      queuedAt,
-    };
-  }
-
-  return {
-    success: true,
-    resourceId: request.resourceId,
-    message: `Queued ${resource.recommendedAction.label} for ${resource.resourceName}. Terraform patch will apply in the next plan.`,
-    queuedAt,
-  };
-}
-
 export interface AuditApiDeps {
   fetchJsonImpl?: typeof fetchJson;
   summaryUrl?: string;
   remediateUrl?: string;
-  simulated?: typeof simulatedRemediation;
+  simulated?: typeof createMockRemediationResponse;
 }
 
 export function summaryEndpoint(deps: AuditApiDeps = {}): string {
@@ -121,7 +88,7 @@ export async function postRemediation(
   deps: AuditApiDeps = {},
 ): Promise<RemediationResponseDto> {
   const fetchJsonImpl = deps.fetchJsonImpl ?? fetchJson;
-  const simulate = deps.simulated ?? simulatedRemediation;
+  const simulate = deps.simulated ?? createMockRemediationResponse;
 
   try {
     const payload = await fetchJsonImpl(remediateEndpoint(deps), {

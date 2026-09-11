@@ -3,8 +3,8 @@ import {
   draftPrRequestSchema,
   isGitFlowDemoMode,
   sanitizeBranchName,
-  SIMULATED_DRAFT_PR,
 } from './draft-pr';
+import { MOCK_DRAFT_PR } from '../mocks/draft-pr.mock';
 
 const validPayload = {
   resourceId: 'vol-0123456789abcdefg',
@@ -86,9 +86,9 @@ describe('sanitizeBranchName', () => {
   });
 });
 
-describe('SIMULATED_DRAFT_PR', () => {
+describe('MOCK_DRAFT_PR', () => {
   it('returns the deterministic demo pull request', () => {
-    expect(SIMULATED_DRAFT_PR).toEqual({
+    expect(MOCK_DRAFT_PR).toEqual({
       success: true,
       simulated: true,
       prNumber: 104,

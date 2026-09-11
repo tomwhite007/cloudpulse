@@ -2,7 +2,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { stepCountIs, streamText } from 'ai';
 import type { LanguageModel, UIMessage } from 'ai';
 import { fetchAuditStatus } from '@/features/dashboard/utils/audit-api';
-import { createDemoLanguageModel } from '@/features/dashboard/utils/pulse-advisor-demo-model';
+import { createMockAdvisorLanguageModel } from '@/features/dashboard/mocks/pulse-advisor-model.mock';
 import {
   buildAdvisorSystemPrompt,
   createAdvisorTools,
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     if (isDemoMode) {
       console.log(DEMO_MODE_NOTICE);
       return await streamAdvisorResponse({
-        model: createDemoLanguageModel(auditContext),
+        model: createMockAdvisorLanguageModel(auditContext),
         messages,
         auditContext,
       });
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
         );
         console.log(DEMO_MODE_NOTICE);
         return await streamAdvisorResponse({
-          model: createDemoLanguageModel(auditContext),
+          model: createMockAdvisorLanguageModel(auditContext),
           messages,
           auditContext,
         });

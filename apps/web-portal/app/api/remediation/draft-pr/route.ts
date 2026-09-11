@@ -2,8 +2,8 @@ import {
   createGitHubRemediationPr,
   draftPrRequestSchema,
   isGitFlowDemoMode,
-  SIMULATED_DRAFT_PR,
 } from '@cloudpulse/gitflow';
+import { MOCK_DRAFT_PR } from '@cloudpulse/gitflow/mocks';
 import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     }
 
     if (isGitFlowDemoMode(process.env)) {
-      return NextResponse.json(SIMULATED_DRAFT_PR);
+      return NextResponse.json(MOCK_DRAFT_PR);
     }
 
     const result = await createGitHubRemediationPr(parsed.data);

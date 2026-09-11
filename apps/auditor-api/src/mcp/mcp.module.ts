@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { McpController } from './mcp.controller';
 import { GitFlowMcpServer } from './gitflow-mcp.server';
-import { MockCloudAuditorService } from '../app/mock-cloud-auditor.service';
+import { MockCloudAuditorService } from '../mocks/cloud-auditor.mock';
 import { AwsCloudAuditorService } from '../auditor/aws-cloud-auditor.service';
 import { applyLiveAwsEnv } from '../auditor/aws-client-config';
 import { CLOUD_AUDITOR_SERVICE } from '../app/cloud-auditor.interface';

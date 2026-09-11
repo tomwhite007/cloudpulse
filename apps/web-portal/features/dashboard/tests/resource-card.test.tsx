@@ -1,4 +1,4 @@
-import { MOCK_AUDIT_RESOURCES } from '@cloudpulse/api-contracts';
+import { MOCK_AUDIT_RESOURCES } from '@cloudpulse/api-contracts/mocks';
 import { screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { ResourceCard } from '../components/resource-card';

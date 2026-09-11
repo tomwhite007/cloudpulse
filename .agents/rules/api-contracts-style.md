@@ -16,11 +16,11 @@ Paths below are relative to `libs/api-contracts/`. This library provides the sha
 - Infer TypeScript types from these schemas (`z.infer<typeof schema>`). Both the Next.js frontend and NestJS backend rely on these definitions.
 
 ## 3. Mock Data Generation
-- Co-locate mock data factories (e.g., `audit.mock.ts`) next to the contracts. These are invaluable for frontend Vitest suites and backend unit tests.
+- Fixtures live in `src/mocks/*.mock.ts` and export from `@cloudpulse/api-contracts/mocks`. See mock-data-style.
 
 ## 4. Exports & Barrel Files
 - Avoid a single monolithic `index.ts` barrel file that bundles mocks, schemas, and types together, as this can bloat builds.
 - Instead, use multiple specific entry points (e.g., configured in `package.json` `exports`):
   - An entry point for pure interfaces/types (which compile to nothing and vaporize correctly in TypeScript).
   - An entry point for runtime validation schemas (Zod).
-  - A separate entry point for testing mocks (e.g., `mock.ts` or `testing.ts`) so testing utilities don't leak into production bundles.
+  - A separate entry point for testing mocks (`@cloudpulse/api-contracts/mocks`) so testing utilities don't leak into production bundles.

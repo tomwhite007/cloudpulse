@@ -11,11 +11,11 @@ import {
   ADVISOR_REMEDIATION_TOOL,
   createProposalFromFinding,
   type RemediationProposal,
-} from './pulse-advisor-tools';
+} from '../utils/pulse-advisor-tools';
 
-export const DEMO_TOOL_FOLLOW_UP_TEXT = 'Tool execution complete.';
+export const MOCK_ADVISOR_FOLLOW_UP_TEXT = 'Tool execution complete.';
 
-const DEMO_USAGE: LanguageModelV4Usage = {
+const MOCK_ADVISOR_USAGE: LanguageModelV4Usage = {
   inputTokens: {
     total: 10,
     noCache: undefined,
@@ -29,12 +29,12 @@ const DEMO_USAGE: LanguageModelV4Usage = {
   },
 };
 
-export type DemoReply =
+export type MockAdvisorReply =
   | { kind: 'text'; text: string }
   | { kind: 'inspect'; text: string }
   | { kind: 'propose'; text: string; proposal: RemediationProposal };
 
-export function demoPromptUserText(prompt: LanguageModelV4Prompt): string {
+export function mockAdvisorPromptUserText(prompt: LanguageModelV4Prompt): string {
   const lastUser = [...prompt].reverse().find((message) => message.role === 'user');
   if (!lastUser || lastUser.role !== 'user') {
     return '';
@@ -46,7 +46,7 @@ export function demoPromptUserText(prompt: LanguageModelV4Prompt): string {
     .join('');
 }
 
-export function isDemoToolFollowUp(prompt: LanguageModelV4Prompt): boolean {
+export function isMockAdvisorToolFollowUp(prompt: LanguageModelV4Prompt): boolean {
   const last = prompt[prompt.length - 1];
   return last?.role === 'tool';
 }
@@ -57,10 +57,10 @@ function findZombie(findings: ResourceStatusCardDto[]): ResourceStatusCardDto | 
   );
 }
 
-export function selectDemoReply(
+export function selectMockAdvisorReply(
   lastMessageText: string,
   auditContext: CostAuditSummaryDto,
-): DemoReply {
+): MockAdvisorReply {
   const findings = auditContext.resources;
   const prMatch = lastMessageText.match(/Request PR proposal for (.+)/i);
 
@@ -158,7 +158,7 @@ function finishPart(
   return {
     type: 'finish',
     finishReason: { unified: reason, raw: reason },
-    usage: DEMO_USAGE,
+    usage: MOCK_ADVISOR_USAGE,
   };
 }
 
@@ -194,7 +194,7 @@ function toolCallParts(
   ];
 }
 
-export function buildDemoStreamParts(
+export function buildMockAdvisorStreamParts(
   prompt: LanguageModelV4Prompt,
   auditContext: CostAuditSummaryDto,
 ): LanguageModelV4StreamPart[] {
@@ -202,13 +202,16 @@ export function buildDemoStreamParts(
     { type: 'stream-start', warnings: [] },
   ];
 
-  if (isDemoToolFollowUp(prompt)) {
-    chunks.push(...textParts('text_followup', DEMO_TOOL_FOLLOW_UP_TEXT));
+  if (isMockAdvisorToolFollowUp(prompt)) {
+    chunks.push(...textParts('text_followup', MOCK_ADVISOR_FOLLOW_UP_TEXT));
     chunks.push(finishPart('stop'));
     return chunks;
   }
 
-  const reply = selectDemoReply(demoPromptUserText(prompt), auditContext);
+  const reply = selectMockAdvisorReply(
+    mockAdvisorPromptUserText(prompt),
+    auditContext,
+  );
   chunks.push(...textParts('text_demo', reply.text));
 
   if (reply.kind === 'propose') {
@@ -233,7 +236,7 @@ export function buildDemoStreamParts(
   return chunks;
 }
 
-export function createDemoLanguageModel(
+export function createMockAdvisorLanguageModel(
   auditContext: CostAuditSummaryDto,
 ): MockLanguageModelV4 {
   return new MockLanguageModelV4({
@@ -241,7 +244,7 @@ export function createDemoLanguageModel(
     modelId: 'mock-model',
     doStream: async ({ prompt }) => ({
       stream: simulateReadableStream({
-        chunks: buildDemoStreamParts(prompt, auditContext),
+        chunks: buildMockAdvisorStreamParts(prompt, auditContext),
         initialDelayInMs: null,
         chunkDelayInMs: null,
       }),

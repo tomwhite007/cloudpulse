@@ -1,4 +1,4 @@
-import { MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts';
+import { MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts/mocks';
 import { describe, expect, it } from 'vitest';
 import {
   advisorChatEndpoint,
