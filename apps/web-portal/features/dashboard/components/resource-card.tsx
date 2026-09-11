@@ -1,7 +1,7 @@
 import type { ResourceStatusCardDto } from '@cloudpulse/api-contracts';
 import { MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -61,9 +61,10 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
 
   return (
     <Card
+      aria-current={isReviewing ? true : undefined}
       className={cn(
         'relative overflow-hidden bg-card/80',
-        isReviewing && 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]',
+        isReviewing && 'ring-inset ring-2 ring-blue-400 bg-blue-500/10',
       )}
     >
       <span className={cn('absolute inset-y-0 left-0 w-1', severity.bar)} aria-hidden="true" />
@@ -106,15 +107,21 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
         <p className="text-xs text-muted-foreground">
           1-click remediation · {resource.recommendedAction.actionType}
         </p>
-        {isQueued ? (
-          <Button size="sm" disabled aria-label={`PR #${queuedPr?.prNumber ?? 104} Open`}>
-            ✓ PR #{queuedPr?.prNumber ?? 104} Open
-          </Button>
+        {isQueued && queuedPr ? (
+          <a
+            href={queuedPr.prUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={buttonVariants({ variant: 'outline', size: 'sm' })}
+          >
+            <span aria-hidden="true">✓ </span>
+            PR #{queuedPr.prNumber} Open
+          </a>
         ) : isReviewing ? (
           <Badge
             role="status"
             aria-live="polite"
-            className="border-blue-400/30 bg-blue-500/15 text-blue-300 animate-pulse"
+            className="border-blue-400/30 bg-blue-500/15 text-blue-300 animate-pulse motion-reduce:animate-none"
           >
             Reviewing in Advisor
           </Badge>

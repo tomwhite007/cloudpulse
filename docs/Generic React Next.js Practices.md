@@ -134,7 +134,7 @@ Use `next/link` for in-app routes, not a raw `<a>`. Use `next/image` for raster 
 
 ## Accessibility
 
-Semantic HTML (`button`, `label`, `nav`, headings in order) rather than clickable `div`s. Associate every form control with a visible `<label>` (or `aria-label` when a visible label would be noise). Keep flows keyboard-operable. Do not use `outline-none` without a visible `focus-visible` replacement. Honour `prefers-reduced-motion` for non-essential animation.
+Target **WCAG 2.1 Level AA**. Semantic HTML (`button`, `label`, `nav`, headings in order) rather than clickable `div`s. Associate every form control with a visible `<label>` (or `aria-label` when a visible label would be noise). Keep flows keyboard-operable. Do not use `outline-none` without a visible `focus-visible` replacement. Selection/context (for example a resource in Pulse Advisor) is not a focus ring: use inset treatment plus text, and keep offset rings on the actual control. Honour `prefers-reduced-motion` for non-essential animation. Axe WCAG 2.1 AA on composed presenters/pages, not isolated primitive atoms.
 
 ---
 

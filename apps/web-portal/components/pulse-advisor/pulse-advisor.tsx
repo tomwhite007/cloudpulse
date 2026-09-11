@@ -7,6 +7,17 @@ import type { AdvisorUIMessage } from '../../features/dashboard/utils/pulse-advi
 import { AdvisorMarkdown } from './advisor-markdown';
 import { RemediationProposalCard } from './remediation-proposal-card';
 
+const ADVISOR_FOCUS_RING =
+  'focus:outline-none focus:border-ring focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950';
+
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function scrollBehavior(): ScrollBehavior {
+  return prefersReducedMotion() ? 'auto' : 'smooth';
+}
+
 function renderAdvisorToolParts(message: AdvisorUIMessage): ReactNode {
   return message.parts.map((part) => {
     if (part.type === 'tool-proposeTerraformRemediation') {
@@ -16,7 +27,7 @@ function renderAdvisorToolParts(message: AdvisorUIMessage): ReactNode {
 
       return (
         <div key={part.toolCallId} className="mt-2 flex items-center gap-2 text-xs text-zinc-400">
-          <Loader2 className="size-3 animate-spin" />
+          <Loader2 className="size-3 animate-spin motion-reduce:animate-none" aria-hidden="true" />
           Generating remediation proposal...
         </div>
       );
@@ -30,9 +41,12 @@ function renderAdvisorToolParts(message: AdvisorUIMessage): ReactNode {
           className="mt-2 flex items-center gap-2 rounded-md bg-zinc-900/50 p-2 text-xs text-zinc-400 border border-white/5"
         >
           {done ? (
-            <CheckCircle className="size-3 text-emerald-400" />
+            <CheckCircle className="size-3 text-emerald-400" aria-hidden="true" />
           ) : (
-            <Loader2 className="size-3 animate-spin" />
+            <Loader2
+              className="size-3 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
           )}
           {done ? 'Analyzed Waste Summary' : 'Analyzing Waste Summary...'}
         </div>
@@ -48,13 +62,14 @@ export function PulseAdvisor() {
     useAdvisorChat();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const advisorPrompt = useDashboardStore((state) => state.advisorPrompt);
   const triggerAdvisorPrompt = useDashboardStore((state) => state.triggerAdvisorPrompt);
   const setReviewingRemediation = useDashboardStore((state) => state.setReviewingRemediation);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: scrollBehavior() });
   }, [messages.length, status]);
 
   useEffect(() => {
@@ -64,6 +79,11 @@ export function PulseAdvisor() {
         setReviewingRemediation(advisorPrompt.resource.id);
       }
       triggerAdvisorPrompt(null);
+      const panel = panelRef.current;
+      if (panel) {
+        panel.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+        panel.focus({ preventScroll: true });
+      }
     }
   }, [advisorPrompt, sendAdvisorMessage, triggerAdvisorPrompt, setReviewingRemediation]);
 
@@ -116,13 +136,17 @@ export function PulseAdvisor() {
 
   return (
     <div
+      ref={panelRef}
+      id="pulse-advisor"
       role="complementary"
       aria-label="PulseAdvisor AI Assistant"
-      className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/80 shadow-2xl backdrop-blur-xl"
+      // Landmark is a programmatic focus target after a resource CTA; -1 keeps it out of the tab order.
+      tabIndex={-1}
+      className="flex h-[calc(100vh-8rem)] scroll-mt-20 flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/80 shadow-2xl backdrop-blur-xl"
     >
       <div className="flex items-center gap-3 border-b border-white/10 p-4">
         <div className="flex size-8 items-center justify-center rounded-full bg-blue-600/20 text-blue-400">
-          <Bot className="size-5" />
+          <Bot className="size-5" aria-hidden="true" />
         </div>
         <div className="flex-1">
           <h2 className="text-lg font-semibold text-white">PulseAdvisor</h2>
@@ -130,11 +154,12 @@ export function PulseAdvisor() {
         </div>
         {messages.length > 0 && (
           <button
+            type="button"
             onClick={handleReset}
-            className="flex items-center gap-2 rounded-lg border border-white/10 bg-zinc-800/50 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white focus:outline-none"
+            className={`flex items-center gap-2 rounded-lg border border-white/10 bg-zinc-800/50 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white ${ADVISOR_FOCUS_RING}`}
             aria-label="Clear chat"
           >
-            <RefreshCcw className="size-3.5" />
+            <RefreshCcw className="size-3.5" aria-hidden="true" />
             Clear
           </button>
         )}
@@ -143,7 +168,7 @@ export function PulseAdvisor() {
       <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-zinc-700">
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-center text-zinc-400">
-            <Bot className="mb-4 size-12 opacity-50" />
+            <Bot className="mb-4 size-12 opacity-50" aria-hidden="true" />
             <p className="max-w-[250px] text-sm">
               I can analyze your cloud waste and help you automatically remediate it. How can I help
               today?
@@ -158,7 +183,7 @@ export function PulseAdvisor() {
               >
                 {message.role !== 'user' && (
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400">
-                    <Bot className="size-5" />
+                    <Bot className="size-5" aria-hidden="true" />
                   </div>
                 )}
                 <div
@@ -178,15 +203,19 @@ export function PulseAdvisor() {
               </div>
             ))}
             {isLoading && messages[messages.length - 1]?.role === 'user' && (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3" role="status" aria-live="polite">
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400">
-                  <Bot className="size-5" />
+                  <Bot className="size-5" aria-hidden="true" />
                 </div>
-                <div className="flex items-center gap-1 rounded-2xl rounded-tl-sm bg-zinc-800/80 px-4 py-4 border border-white/5">
-                  <div className="size-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-0.3s]"></div>
-                  <div className="size-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-0.15s]"></div>
-                  <div className="size-1.5 animate-bounce rounded-full bg-zinc-500"></div>
+                <div
+                  className="flex items-center gap-1 rounded-2xl rounded-tl-sm bg-zinc-800/80 px-4 py-4 border border-white/5"
+                  aria-hidden="true"
+                >
+                  <div className="size-1.5 animate-bounce rounded-full bg-zinc-500 motion-reduce:animate-none [animation-delay:-0.3s]"></div>
+                  <div className="size-1.5 animate-bounce rounded-full bg-zinc-500 motion-reduce:animate-none [animation-delay:-0.15s]"></div>
+                  <div className="size-1.5 animate-bounce rounded-full bg-zinc-500 motion-reduce:animate-none"></div>
                 </div>
+                <span className="sr-only">PulseAdvisor is responding</span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -200,8 +229,9 @@ export function PulseAdvisor() {
             {promptPills.map((pill) => (
               <button
                 key={pill}
+                type="button"
                 onClick={() => onPillClick(pill)}
-                className="rounded-full border border-white/10 bg-zinc-800/50 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white focus:outline-none"
+                className={`rounded-full border border-white/10 bg-zinc-800/50 px-3 py-1.5 text-xs text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white ${ADVISOR_FOCUS_RING}`}
               >
                 {pill}
               </button>
@@ -216,16 +246,18 @@ export function PulseAdvisor() {
             type="text"
             value={input || ''}
             onChange={handleInputChange}
+            aria-label="Ask PulseAdvisor about infrastructure waste"
             placeholder="Ask about your infrastructure waste..."
-            className="w-full rounded-xl border border-white/10 bg-zinc-900 py-3 pl-4 pr-12 text-sm text-white placeholder:text-zinc-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+            className={`w-full rounded-xl border border-white/10 bg-zinc-900 py-3 pl-4 pr-12 text-sm text-white placeholder:text-zinc-400 ${ADVISOR_FOCUS_RING} transition-all`}
             disabled={isLoading}
           />
           <button
             type="submit"
             disabled={isLoading || !(input || '').trim()}
-            className="absolute right-2 flex size-8 items-center justify-center rounded-lg bg-blue-600 text-white transition-colors hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600"
+            aria-label="Send message"
+            className={`absolute right-2 flex size-8 items-center justify-center rounded-lg bg-blue-600 text-white transition-colors hover:bg-blue-500 disabled:opacity-50 disabled:hover:bg-blue-600 ${ADVISOR_FOCUS_RING}`}
           >
-            <Send className="size-4" />
+            <Send className="size-4" aria-hidden="true" />
           </button>
         </form>
       </div>

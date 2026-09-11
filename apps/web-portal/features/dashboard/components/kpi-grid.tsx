@@ -28,14 +28,7 @@ const KPI_ITEMS: readonly KpiItem[] = [
     format: (summary) => formatUsd(summary.totalMonthlySpend),
     hint: (summary) => {
       if (summary.totalMonthlySpend === 0 && summary.totalIdentifiedWaste > 0) {
-        return (
-          <span
-            title="New or low-spend account; waste is projected run-rate"
-            className="cursor-help border-b border-dashed border-muted-foreground/50"
-          >
-            Trailing 30d invoice ($0.00 recorded)
-          </span>
-        );
+        return 'Trailing 30d invoice ($0.00 recorded). New or low-spend account; waste is projected run-rate.';
       }
       return 'Trailing 30-day cloud invoice';
     },
@@ -108,6 +101,7 @@ export function KpiGrid({ summary }: { summary: CostAuditSummaryDto | undefined 
                   summary.activeAssetCount > 0 ? (
                     <Progress
                       value={summary.complianceScorePercent}
+                      aria-label={`FinOps compliance score ${summary.complianceScorePercent} percent`}
                       trackClassName={
                         summary.complianceScorePercent === 0 ? 'bg-rose-500/20' : undefined
                       }

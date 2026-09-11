@@ -2,7 +2,12 @@ import { screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { RemediationProposalCard } from '@/components/pulse-advisor/remediation-proposal-card';
 import { useDashboardStore } from '../store/dashboard-store';
-import { clickControl, renderPresenter, usePresenterTestLifecycle } from './presenter-harness';
+import {
+  assertNoAxeViolations,
+  clickControl,
+  renderPresenter,
+  usePresenterTestLifecycle,
+} from './presenter-harness';
 
 usePresenterTestLifecycle();
 
@@ -77,5 +82,10 @@ describe('RemediationProposalCard', () => {
     });
 
     expect(await screen.findByRole('link', { name: /Open PR #104/ })).toBeDefined();
+  });
+
+  it('has no WCAG 2.1 AA axe violations', async () => {
+    const { container } = await renderPresenter(<RemediationProposalCard {...proposal} />);
+    await assertNoAxeViolations(container);
   });
 });

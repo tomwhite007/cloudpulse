@@ -2,7 +2,12 @@ import { MOCK_AUDIT_RESOURCES } from '@cloudpulse/api-contracts/mocks';
 import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { ResourceFeed } from '../components/resource-feed';
-import { clickControl, renderPresenter, usePresenterTestLifecycle } from './presenter-harness';
+import {
+  assertNoAxeViolations,
+  clickControl,
+  renderPresenter,
+  usePresenterTestLifecycle,
+} from './presenter-harness';
 
 usePresenterTestLifecycle();
 
@@ -40,5 +45,10 @@ describe('ResourceFeed', () => {
         name: 'No resources match the current filters.',
       }),
     ).toBeDefined();
+  });
+
+  it('has no WCAG 2.1 AA axe violations', async () => {
+    const { container } = await renderPresenter(<ResourceFeed resources={MOCK_AUDIT_RESOURCES} />);
+    await assertNoAxeViolations(container);
   });
 });

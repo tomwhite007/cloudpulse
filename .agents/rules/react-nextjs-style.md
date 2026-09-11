@@ -36,5 +36,6 @@ features/dashboard/
 - Zustand holds dashboard chrome only (filters, queued PR ids). Filters are not URL state.
 - PulseAdvisor demo: `isPulseAdvisorDemoMode` (`DEMO_MODE`, missing Anthropic key, or auditor not `LIVE`). Do not rename `DEMO_MODE` / `USE_LIVE_AWS` / `SIMULATED`|`LIVE`.
 - Chat and draft-PR are Route Handlers, not Server Actions. Draft-PR uses Zod + `fetch` + sonner. Do not add a second fetch library.
-- Tests: `features/*/tests/*.test.ts(x)`, colocated `app/api/**/route.test.ts` and `lib/*.test.ts`, page RTL in `specs/`. Query with `getByRole` / `getByLabelText`. Prefer DI over `vi.mock()`.
+- Tests: `features/*/tests/*.test.ts(x)`, colocated `app/api/**/route.test.ts` and `lib/*.test.ts`, page RTL in `specs/`. Query with `getByRole` / `getByLabelText`. Prefer DI over `vi.mock()`. Axe WCAG 2.1 AA on composed presenters/pages (`assertNoAxeViolations`), not shadcn atoms.
+- Target **WCAG 2.1 Level AA**. Semantic HTML, labelled controls, keyboard operability, visible `focus-visible` (never `outline-none` alone). Advisor-reviewing cards use inset ring + wash + text; focus rings stay offset on the control. Honour `prefers-reduced-motion`.
 - Public env only via Zod `lib/env.ts` (`NEXT_PUBLIC_AUDITOR_API_URL`). Secrets are server-only, never `NEXT_PUBLIC_`.

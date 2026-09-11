@@ -15,9 +15,15 @@ export function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      <a
+        href="#main"
+        className="absolute left-4 top-4 z-50 -translate-y-[200%] rounded-md bg-background px-3 py-2 text-sm font-medium text-foreground ring-2 ring-ring ring-offset-2 ring-offset-background focus:translate-y-0"
+      >
+        Skip to main content
+      </a>
       <NavHeader />
       <div className="mx-auto flex max-w-[1600px] flex-col gap-6 px-4 py-6 lg:flex-row lg:items-start sm:px-6">
-        <main className="min-w-0 space-y-6 lg:w-2/3">
+        <main id="main" className="min-w-0 space-y-6 lg:w-2/3">
           <KpiGrid summary={summary} />
           <ResourceFeed resources={resources} />
         </main>

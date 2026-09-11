@@ -91,7 +91,7 @@ export function RemediationProposalCard({
         </div>
         {branchName && (
           <div className="flex items-center gap-2">
-            <GitBranch className="size-4 text-blue-400" />
+            <GitBranch className="size-4 text-blue-400" aria-hidden="true" />
             <code className="rounded bg-blue-500/20 px-1.5 py-0.5 text-xs text-blue-300">
               git checkout -b {branchName}
             </code>
@@ -106,7 +106,7 @@ export function RemediationProposalCard({
               key={idx}
               className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-300"
             >
-              <ShieldCheck className="size-3" />
+              <ShieldCheck className="size-3" aria-hidden="true" />
               {check}
             </span>
           ))}
@@ -128,9 +128,9 @@ export function RemediationProposalCard({
             href={draftState.prUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+            className="flex items-center gap-2 rounded-lg bg-emerald-500/20 px-4 py-2 text-sm font-medium text-emerald-400 transition-colors hover:bg-emerald-500/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
           >
-            <CheckCircle className="size-4" />
+            <CheckCircle className="size-4" aria-hidden="true" />
             Open PR #{draftState.prNumber} ↗
           </a>
         ) : (
@@ -140,7 +140,7 @@ export function RemediationProposalCard({
             }}
             disabled={draftState.status === 'loading'}
             aria-busy={draftState.status === 'loading'}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900 transition-all active:scale-95 disabled:cursor-wait disabled:opacity-80"
+            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900 transition-all active:scale-95 disabled:cursor-wait disabled:opacity-80"
           >
             {draftState.status === 'loading' ? (
               <>
