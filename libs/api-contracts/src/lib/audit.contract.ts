@@ -1,17 +1,17 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 export const RecommendedActionSchema = z.object({
   actionId: z.string(),
   label: z.string(),
-  actionType: z.enum(["RESIZE", "TERMINATE", "SCHEDULE_SLEEP"]),
+  actionType: z.enum(['RESIZE', 'TERMINATE', 'SCHEDULE_SLEEP']),
   terraformPatchPreview: z.string(),
 });
 
 export const ResourceStatusCardSchema = z.object({
   id: z.string(),
   resourceName: z.string(),
-  resourceType: z.enum(["RDS", "EBS", "ECS", "EC2", "LAMBDA"]),
-  status: z.enum(["HEALTHY", "IDLE", "OVER_PROVISIONED", "ZOMBIE"]),
+  resourceType: z.enum(['RDS', 'EBS', 'ECS', 'EC2', 'LAMBDA']),
+  status: z.enum(['HEALTHY', 'IDLE', 'OVER_PROVISIONED', 'ZOMBIE']),
   region: z.string(),
   monthlyCost: z.number(),
   potentialMonthlySavings: z.number(),
@@ -26,7 +26,7 @@ export const SpendCategorySchema = z.object({
 
 export const CostAuditSummarySchema = z.object({
   totalMonthlySpend: z.number(),
-  currency: z.literal("USD"),
+  currency: z.literal('USD'),
   totalIdentifiedWaste: z.number(),
   activeAssetCount: z.number(),
   complianceScorePercent: z.number(),
@@ -54,7 +54,7 @@ export type RemediationRequestDto = z.infer<typeof RemediationRequestSchema>;
 export type RemediationResponseDto = z.infer<typeof RemediationResponseSchema>;
 
 export const AuditStatusSchema = z.object({
-  mode: z.enum(["SIMULATED", "LIVE"]),
+  mode: z.enum(['SIMULATED', 'LIVE']),
   profile: z.string().optional(),
 });
 export type AuditStatusDto = z.infer<typeof AuditStatusSchema>;

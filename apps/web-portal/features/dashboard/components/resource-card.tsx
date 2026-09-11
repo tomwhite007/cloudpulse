@@ -46,21 +46,11 @@ const SEVERITY_STYLES: Record<ResourceStatusCardDto['status'], SeverityStyle> = 
 };
 
 export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) {
-  const queuedRemediations = useDashboardStore(
-    (state) => state.queuedRemediations,
-  );
-  const queuedRemediationPrs = useDashboardStore(
-    (state) => state.queuedRemediationPrs,
-  );
-  const triggerAdvisorPrompt = useDashboardStore(
-    (state) => state.triggerAdvisorPrompt,
-  );
-  const reviewingRemediations = useDashboardStore(
-    (state) => state.reviewingRemediations,
-  );
-  const setReviewingRemediation = useDashboardStore(
-    (state) => state.setReviewingRemediation,
-  );
+  const queuedRemediations = useDashboardStore((state) => state.queuedRemediations);
+  const queuedRemediationPrs = useDashboardStore((state) => state.queuedRemediationPrs);
+  const triggerAdvisorPrompt = useDashboardStore((state) => state.triggerAdvisorPrompt);
+  const reviewingRemediations = useDashboardStore((state) => state.reviewingRemediations);
+  const setReviewingRemediation = useDashboardStore((state) => state.setReviewingRemediation);
   const severity = SEVERITY_STYLES[resource.status];
   const isQueued = queuedRemediations.includes(resource.id);
   const queuedPr = queuedRemediationPrs[resource.id];
@@ -72,11 +62,13 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
   }
 
   return (
-    <Card className={cn("relative overflow-hidden bg-card/80", isReviewing && "border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]")}>
-      <span
-        className={cn('absolute inset-y-0 left-0 w-1', severity.bar)}
-        aria-hidden="true"
-      />
+    <Card
+      className={cn(
+        'relative overflow-hidden bg-card/80',
+        isReviewing && 'border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]',
+      )}
+    >
+      <span className={cn('absolute inset-y-0 left-0 w-1', severity.bar)} aria-hidden="true" />
       <CardHeader className="pl-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -102,9 +94,7 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
         <div className="flex flex-wrap gap-4 text-xs">
           <p>
             <span className="text-muted-foreground">Monthly cost </span>
-            <span className="font-medium text-foreground">
-              {formatUsd(resource.monthlyCost)}
-            </span>
+            <span className="font-medium text-foreground">{formatUsd(resource.monthlyCost)}</span>
           </p>
           <p>
             <span className="text-muted-foreground">Potential savings </span>
@@ -119,11 +109,7 @@ export function ResourceCard({ resource }: { resource: ResourceStatusCardDto }) 
           1-click remediation · {resource.recommendedAction.actionType}
         </p>
         {isQueued ? (
-          <Button
-            size="sm"
-            disabled
-            aria-label={`PR #${queuedPr?.prNumber ?? 104} Open`}
-          >
+          <Button size="sm" disabled aria-label={`PR #${queuedPr?.prNumber ?? 104} Open`}>
             ✓ PR #{queuedPr?.prNumber ?? 104} Open
           </Button>
         ) : isReviewing ? (

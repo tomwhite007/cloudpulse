@@ -16,14 +16,8 @@ export default defineConfig(() => ({
         root,
         '../../libs/api-contracts/src/mocks/index.ts',
       ),
-      '@cloudpulse/api-contracts': resolve(
-        root,
-        '../../libs/api-contracts/src/index.ts',
-      ),
-      '@cloudpulse/gitflow/mocks': resolve(
-        root,
-        '../../libs/gitflow/src/mocks/index.ts',
-      ),
+      '@cloudpulse/api-contracts': resolve(root, '../../libs/api-contracts/src/index.ts'),
+      '@cloudpulse/gitflow/mocks': resolve(root, '../../libs/gitflow/src/mocks/index.ts'),
       '@cloudpulse/gitflow': resolve(root, '../../libs/gitflow/src/index.ts'),
     },
   },

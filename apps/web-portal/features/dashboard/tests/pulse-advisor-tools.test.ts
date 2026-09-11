@@ -36,9 +36,7 @@ function userMessage(text: string): UIMessage {
 
 describe('parseAuditContext', () => {
   it('returns a valid audit summary unchanged', () => {
-    expect(parseAuditContext(MOCK_COST_AUDIT_SUMMARY)).toEqual(
-      MOCK_COST_AUDIT_SUMMARY,
-    );
+    expect(parseAuditContext(MOCK_COST_AUDIT_SUMMARY)).toEqual(MOCK_COST_AUDIT_SUMMARY);
   });
 
   it('falls back to the mock summary when the payload is invalid', () => {
@@ -137,15 +135,11 @@ async function executePropose(
 
 describe('createAdvisorTools', () => {
   it('returns the current audit summary from inspectWasteSummary', async () => {
-    await expect(executeInspect(MOCK_COST_AUDIT_SUMMARY)).resolves.toEqual(
-      MOCK_COST_AUDIT_SUMMARY,
-    );
+    await expect(executeInspect(MOCK_COST_AUDIT_SUMMARY)).resolves.toEqual(MOCK_COST_AUDIT_SUMMARY);
   });
 
   it('aligns proposeTerraformRemediation output and defaults isSimulated', async () => {
-    const proposal = createProposalFromFinding(
-      MOCK_COST_AUDIT_SUMMARY.resources[1],
-    );
+    const proposal = createProposalFromFinding(MOCK_COST_AUDIT_SUMMARY.resources[1]);
     const { isSimulated, ...params } = proposal;
     expect(isSimulated).toBe(true);
     const output = await executePropose(MOCK_COST_AUDIT_SUMMARY, params);
@@ -155,9 +149,7 @@ describe('createAdvisorTools', () => {
   });
 
   it('preserves an explicit isSimulated flag', async () => {
-    const proposal = createProposalFromFinding(
-      MOCK_COST_AUDIT_SUMMARY.resources[1],
-    );
+    const proposal = createProposalFromFinding(MOCK_COST_AUDIT_SUMMARY.resources[1]);
     const output = await executePropose(MOCK_COST_AUDIT_SUMMARY, proposal);
     expect(output.isSimulated).toBe(true);
   });
@@ -181,9 +173,7 @@ describe('toFallbackModelMessages', () => {
 
 describe('toAdvisorModelMessages', () => {
   it('converts UI messages with parts', async () => {
-    const converted = await toAdvisorModelMessages([
-      userMessage('Find zombie storage'),
-    ]);
+    const converted = await toAdvisorModelMessages([userMessage('Find zombie storage')]);
     expect(converted.length).toBeGreaterThan(0);
     expect(converted[0]?.role).toBe('user');
   });
@@ -196,9 +186,7 @@ describe('toAdvisorModelMessages', () => {
         throw new Error('cannot convert');
       },
     );
-    expect(converted).toEqual([
-      { role: 'user', content: 'Find zombie storage' },
-    ]);
+    expect(converted).toEqual([{ role: 'user', content: 'Find zombie storage' }]);
     expect(warn).toHaveBeenCalled();
     warn.mockRestore();
   });

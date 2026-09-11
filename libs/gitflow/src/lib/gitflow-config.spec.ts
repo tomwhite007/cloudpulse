@@ -32,9 +32,7 @@ describe('resolveTerraformPath', () => {
   });
 
   it('ignores a blank override', () => {
-    expect(resolveTerraformPath({ GITFLOW_TERRAFORM_PATH: '   ' })).toBe(
-      DEFAULT_TERRAFORM_PATH,
-    );
+    expect(resolveTerraformPath({ GITFLOW_TERRAFORM_PATH: '   ' })).toBe(DEFAULT_TERRAFORM_PATH);
   });
 });
 
@@ -44,17 +42,13 @@ describe('resolveBranchPrefix', () => {
   });
 
   it('strips slashes from a custom prefix', () => {
-    expect(resolveBranchPrefix({ GITFLOW_BRANCH_PREFIX: '/cloudpulse/' })).toBe(
-      'cloudpulse',
-    );
+    expect(resolveBranchPrefix({ GITFLOW_BRANCH_PREFIX: '/cloudpulse/' })).toBe('cloudpulse');
   });
 });
 
 describe('lastBranchSegment', () => {
   it('strips an existing folder so a new prefix can be applied', () => {
-    expect(lastBranchSegment('finops/terminate-vol-0123456789')).toBe(
-      'terminate-vol-0123456789',
-    );
+    expect(lastBranchSegment('finops/terminate-vol-0123456789')).toBe('terminate-vol-0123456789');
   });
 });
 
@@ -72,9 +66,7 @@ describe('interpolateBranchTemplate', () => {
 
 describe('resolveGitFlowBranchName', () => {
   it('re-applies the default prefix to the advisor suffix', () => {
-    expect(resolveGitFlowBranchName(draftInput, {})).toBe(
-      'finops/terminate-vol-0123456789',
-    );
+    expect(resolveGitFlowBranchName(draftInput, {})).toBe('finops/terminate-vol-0123456789');
   });
 
   it('replaces the folder when GITFLOW_BRANCH_PREFIX is set', () => {
@@ -97,9 +89,7 @@ describe('resolveGitFlowBranchName', () => {
 
 describe('slugResourceName', () => {
   it('lowercases and hyphenates the resource name', () => {
-    expect(slugResourceName('CloudPulse Test Waste')).toBe(
-      'cloudpulse-test-waste',
-    );
+    expect(slugResourceName('CloudPulse Test Waste')).toBe('cloudpulse-test-waste');
   });
 });
 

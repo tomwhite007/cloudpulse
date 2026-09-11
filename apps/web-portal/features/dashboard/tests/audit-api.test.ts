@@ -1,8 +1,5 @@
 import type { RemediationRequestDto } from '@cloudpulse/api-contracts';
-import {
-  MOCK_AUDIT_RESOURCES,
-  MOCK_COST_AUDIT_SUMMARY,
-} from '@cloudpulse/api-contracts/mocks';
+import { MOCK_AUDIT_RESOURCES, MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts/mocks';
 import { describe, expect, it } from 'vitest';
 import {
   fetchAuditSummary,
@@ -39,15 +36,13 @@ describe('summaryEndpoint', () => {
 
 describe('remediateEndpoint', () => {
   it('uses the env API base by default', () => {
-    expect(remediateEndpoint()).toBe(
-      'http://localhost:3000/api/audit/remediate',
-    );
+    expect(remediateEndpoint()).toBe('http://localhost:3000/api/audit/remediate');
   });
 
   it('prefers an explicit remediate URL', () => {
-    expect(
-      remediateEndpoint({ remediateUrl: 'https://auditor.test/remediate' }),
-    ).toBe('https://auditor.test/remediate');
+    expect(remediateEndpoint({ remediateUrl: 'https://auditor.test/remediate' })).toBe(
+      'https://auditor.test/remediate',
+    );
   });
 });
 
@@ -73,11 +68,7 @@ describe('fetchJson', () => {
       return jsonResponse({});
     };
 
-    await fetchJson(
-      'http://example.test/summary',
-      { method: 'GET' },
-      { fetchImpl, timeoutMs: 25 },
-    );
+    await fetchJson('http://example.test/summary', { method: 'GET' }, { fetchImpl, timeoutMs: 25 });
 
     expect(received?.cache).toBe('no-store');
     expect(received?.signal).toBeInstanceOf(AbortSignal);
@@ -88,9 +79,7 @@ describe('fetchJson', () => {
 describe('createMockRemediationResponse', () => {
   it('queues a matching 1-click action', () => {
     const queuedAt = '2026-09-04T12:00:00.000Z';
-    expect(
-      createMockRemediationResponse(matchingRequest, { nowIso: queuedAt }),
-    ).toEqual({
+    expect(createMockRemediationResponse(matchingRequest, { nowIso: queuedAt })).toEqual({
       success: true,
       resourceId: matchingRequest.resourceId,
       message:
@@ -146,8 +135,7 @@ describe('createMockRemediationResponse', () => {
     ).toEqual({
       success: true,
       resourceId: 'custom-rds',
-      message:
-        'Queued Resize Custom for custom-rds. Terraform patch will apply in the next plan.',
+      message: 'Queued Resize Custom for custom-rds. Terraform patch will apply in the next plan.',
       queuedAt,
     });
   });
@@ -158,9 +146,7 @@ describe('fetchAuditSummary', () => {
     const summary = await fetchAuditSummary({
       fetchJsonImpl: async () => MOCK_COST_AUDIT_SUMMARY,
     });
-    expect(summary.totalMonthlySpend).toBe(
-      MOCK_COST_AUDIT_SUMMARY.totalMonthlySpend,
-    );
+    expect(summary.totalMonthlySpend).toBe(MOCK_COST_AUDIT_SUMMARY.totalMonthlySpend);
   });
 
   it('falls back to the mock summary when network fails', async () => {
@@ -171,8 +157,6 @@ describe('fetchAuditSummary', () => {
     });
     expect(summary).toEqual(MOCK_COST_AUDIT_SUMMARY);
   });
-
-
 
   it('falls back when the payload fails Zod', async () => {
     const summary = await fetchAuditSummary({
@@ -217,6 +201,4 @@ describe('postRemediation', () => {
     expect(result.success).toBe(true);
     expect(result.resourceId).toBe(matchingRequest.resourceId);
   });
-
-
 });

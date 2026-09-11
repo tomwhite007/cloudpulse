@@ -42,13 +42,9 @@ export function NavHeader() {
                 </Badge>
               )}
             </div>
-            <p className="hidden text-xs text-muted-foreground sm:block">
-              FinOps control plane
-            </p>
+            <p className="hidden text-xs text-muted-foreground sm:block">FinOps control plane</p>
           </div>
         </div>
-
-
 
         <div className="flex min-w-0 items-center gap-2 justify-self-start text-xs text-muted-foreground md:justify-self-end">
           <Button
@@ -61,10 +57,7 @@ export function NavHeader() {
             aria-busy={isFetching}
           >
             <RefreshCw
-              className={cn(
-                'size-3.5',
-                isFetching && 'animate-spin motion-reduce:animate-none',
-              )}
+              className={cn('size-3.5', isFetching && 'animate-spin motion-reduce:animate-none')}
               aria-hidden="true"
             />
             Sync Telemetry
@@ -72,19 +65,14 @@ export function NavHeader() {
           <span
             className={cn(
               'size-2 shrink-0 rounded-full',
-              (isSimulated || statusData?.profile)
+              isSimulated || statusData?.profile
                 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]'
                 : 'bg-amber-400',
             )}
             aria-hidden="true"
           />
           <Cloud className="size-3.5 shrink-0" aria-hidden="true" />
-          <span
-            className="truncate"
-            role="status"
-            aria-live="polite"
-            aria-label={engineStatus}
-          >
+          <span className="truncate" role="status" aria-live="polite" aria-label={engineStatus}>
             {engineStatus}
           </span>
         </div>

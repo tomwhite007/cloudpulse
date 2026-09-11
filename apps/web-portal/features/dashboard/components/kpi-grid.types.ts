@@ -4,10 +4,7 @@ export type KpiTone = 'default' | 'warning' | 'success';
 
 export type KpiMetricKey = keyof Pick<
   CostAuditSummaryDto,
-  | 'totalMonthlySpend'
-  | 'totalIdentifiedWaste'
-  | 'activeAssetCount'
-  | 'complianceScorePercent'
+  'totalMonthlySpend' | 'totalIdentifiedWaste' | 'activeAssetCount' | 'complianceScorePercent'
 >;
 
 export interface KpiItem {

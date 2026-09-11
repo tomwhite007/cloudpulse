@@ -1,11 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  fetchAuditSummary,
-  fetchAuditStatus,
-  type AuditApiDeps,
-} from '../utils/audit-api';
+import { fetchAuditSummary, fetchAuditStatus, type AuditApiDeps } from '../utils/audit-api';
 
 export const auditKeys = {
   all: ['audit'] as const,

@@ -23,7 +23,7 @@ export function RemediationProposalCard({
   safetyChecks,
   isSimulated,
 }: RemediationProposal) {
-  const queueRemediation = useDashboardStore(state => state.queueRemediation);
+  const queueRemediation = useDashboardStore((state) => state.queueRemediation);
   const [draftState, setDraftState] = useState<DraftState>({ status: 'idle' });
 
   const handleApprove = async () => {
@@ -86,7 +86,7 @@ export function RemediationProposalCard({
           +${monthlySavingsUsd}/mo
         </span>
       </div>
-      
+
       <div className="mb-4 flex flex-col gap-2 text-sm text-zinc-300">
         <div>
           <span className="font-semibold text-white">Target Resource:</span> {resourceName}
@@ -104,14 +104,17 @@ export function RemediationProposalCard({
       {safetyChecks && safetyChecks.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
           {safetyChecks.map((check, idx) => (
-            <span key={idx} className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-300">
+            <span
+              key={idx}
+              className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-300"
+            >
               <ShieldCheck className="size-3" />
               {check}
             </span>
           ))}
         </div>
       )}
-      
+
       <div className="mb-4 overflow-hidden rounded-lg border border-zinc-700 bg-zinc-900">
         <div className="border-b border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-400">
           Terraform Patch Preview

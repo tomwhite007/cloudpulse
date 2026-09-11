@@ -56,10 +56,8 @@ export function filterResources(
 ): ResourceStatusCardDto[] {
   return resources.filter((resource) => {
     const matchesType =
-      filters.resourceType === 'ALL' ||
-      resource.resourceType === filters.resourceType;
-    const matchesStatus =
-      filters.status === 'all' || resource.status === filters.status;
+      filters.resourceType === 'ALL' || resource.resourceType === filters.resourceType;
+    const matchesStatus = filters.status === 'all' || resource.status === filters.status;
     return matchesType && matchesStatus;
   });
 }

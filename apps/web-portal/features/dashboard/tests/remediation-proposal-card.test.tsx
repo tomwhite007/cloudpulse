@@ -2,11 +2,7 @@ import { screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { RemediationProposalCard } from '@/components/pulse-advisor/remediation-proposal-card';
 import { useDashboardStore } from '../store/dashboard-store';
-import {
-  clickControl,
-  renderPresenter,
-  usePresenterTestLifecycle,
-} from './presenter-harness';
+import { clickControl, renderPresenter, usePresenterTestLifecycle } from './presenter-harness';
 
 usePresenterTestLifecycle();
 
@@ -40,9 +36,7 @@ describe('RemediationProposalCard', () => {
     await clickControl(screen.getByRole('button', { name: 'Draft Pull Request' }));
 
     const link = await screen.findByRole('link', { name: /Open PR #88/ });
-    expect(link.getAttribute('href')).toBe(
-      'https://github.com/tomwhite007/cloudpulse/pull/88',
-    );
+    expect(link.getAttribute('href')).toBe('https://github.com/tomwhite007/cloudpulse/pull/88');
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/remediation/draft-pr',
       expect.objectContaining({ method: 'POST' }),

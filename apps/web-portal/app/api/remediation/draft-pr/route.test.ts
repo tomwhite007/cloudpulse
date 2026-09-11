@@ -9,9 +9,7 @@ vi.mock('@/features/dashboard/utils/audit-api', () => ({
 }));
 
 vi.mock('@cloudpulse/gitflow', async () => {
-  const actual = await vi.importActual<typeof import('@cloudpulse/gitflow')>(
-    '@cloudpulse/gitflow',
-  );
+  const actual = await vi.importActual<typeof import('@cloudpulse/gitflow')>('@cloudpulse/gitflow');
   return {
     ...actual,
     createGitHubRemediationPr,

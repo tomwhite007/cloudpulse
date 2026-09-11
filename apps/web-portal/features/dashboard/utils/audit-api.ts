@@ -50,14 +50,13 @@ export function summaryEndpoint(deps: AuditApiDeps = {}): string {
 }
 
 export function remediateEndpoint(deps: AuditApiDeps = {}): string {
-  return (
-    deps.remediateUrl ??
-    `${env.NEXT_PUBLIC_AUDITOR_API_URL}/api/audit/remediate`
-  );
+  return deps.remediateUrl ?? `${env.NEXT_PUBLIC_AUDITOR_API_URL}/api/audit/remediate`;
 }
 
 export function statusEndpoint(deps: AuditApiDeps = {}): string {
-  return deps.summaryUrl ? deps.summaryUrl.replace('/summary', '/status') : `${env.NEXT_PUBLIC_AUDITOR_API_URL}/api/audit/status`;
+  return deps.summaryUrl
+    ? deps.summaryUrl.replace('/summary', '/status')
+    : `${env.NEXT_PUBLIC_AUDITOR_API_URL}/api/audit/status`;
 }
 
 export async function fetchAuditStatus(deps: AuditApiDeps = {}) {
@@ -70,9 +69,7 @@ export async function fetchAuditStatus(deps: AuditApiDeps = {}) {
   }
 }
 
-export async function fetchAuditSummary(
-  deps: AuditApiDeps = {},
-): Promise<CostAuditSummaryDto> {
+export async function fetchAuditSummary(deps: AuditApiDeps = {}): Promise<CostAuditSummaryDto> {
   const fetchJsonImpl = deps.fetchJsonImpl ?? fetchJson;
 
   try {

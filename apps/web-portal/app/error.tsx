@@ -11,9 +11,7 @@ export default function Error({
 }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 text-center">
-      <h1 className="text-lg font-semibold tracking-tight">
-        Something went wrong
-      </h1>
+      <h1 className="text-lg font-semibold tracking-tight">Something went wrong</h1>
       <p className="max-w-md text-sm text-muted-foreground">
         {error.message || 'The FinOps dashboard failed to load. Retry, or return later.'}
       </p>

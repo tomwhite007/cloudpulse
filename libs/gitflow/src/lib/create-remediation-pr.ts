@@ -1,9 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import {
-  buildRemediationPrBody,
-  type DraftPrRequest,
-  type DraftPrResponse,
-} from './draft-pr';
+import { buildRemediationPrBody, type DraftPrRequest, type DraftPrResponse } from './draft-pr';
 import {
   gitFlowEnvFromProcess,
   resolveGitFlowBranchName,
@@ -33,16 +29,10 @@ export async function createGitHubRemediationPr(
 ): Promise<DraftPrResponse> {
   const octokit = new Octokit({ auth: env.GITHUB_TOKEN });
   const repo = env.GITHUB_REPO_NAME || 'cloudpulse';
-  const owner =
-    env.GITHUB_REPO_OWNER ||
-    (await octokit.rest.users.getAuthenticated()).data.login;
+  const owner = env.GITHUB_REPO_OWNER || (await octokit.rest.users.getAuthenticated()).data.login;
   const terraformPath = resolveTerraformPath(env);
 
-  const { sha: baseSha, branch: baseBranch } = await resolveBaseBranch(
-    octokit,
-    owner,
-    repo,
-  );
+  const { sha: baseSha, branch: baseBranch } = await resolveBaseBranch(octokit, owner, repo);
   const branchName = await createUniqueBranch(
     octokit,
     owner,
@@ -51,13 +41,7 @@ export async function createGitHubRemediationPr(
     baseSha,
   );
 
-  const existing = await readTerraformFile(
-    octokit,
-    owner,
-    repo,
-    branchName,
-    terraformPath,
-  );
+  const existing = await readTerraformFile(octokit, owner, repo, branchName, terraformPath);
   const currentHcl = existing.content ?? FALLBACK_SANDBOX_STORAGE;
   const tombstoneOptions = {
     resourceName: input.resourceName,

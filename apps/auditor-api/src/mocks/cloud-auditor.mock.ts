@@ -5,10 +5,7 @@ import {
   RemediationRequestSchema,
   RemediationResponseDto,
 } from '@cloudpulse/api-contracts';
-import {
-  MOCK_AUDIT_RESOURCES,
-  MOCK_COST_AUDIT_SUMMARY,
-} from '@cloudpulse/api-contracts/mocks';
+import { MOCK_AUDIT_RESOURCES, MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts/mocks';
 import { ICloudAuditorService } from '../app/cloud-auditor.interface';
 
 @Injectable()
@@ -17,9 +14,7 @@ export class MockCloudAuditorService implements ICloudAuditorService {
     return MOCK_COST_AUDIT_SUMMARY;
   }
 
-  async remediateResource(
-    request: RemediationRequestDto,
-  ): Promise<RemediationResponseDto> {
+  async remediateResource(request: RemediationRequestDto): Promise<RemediationResponseDto> {
     const parsed = RemediationRequestSchema.safeParse(request);
     if (!parsed.success) {
       throw new BadRequestException('Invalid remediation request.');

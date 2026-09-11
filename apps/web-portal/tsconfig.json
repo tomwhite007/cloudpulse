@@ -10,11 +10,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
@@ -24,18 +20,10 @@
         "name": "next"
       }
     ],
-    "types": [
-      "vitest/globals",
-      "vitest/importMeta",
-      "vite/client",
-      "node",
-      "vitest"
-    ],
+    "types": ["vitest/globals", "vitest/importMeta", "vite/client", "node", "vitest"],
     "paths": {
       "@/*": ["./*"],
-      "@cloudpulse/api-contracts/mocks": [
-        "../../libs/api-contracts/src/mocks/index.ts"
-      ],
+      "@cloudpulse/api-contracts/mocks": ["../../libs/api-contracts/src/mocks/index.ts"],
       "@cloudpulse/api-contracts": ["../../libs/api-contracts/src/index.ts"],
       "@cloudpulse/gitflow/mocks": ["../../libs/gitflow/src/mocks/index.ts"],
       "@cloudpulse/gitflow": ["../../libs/gitflow/src/index.ts"]

@@ -13,8 +13,7 @@ const DEFAULT_RESOURCE: ResourceStatusCardDto = {
   region: 'us-east-1',
   monthlyCost: 2840,
   potentialMonthlySavings: 2100,
-  telemetrySummary:
-    'Avg CPU: 11% · Avg memory: 18% · db.r5.4xlarge over 14 days',
+  telemetrySummary: 'Avg CPU: 11% · Avg memory: 18% · db.r5.4xlarge over 14 days',
   recommendedAction: {
     actionId: 'act-resize-rds-r5-xlarge',
     label: 'Resize Instance',
@@ -26,9 +25,7 @@ const DEFAULT_RESOURCE: ResourceStatusCardDto = {
   },
 };
 
-type MockResourceStatusCardOverrides = Partial<
-  Omit<ResourceStatusCardDto, 'recommendedAction'>
-> & {
+type MockResourceStatusCardOverrides = Partial<Omit<ResourceStatusCardDto, 'recommendedAction'>> & {
   recommendedAction?: Partial<ResourceStatusCardDto['recommendedAction']>;
 };
 
@@ -56,8 +53,7 @@ export const MOCK_AUDIT_RESOURCES: ResourceStatusCardDto[] = [
     region: 'us-west-2',
     monthlyCost: 950,
     potentialMonthlySavings: 950,
-    telemetrySummary:
-      'Unattached for 42 days · io2 2 TB · zero I/O since last attach',
+    telemetrySummary: 'Unattached for 42 days · io2 2 TB · zero I/O since last attach',
     recommendedAction: {
       actionId: 'act-terminate-ebs-orphan',
       label: 'Snapshot & Terminate',
@@ -74,8 +70,7 @@ export const MOCK_AUDIT_RESOURCES: ResourceStatusCardDto[] = [
     region: 'eu-west-1',
     monthlyCost: 1800,
     potentialMonthlySavings: 1800,
-    telemetrySummary:
-      'Idle staging cluster · 0 running tasks for 16 days · CPU reservation 0%',
+    telemetrySummary: 'Idle staging cluster · 0 running tasks for 16 days · CPU reservation 0%',
     recommendedAction: {
       actionId: 'act-sleep-ecs-staging',
       label: 'Schedule Overnight Sleep',
@@ -109,5 +104,4 @@ export function createMockCostAuditSummary(
   });
 }
 
-export const MOCK_COST_AUDIT_SUMMARY: CostAuditSummaryDto =
-  createMockCostAuditSummary();
+export const MOCK_COST_AUDIT_SUMMARY: CostAuditSummaryDto = createMockCostAuditSummary();

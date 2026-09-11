@@ -7,8 +7,7 @@ import { MOCK_DRAFT_PR } from '@cloudpulse/gitflow/mocks';
 import { NextResponse } from 'next/server';
 import { fetchAuditStatus } from '@/features/dashboard/utils/audit-api';
 
-const DEMO_MODE_NOTICE =
-  'GitFlow draft PR running in deterministic DEMO mode; skipping GitHub';
+const DEMO_MODE_NOTICE = 'GitFlow draft PR running in deterministic DEMO mode; skipping GitHub';
 
 export async function POST(req: Request) {
   try {
@@ -41,11 +40,7 @@ export async function POST(req: Request) {
     const result = await createGitHubRemediationPr(parsed.data);
     return NextResponse.json(result);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Failed to create draft pull request';
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 500 },
-    );
+    const message = error instanceof Error ? error.message : 'Failed to create draft pull request';
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

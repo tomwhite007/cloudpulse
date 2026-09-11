@@ -13,12 +13,7 @@ import {
   slugResourceName,
 } from '@cloudpulse/gitflow';
 import { APICallError, convertToModelMessages, tool } from 'ai';
-import type {
-  InferUITools,
-  ModelMessage,
-  UIDataTypes,
-  UIMessage,
-} from 'ai';
+import type { InferUITools, ModelMessage, UIDataTypes, UIMessage } from 'ai';
 import { z } from 'zod';
 import { advisorMessageMarkdown } from './advisor-markdown';
 
@@ -46,10 +41,7 @@ export const remediationProposalSchema = z.object({
   safetyChecks: z
     .array(z.string())
     .describe('Safety checks the operator should verify before apply'),
-  isSimulated: z
-    .boolean()
-    .optional()
-    .describe('Whether this proposal is a simulated/demo card'),
+  isSimulated: z.boolean().optional().describe('Whether this proposal is a simulated/demo card'),
 });
 
 export type RemediationProposal = z.infer<typeof remediationProposalSchema>;
@@ -66,9 +58,7 @@ export function alignProposalWithGitFlow(
   > & { hclDiff?: string },
 ): Pick<RemediationProposal, 'branchName' | 'hclDiff'> {
   const env = gitFlowEnvFromProcess();
-  const fromDiff = proposal.hclDiff
-    ? parseResourceHeadersFromHcl(proposal.hclDiff)
-    : [];
+  const fromDiff = proposal.hclDiff ? parseResourceHeadersFromHcl(proposal.hclDiff) : [];
   const previewTargets =
     fromDiff.length > 0
       ? fromDiff.map((block) => ({
@@ -79,16 +69,11 @@ export function alignProposalWithGitFlow(
 
   return {
     branchName: resolveGitFlowBranchName(proposal, env),
-    hclDiff: generateTombstoneDiffPreview(
-      previewTargets,
-      resolveTerraformPath(env),
-    ),
+    hclDiff: generateTombstoneDiffPreview(previewTargets, resolveTerraformPath(env)),
   };
 }
 
-export function createProposalFromFinding(
-  finding: ResourceStatusCardDto,
-): RemediationProposal {
+export function createProposalFromFinding(finding: ResourceStatusCardDto): RemediationProposal {
   const gitFlow = alignProposalWithGitFlow({
     resourceId: finding.id,
     resourceName: finding.resourceName,
@@ -113,9 +98,7 @@ export function createProposalFromFinding(
   };
 }
 
-export function formatAuditContextMarkdown(
-  auditContext: CostAuditSummaryDto,
-): string {
+export function formatAuditContextMarkdown(auditContext: CostAuditSummaryDto): string {
   const findings = auditContext.resources;
   const metrics = [
     `- Total monthly spend: $${auditContext.totalMonthlySpend} ${auditContext.currency}`,
@@ -145,9 +128,7 @@ export function formatAuditContextMarkdown(
   ].join('\n');
 }
 
-export function buildAdvisorSystemPrompt(
-  auditContext: CostAuditSummaryDto,
-): string {
+export function buildAdvisorSystemPrompt(auditContext: CostAuditSummaryDto): string {
   const terraformPath = resolveTerraformPath(gitFlowEnvFromProcess());
 
   return [
@@ -167,9 +148,7 @@ export function buildAdvisorSystemPrompt(
   ].join('\n');
 }
 
-export function toFallbackModelMessages(
-  messages: UIMessage[],
-): ModelMessage[] {
+export function toFallbackModelMessages(messages: UIMessage[]): ModelMessage[] {
   return messages
     .filter(
       (message): message is UIMessage & { role: 'user' | 'assistant' } =>
@@ -181,8 +160,7 @@ export function toFallbackModelMessages(
     }))
     .filter(
       (message) =>
-        message.role === 'user' ||
-        (message.role === 'assistant' && message.content.length > 0),
+        message.role === 'user' || (message.role === 'assistant' && message.content.length > 0),
     );
 }
 
@@ -193,10 +171,7 @@ export async function toAdvisorModelMessages(
   try {
     return await convert(messages);
   } catch (error) {
-    console.warn(
-      'PulseAdvisor failed to convert UI messages; using text fallback',
-      error,
-    );
+    console.warn('PulseAdvisor failed to convert UI messages; using text fallback', error);
     return toFallbackModelMessages(messages);
   }
 }
@@ -220,13 +195,7 @@ export function isPulseAdvisorDemoMode(options: {
 export function isAnthropicFallbackError(error: unknown): boolean {
   if (APICallError.isInstance(error)) {
     const status = error.statusCode;
-    if (
-      status === 401 ||
-      status === 403 ||
-      status === 402 ||
-      status === 429 ||
-      status === 404
-    ) {
+    if (status === 401 || status === 403 || status === 402 || status === 429 || status === 404) {
       return true;
     }
   }
@@ -293,8 +262,4 @@ export function createAdvisorTools(auditContext: CostAuditSummaryDto) {
 }
 
 export type AdvisorToolSet = ReturnType<typeof createAdvisorTools>;
-export type AdvisorUIMessage = UIMessage<
-  unknown,
-  UIDataTypes,
-  InferUITools<AdvisorToolSet>
->;
+export type AdvisorUIMessage = UIMessage<unknown, UIDataTypes, InferUITools<AdvisorToolSet>>;

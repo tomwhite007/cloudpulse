@@ -18,11 +18,14 @@ function Progress({
       {...props}
     >
       <ProgressPrimitive.Track
-        className={cn("relative h-1.5 w-full overflow-hidden rounded-full bg-muted", trackClassName)}
+        className={cn(
+          'relative h-1.5 w-full overflow-hidden rounded-full bg-muted',
+          trackClassName,
+        )}
         data-slot="progress-track"
       >
         <ProgressPrimitive.Indicator
-          className={cn("h-full bg-primary transition-all", indicatorClassName)}
+          className={cn('h-full bg-primary transition-all', indicatorClassName)}
           data-slot="progress-indicator"
         />
       </ProgressPrimitive.Track>

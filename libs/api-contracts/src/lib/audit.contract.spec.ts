@@ -42,8 +42,6 @@ describe('audit contracts', () => {
   });
 
   it('rejects an incomplete remediation request', () => {
-    expect(() =>
-      RemediationRequestSchema.parse({ resourceId: 'res-1' }),
-    ).toThrow();
+    expect(() => RemediationRequestSchema.parse({ resourceId: 'res-1' })).toThrow();
   });
 });

@@ -6,25 +6,15 @@
       "request": "launch",
       "name": "Debug auditor-api with Nx",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": [
-        "exec",
-        "nx",
-        "serve",
-        "auditor-api"
-      ],
+      "runtimeArgs": ["exec", "nx", "serve", "auditor-api"],
       "env": {
         "NODE_OPTIONS": "--inspect=9229"
       },
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "skipFiles": ["<node_internals>/**"],
       "sourceMaps": true,
-      "outFiles": [
-        "${workspaceFolder}/apps/auditor-api/dist/**/*.(m|c|)js",
-        "!**/node_modules/**"
-      ]
+      "outFiles": ["${workspaceFolder}/apps/auditor-api/dist/**/*.(m|c|)js", "!**/node_modules/**"]
     }
   ]
 }

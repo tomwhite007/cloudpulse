@@ -65,9 +65,7 @@ describe('tombstoneTargetedResource', () => {
       resourceId: 'i-0123456789abcdefg',
     });
 
-    expect(patched).toContain(
-      '# TOMBSTONED by CloudPulse — web (i-0123456789abcdefg)',
-    );
+    expect(patched).toContain('# TOMBSTONED by CloudPulse — web (i-0123456789abcdefg)');
     expect(patched).toContain(
       '# TOMBSTONED by CloudPulse — coupled satellite of web (i-0123456789abcdefg)',
     );
@@ -117,10 +115,7 @@ describe('generateTombstoneDiffPreview', () => {
   });
 
   it('formats a tombstone diff against the default terraform path', () => {
-    const preview = generateTombstoneDiffPreview(
-      'cloudpulse-test-waste',
-      DEFAULT_TERRAFORM_PATH,
-    );
+    const preview = generateTombstoneDiffPreview('cloudpulse-test-waste', DEFAULT_TERRAFORM_PATH);
 
     expect(preview).toBe(
       [
@@ -146,30 +141,21 @@ describe('generateTombstoneDiffPreview', () => {
     expect(preview).toContain('- resource "aws_instance" "web" {');
     expect(preview).toContain('- resource "aws_eip_association" "web_eip" {');
     expect(preview).toContain('+ # resource "aws_instance" "web" { ... }');
-    expect(preview).toContain(
-      '+ # resource "aws_eip_association" "web_eip" { ... }',
-    );
+    expect(preview).toContain('+ # resource "aws_eip_association" "web_eip" { ... }');
   });
 
   it('uses an explicit file path when provided', () => {
-    const preview = generateTombstoneDiffPreview(
-      'cloudpulse-test-waste',
-      'infra/live/ebs.tf',
-    );
+    const preview = generateTombstoneDiffPreview('cloudpulse-test-waste', 'infra/live/ebs.tf');
 
     expect(preview.startsWith('# infra/live/ebs.tf\n')).toBe(true);
-    expect(preview).toContain(
-      '+ # TOMBSTONED by CloudPulse (FinOps Remediation)',
-    );
+    expect(preview).toContain('+ # TOMBSTONED by CloudPulse (FinOps Remediation)');
   });
 
   it('resolves GITFLOW_TERRAFORM_PATH when filePath is omitted', () => {
     vi.stubEnv('GITFLOW_TERRAFORM_PATH', 'infra/live/ebs.tf');
 
     expect(
-      generateTombstoneDiffPreview('cloudpulse-test-waste').startsWith(
-        '# infra/live/ebs.tf\n',
-      ),
+      generateTombstoneDiffPreview('cloudpulse-test-waste').startsWith('# infra/live/ebs.tf\n'),
     ).toBe(true);
   });
 });
@@ -193,8 +179,6 @@ describe('parseResourceHeadersFromHcl', () => {
 
 describe('hclResourceIdentifier', () => {
   it('converts hyphens into terraform identifiers', () => {
-    expect(hclResourceIdentifier('cloudpulse-test-waste')).toBe(
-      'cloudpulse_test_waste',
-    );
+    expect(hclResourceIdentifier('cloudpulse-test-waste')).toBe('cloudpulse_test_waste');
   });
 });

@@ -41,9 +41,7 @@ describe('mergeAuditContextIntoChatBody', () => {
       ),
     );
 
-    expect(merged.messages).toEqual([
-      { role: 'user', content: 'Find zombie storage' },
-    ]);
+    expect(merged.messages).toEqual([{ role: 'user', content: 'Find zombie storage' }]);
     expect(merged.auditContext).toEqual(MOCK_COST_AUDIT_SUMMARY);
     expect(merged.data).toEqual({
       sessionId: 'abc',
@@ -53,10 +51,7 @@ describe('mergeAuditContextIntoChatBody', () => {
 
   it('replaces a non-object data field with the audit context', () => {
     const merged = JSON.parse(
-      mergeAuditContextIntoChatBody(
-        JSON.stringify({ data: ['stale'] }),
-        MOCK_COST_AUDIT_SUMMARY,
-      ),
+      mergeAuditContextIntoChatBody(JSON.stringify({ data: ['stale'] }), MOCK_COST_AUDIT_SUMMARY),
     );
 
     expect(merged.data).toEqual({
@@ -73,10 +68,7 @@ describe('createAdvisorChatFetch', () => {
       return new Response('ok');
     };
 
-    const chatFetch = createAdvisorChatFetch(
-      () => MOCK_COST_AUDIT_SUMMARY,
-      fetchImpl,
-    );
+    const chatFetch = createAdvisorChatFetch(() => MOCK_COST_AUDIT_SUMMARY, fetchImpl);
 
     await chatFetch('/api/chat', {
       method: 'POST',
@@ -84,10 +76,7 @@ describe('createAdvisorChatFetch', () => {
     });
 
     expect(received?.body).toBe(
-      mergeAuditContextIntoChatBody(
-        JSON.stringify({ messages: [] }),
-        MOCK_COST_AUDIT_SUMMARY,
-      ),
+      mergeAuditContextIntoChatBody(JSON.stringify({ messages: [] }), MOCK_COST_AUDIT_SUMMARY),
     );
   });
 
@@ -98,10 +87,7 @@ describe('createAdvisorChatFetch', () => {
       return new Response('ok');
     };
 
-    const chatFetch = createAdvisorChatFetch(
-      () => MOCK_COST_AUDIT_SUMMARY,
-      fetchImpl,
-    );
+    const chatFetch = createAdvisorChatFetch(() => MOCK_COST_AUDIT_SUMMARY, fetchImpl);
 
     await chatFetch('/api/chat', {
       method: 'POST',
@@ -118,10 +104,7 @@ describe('createAdvisorChatFetch', () => {
       return new Response('ok');
     };
 
-    const chatFetch = createAdvisorChatFetch(
-      () => MOCK_COST_AUDIT_SUMMARY,
-      fetchImpl,
-    );
+    const chatFetch = createAdvisorChatFetch(() => MOCK_COST_AUDIT_SUMMARY, fetchImpl);
 
     await chatFetch('/api/chat', { method: 'GET' });
 

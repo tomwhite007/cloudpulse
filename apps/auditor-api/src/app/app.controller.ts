@@ -5,10 +5,7 @@ import {
   RemediationResponseDto,
 } from '@cloudpulse/api-contracts';
 import { AppService } from './app.service';
-import {
-  CLOUD_AUDITOR_SERVICE,
-  ICloudAuditorService,
-} from './cloud-auditor.interface';
+import { CLOUD_AUDITOR_SERVICE, ICloudAuditorService } from './cloud-auditor.interface';
 import { resolveLiveAwsProfile } from '../auditor/aws-client-config';
 
 @Controller()
@@ -39,9 +36,7 @@ export class AppController {
   }
 
   @Post('audit/remediate')
-  remediateResource(
-    @Body() request: RemediationRequestDto,
-  ): Promise<RemediationResponseDto> {
+  remediateResource(@Body() request: RemediationRequestDto): Promise<RemediationResponseDto> {
     return this.cloudAuditor.remediateResource(request);
   }
 }

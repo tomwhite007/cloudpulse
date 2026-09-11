@@ -12,17 +12,9 @@ import {
 } from '../utils/filters';
 import { ResourceCard } from './resource-card';
 
-export function ResourceFeed({
-  resources,
-}: {
-  resources: ResourceStatusCardDto[];
-}) {
-  const selectedResourceType = useDashboardStore(
-    (state) => state.selectedResourceType,
-  );
-  const setSelectedResourceType = useDashboardStore(
-    (state) => state.setSelectedResourceType,
-  );
+export function ResourceFeed({ resources }: { resources: ResourceStatusCardDto[] }) {
+  const selectedResourceType = useDashboardStore((state) => state.selectedResourceType);
+  const setSelectedResourceType = useDashboardStore((state) => state.setSelectedResourceType);
   const statusFilter = useDashboardStore((state) => state.statusFilter);
   const setStatusFilter = useDashboardStore((state) => state.setStatusFilter);
 
@@ -44,10 +36,7 @@ export function ResourceFeed({
             Waste findings from the CloudPulse auditor engine
           </p>
         </div>
-        <Tabs
-          value={statusFilter}
-          onValueChange={(value) => setStatusFilter(String(value))}
-        >
+        <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(String(value))}>
           <TabsList className="h-auto flex-wrap" aria-label="Filter by status">
             {STATUS_FILTER_OPTIONS.map((item) => (
               <TabsTrigger key={item.value} value={item.value}>
@@ -62,11 +51,7 @@ export function ResourceFeed({
         value={selectedResourceType}
         onValueChange={(value) => setSelectedResourceType(String(value))}
       >
-        <TabsList
-          variant="line"
-          className="h-auto flex-wrap"
-          aria-label="Filter by resource type"
-        >
+        <TabsList variant="line" className="h-auto flex-wrap" aria-label="Filter by resource type">
           {RESOURCE_TYPE_FILTER_OPTIONS.map((item) => (
             <TabsTrigger key={item.value} value={item.value}>
               {item.label}
@@ -78,8 +63,7 @@ export function ResourceFeed({
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Badge variant="secondary">
-            {visibleResources.length}{' '}
-            {visibleResources.length === 1 ? 'resource' : 'resources'}
+            {visibleResources.length} {visibleResources.length === 1 ? 'resource' : 'resources'}
           </Badge>
           <span>Sorted by identified monthly waste</span>
         </div>
@@ -93,9 +77,7 @@ export function ResourceFeed({
             No resources match the current filters.
           </p>
         ) : (
-          visibleResources.map((resource) => (
-            <ResourceCard key={resource.id} resource={resource} />
-          ))
+          visibleResources.map((resource) => <ResourceCard key={resource.id} resource={resource} />)
         )}
       </div>
     </section>

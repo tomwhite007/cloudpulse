@@ -9,13 +9,10 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>;
 
-export function parseEnv(source: {
-  NEXT_PUBLIC_AUDITOR_API_URL?: string;
-}): Env {
+export function parseEnv(source: { NEXT_PUBLIC_AUDITOR_API_URL?: string }): Env {
   const value = source.NEXT_PUBLIC_AUDITOR_API_URL;
   return envSchema.parse({
-    NEXT_PUBLIC_AUDITOR_API_URL:
-      value && value.length > 0 ? value : undefined,
+    NEXT_PUBLIC_AUDITOR_API_URL: value && value.length > 0 ? value : undefined,
   });
 }
 

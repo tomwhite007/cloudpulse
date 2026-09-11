@@ -3,11 +3,7 @@ import { screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { ResourceCard } from '../components/resource-card';
 import { useDashboardStore } from '../store/dashboard-store';
-import {
-  clickControl,
-  renderPresenter,
-  usePresenterTestLifecycle,
-} from './presenter-harness';
+import { clickControl, renderPresenter, usePresenterTestLifecycle } from './presenter-harness';
 
 usePresenterTestLifecycle();
 

@@ -13,8 +13,8 @@
     "test-gitflow": "nx test gitflow",
     "test-all": "npx nx run-many -t test",
     "test-all-affected": "npx nx affected -t test",
-    "format": "nx format:write",
-    "format:check": "nx format:check"
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "private": true,
   "devDependencies": {

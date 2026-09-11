@@ -22,9 +22,7 @@ describe('draftPrRequestSchema', () => {
   });
 
   it('rejects a missing resource id', () => {
-    expect(() =>
-      draftPrRequestSchema.parse({ ...validPayload, resourceId: '' }),
-    ).toThrow();
+    expect(() => draftPrRequestSchema.parse({ ...validPayload, resourceId: '' })).toThrow();
   });
 });
 
@@ -90,18 +88,14 @@ describe('buildRemediationPrBody', () => {
     });
 
     expect(body).toContain('### Remediated Resources');
-    expect(body).toContain(
-      '`aws_instance.web` (primary) — `i-0123456789abcdefg`',
-    );
+    expect(body).toContain('`aws_instance.web` (primary) — `i-0123456789abcdefg`');
     expect(body).toContain('`aws_eip_association.web_eip` (coupled satellite)');
   });
 });
 
 describe('sanitizeBranchName', () => {
   it('replaces unsupported git ref characters', () => {
-    expect(sanitizeBranchName('finops/terminate vol*waste')).toBe(
-      'finops/terminate-vol-waste',
-    );
+    expect(sanitizeBranchName('finops/terminate vol*waste')).toBe('finops/terminate-vol-waste');
   });
 });
 

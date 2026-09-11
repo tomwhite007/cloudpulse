@@ -52,9 +52,7 @@ export function isMockAdvisorToolFollowUp(prompt: LanguageModelV4Prompt): boolea
 }
 
 function findZombie(findings: ResourceStatusCardDto[]): ResourceStatusCardDto | undefined {
-  return findings.find(
-    (finding) => finding.status === 'ZOMBIE' || finding.resourceType === 'EBS',
-  );
+  return findings.find((finding) => finding.status === 'ZOMBIE' || finding.resourceType === 'EBS');
 }
 
 export function selectMockAdvisorReply(
@@ -127,12 +125,8 @@ export function selectMockAdvisorReply(
     return { kind: 'text', text };
   }
 
-  if (
-    lastMessageText.includes('Review RDS spend') ||
-    lastMessageText.includes('How can I cut')
-  ) {
-    const finding =
-      findings.find((row) => row.resourceType === 'RDS') || findings[0];
+  if (lastMessageText.includes('Review RDS spend') || lastMessageText.includes('How can I cut')) {
+    const finding = findings.find((row) => row.resourceType === 'RDS') || findings[0];
     if (finding) {
       return {
         kind: 'propose',
@@ -152,9 +146,7 @@ export function selectMockAdvisorReply(
   };
 }
 
-function finishPart(
-  reason: 'stop' | 'tool-calls',
-): LanguageModelV4StreamPart {
+function finishPart(reason: 'stop' | 'tool-calls'): LanguageModelV4StreamPart {
   return {
     type: 'finish',
     finishReason: { unified: reason, raw: reason },
@@ -174,11 +166,7 @@ function textParts(id: string, text: string): LanguageModelV4StreamPart[] {
   ];
 }
 
-function toolCallParts(
-  id: string,
-  toolName: string,
-  input: object,
-): LanguageModelV4StreamPart[] {
+function toolCallParts(id: string, toolName: string, input: object): LanguageModelV4StreamPart[] {
   const json = JSON.stringify(input);
 
   return [
@@ -198,9 +186,7 @@ export function buildMockAdvisorStreamParts(
   prompt: LanguageModelV4Prompt,
   auditContext: CostAuditSummaryDto,
 ): LanguageModelV4StreamPart[] {
-  const chunks: LanguageModelV4StreamPart[] = [
-    { type: 'stream-start', warnings: [] },
-  ];
+  const chunks: LanguageModelV4StreamPart[] = [{ type: 'stream-start', warnings: [] }];
 
   if (isMockAdvisorToolFollowUp(prompt)) {
     chunks.push(...textParts('text_followup', MOCK_ADVISOR_FOLLOW_UP_TEXT));
@@ -208,10 +194,7 @@ export function buildMockAdvisorStreamParts(
     return chunks;
   }
 
-  const reply = selectMockAdvisorReply(
-    mockAdvisorPromptUserText(prompt),
-    auditContext,
-  );
+  const reply = selectMockAdvisorReply(mockAdvisorPromptUserText(prompt), auditContext);
   chunks.push(...textParts('text_demo', reply.text));
 
   if (reply.kind === 'propose') {

@@ -65,24 +65,18 @@ describe('isStatusFilter', () => {
 
 describe('filterResources', () => {
   it('returns every resource when both filters are open', () => {
-    expect(
-      filterResources(inventory, { resourceType: 'ALL', status: 'all' }),
-    ).toHaveLength(4);
+    expect(filterResources(inventory, { resourceType: 'ALL', status: 'all' })).toHaveLength(4);
   });
 
   it('filters by resource type', () => {
     expect(
-      filterResources(inventory, { resourceType: 'RDS', status: 'all' }).map(
-        (item) => item.id,
-      ),
+      filterResources(inventory, { resourceType: 'RDS', status: 'all' }).map((item) => item.id),
     ).toEqual(['rds-over']);
   });
 
   it('filters by status', () => {
     expect(
-      filterResources(inventory, { resourceType: 'ALL', status: 'ZOMBIE' }).map(
-        (item) => item.id,
-      ),
+      filterResources(inventory, { resourceType: 'ALL', status: 'ZOMBIE' }).map((item) => item.id),
     ).toEqual(['ebs-zombie']);
   });
 
@@ -107,10 +101,7 @@ describe('filterResources', () => {
 
 describe('filter option catalogs', () => {
   it('lists both audit modes', () => {
-    expect(AUDIT_MODE_OPTIONS.map((item) => item.id)).toEqual([
-      'SIMULATED',
-      'LIVE',
-    ]);
+    expect(AUDIT_MODE_OPTIONS.map((item) => item.id)).toEqual(['SIMULATED', 'LIVE']);
   });
 
   it('lists resource type tabs including ALL', () => {

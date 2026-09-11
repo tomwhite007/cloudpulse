@@ -1,13 +1,7 @@
 'use client';
 
 import type { CostAuditSummaryDto } from '@cloudpulse/api-contracts';
-import {
-  DollarSign,
-  Leaf,
-  Server,
-  ShieldCheck,
-  type LucideIcon,
-} from 'lucide-react';
+import { DollarSign, Leaf, Server, ShieldCheck, type LucideIcon } from 'lucide-react';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -37,7 +31,10 @@ const KPI_ITEMS: readonly KpiItem[] = [
     hint: (summary) => {
       if (summary.totalMonthlySpend === 0 && summary.totalIdentifiedWaste > 0) {
         return (
-          <span title="New or low-spend account; waste is projected run-rate" className="cursor-help border-b border-dashed border-muted-foreground/50">
+          <span
+            title="New or low-spend account; waste is projected run-rate"
+            className="cursor-help border-b border-dashed border-muted-foreground/50"
+          >
             Trailing 30d invoice ($0.00 recorded)
           </span>
         );
@@ -64,7 +61,11 @@ const KPI_ITEMS: readonly KpiItem[] = [
     format: formatCompliancePercent,
     hint: (summary) => {
       if (summary.complianceScorePercent === 0 && summary.activeAssetCount > 0) {
-        return <span className="font-medium text-rose-400">Critical: 100% of monitored assets flagged</span>;
+        return (
+          <span className="font-medium text-rose-400">
+            Critical: 100% of monitored assets flagged
+          </span>
+        );
       }
       return 'Policy adherence across estates';
     },
@@ -79,11 +80,7 @@ const KPI_ICONS: Record<KpiMetricKey, LucideIcon> = {
   complianceScorePercent: ShieldCheck,
 };
 
-export function KpiGrid({
-  summary,
-}: {
-  summary: CostAuditSummaryDto | undefined;
-}) {
+export function KpiGrid({ summary }: { summary: CostAuditSummaryDto | undefined }) {
   return (
     <section aria-label="FinOps KPI metrics">
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -96,9 +93,7 @@ export function KpiGrid({
                   {item.label}
                 </CardTitle>
                 {summary ? (
-                  <p className={kpiValueClassName(item.tone)}>
-                    {item.format(summary)}
-                  </p>
+                  <p className={kpiValueClassName(item.tone)}>{item.format(summary)}</p>
                 ) : (
                   <Skeleton className="h-8 w-28" />
                 )}
@@ -110,16 +105,26 @@ export function KpiGrid({
               </CardHeader>
               <CardContent className="mt-auto">
                 <div className="min-h-1.5">
-                  {item.key === 'complianceScorePercent' && summary && summary.activeAssetCount > 0 ? (
+                  {item.key === 'complianceScorePercent' &&
+                  summary &&
+                  summary.activeAssetCount > 0 ? (
                     <Progress
                       value={summary.complianceScorePercent}
-                      trackClassName={summary.complianceScorePercent === 0 ? 'bg-rose-500/20' : undefined}
-                      indicatorClassName={summary.complianceScorePercent === 0 ? 'bg-rose-500' : undefined}
+                      trackClassName={
+                        summary.complianceScorePercent === 0 ? 'bg-rose-500/20' : undefined
+                      }
+                      indicatorClassName={
+                        summary.complianceScorePercent === 0 ? 'bg-rose-500' : undefined
+                      }
                     />
                   ) : null}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {typeof item.hint === 'function' ? (summary ? item.hint(summary) : '') : item.hint}
+                  {typeof item.hint === 'function'
+                    ? summary
+                      ? item.hint(summary)
+                      : ''
+                    : item.hint}
                 </p>
               </CardContent>
             </Card>

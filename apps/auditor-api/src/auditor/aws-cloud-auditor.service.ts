@@ -16,7 +16,7 @@ import { awsClientConfig, resolveLiveAwsProfile } from './aws-client-config';
 @Injectable()
 export class AwsCloudAuditorService implements ICloudAuditorService {
   private readonly logger = new Logger(AwsCloudAuditorService.name);
-  
+
   private readonly clientConfig = awsClientConfig();
   private readonly region = this.clientConfig.region;
   private readonly profile = resolveLiveAwsProfile();
@@ -26,9 +26,7 @@ export class AwsCloudAuditorService implements ICloudAuditorService {
   private cwClient = new CloudWatchClient(this.clientConfig);
 
   constructor() {
-    this.logger.log(
-      `Live AWS clients using profile "${this.profile}" in ${this.region}`,
-    );
+    this.logger.log(`Live AWS clients using profile "${this.profile}" in ${this.region}`);
   }
 
   async getAuditSummary(): Promise<CostAuditSummaryDto> {
@@ -37,9 +35,10 @@ export class AwsCloudAuditorService implements ICloudAuditorService {
       const { findings, monitoredCount } = await this.listFindings();
 
       const totalIdentifiedWaste = findings.reduce((acc, f) => acc + f.potentialMonthlySavings, 0);
-      const complianceScorePercent = monitoredCount > 0 
-        ? Math.max(0, Math.floor(((monitoredCount - findings.length) / monitoredCount) * 100)) 
-        : 100;
+      const complianceScorePercent =
+        monitoredCount > 0
+          ? Math.max(0, Math.floor(((monitoredCount - findings.length) / monitoredCount) * 100))
+          : 100;
 
       return {
         totalMonthlySpend: spendDetails.totalMonthlySpend,
@@ -65,10 +64,10 @@ export class AwsCloudAuditorService implements ICloudAuditorService {
     }
   }
 
-  async remediateResource(
-    request: RemediationRequestDto,
-  ): Promise<RemediationResponseDto> {
-    this.logger.warn(`remediateResource called in LIVE_AWS mode for ${request.resourceId}. Operations are read-only.`);
+  async remediateResource(request: RemediationRequestDto): Promise<RemediationResponseDto> {
+    this.logger.warn(
+      `remediateResource called in LIVE_AWS mode for ${request.resourceId}. Operations are read-only.`,
+    );
     return {
       success: false,
       resourceId: request.resourceId,
@@ -77,7 +76,10 @@ export class AwsCloudAuditorService implements ICloudAuditorService {
     };
   }
 
-  private async getWasteSummary(): Promise<{ totalMonthlySpend: number; spendByService: SpendCategoryDto[] }> {
+  private async getWasteSummary(): Promise<{
+    totalMonthlySpend: number;
+    spendByService: SpendCategoryDto[];
+  }> {
     const end = new Date();
     const start = new Date();
     start.setDate(end.getDate() - 30);
@@ -124,7 +126,10 @@ export class AwsCloudAuditorService implements ICloudAuditorService {
     }
   }
 
-  private async listFindings(): Promise<{ findings: ResourceStatusCardDto[], monitoredCount: number }> {
+  private async listFindings(): Promise<{
+    findings: ResourceStatusCardDto[];
+    monitoredCount: number;
+  }> {
     const findings: ResourceStatusCardDto[] = [];
     let monitoredCount = 0;
 
@@ -132,16 +137,18 @@ export class AwsCloudAuditorService implements ICloudAuditorService {
     const volumesCmd = new DescribeVolumesCommand({
       Filters: [{ Name: 'status', Values: ['available'] }],
     });
-    
+
     try {
       const volumes = await this.ec2Client.send(volumesCmd);
       if (volumes.Volumes) {
         monitoredCount += volumes.Volumes.length;
         for (const vol of volumes.Volumes) {
-          const days = vol.CreateTime ? Math.floor((new Date().getTime() - vol.CreateTime.getTime()) / 86400000) : 0;
-          const nameTag = vol.Tags?.find(t => t.Key === 'Name')?.Value || vol.VolumeId!;
+          const days = vol.CreateTime
+            ? Math.floor((new Date().getTime() - vol.CreateTime.getTime()) / 86400000)
+            : 0;
+          const nameTag = vol.Tags?.find((t) => t.Key === 'Name')?.Value || vol.VolumeId!;
           const unattachedStr = days === 0 ? 'Unattached (< 1 day)' : `Unattached for ${days} days`;
-          
+
           findings.push({
             id: vol.VolumeId!,
             resourceName: nameTag,
@@ -169,9 +176,11 @@ export class AwsCloudAuditorService implements ICloudAuditorService {
     try {
       const rdsInstances = await this.rdsClient.send(rdsCmd);
       if (rdsInstances.DBInstances) {
-        const activeInstances = rdsInstances.DBInstances.filter(db => db.DBInstanceStatus === 'available');
+        const activeInstances = rdsInstances.DBInstances.filter(
+          (db) => db.DBInstanceStatus === 'available',
+        );
         monitoredCount += activeInstances.length;
-        
+
         const end = new Date();
         const start = new Date();
         start.setDate(end.getDate() - 14);
@@ -191,7 +200,9 @@ export class AwsCloudAuditorService implements ICloudAuditorService {
             const cwData = await this.cwClient.send(cwCmd);
             let avgCpu = 0;
             if (cwData.Datapoints && cwData.Datapoints.length > 0) {
-              avgCpu = cwData.Datapoints.reduce((acc, dp) => acc + (dp.Average || 0), 0) / cwData.Datapoints.length;
+              avgCpu =
+                cwData.Datapoints.reduce((acc, dp) => acc + (dp.Average || 0), 0) /
+                cwData.Datapoints.length;
             }
 
             if (avgCpu > 0 && avgCpu < 15) {
@@ -213,7 +224,7 @@ export class AwsCloudAuditorService implements ICloudAuditorService {
               });
             }
           } catch (e) {
-             this.logger.error(`Failed to get metrics for ${db.DBInstanceIdentifier}`, e);
+            this.logger.error(`Failed to get metrics for ${db.DBInstanceIdentifier}`, e);
           }
         }
       }

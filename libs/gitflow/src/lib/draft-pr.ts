@@ -45,10 +45,7 @@ export function isGitFlowDemoMode(options: {
 }
 
 export function listRemediatedResources(
-  input: Pick<
-    DraftPrRequest,
-    'resourceId' | 'resourceName' | 'hclDiff' | 'remediatedResources'
-  >,
+  input: Pick<DraftPrRequest, 'resourceId' | 'resourceName' | 'hclDiff' | 'remediatedResources'>,
 ): RemediatedResource[] {
   if (input.remediatedResources && input.remediatedResources.length > 0) {
     return input.remediatedResources;
@@ -114,9 +111,7 @@ function formatRemediatedResourceLine(
   resource: RemediatedResource,
   fallbackResourceId: string,
 ): string {
-  const address = resource.type
-    ? `${resource.type}.${resource.name}`
-    : resource.name;
+  const address = resource.type ? `${resource.type}.${resource.name}` : resource.name;
   const roleLabel =
     resource.role === 'satellite'
       ? 'coupled satellite'

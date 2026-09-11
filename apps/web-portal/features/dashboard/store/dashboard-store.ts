@@ -30,10 +30,7 @@ interface DashboardStore {
   setStatusFilter: (status: string) => void;
   queueRemediation: (resourceId: string, pr?: QueuedRemediationPr) => void;
   setReviewingRemediation: (resourceId: string) => void;
-  triggerAdvisorPrompt: (
-    prompt: string | null,
-    resource?: ResourceStatusCardDto,
-  ) => void;
+  triggerAdvisorPrompt: (prompt: string | null, resource?: ResourceStatusCardDto) => void;
 }
 
 const initialChrome = {
@@ -74,7 +71,7 @@ export const useDashboardStore = create<DashboardStore>((set) => ({
         ? state.reviewingRemediations
         : [...state.reviewingRemediations, resourceId],
     })),
-  triggerAdvisorPrompt: (prompt, resource) => 
+  triggerAdvisorPrompt: (prompt, resource) =>
     set({ advisorPrompt: prompt ? { prompt, resource } : null }),
 }));
 

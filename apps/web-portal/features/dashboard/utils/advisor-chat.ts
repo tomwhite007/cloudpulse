@@ -22,15 +22,10 @@ export function auditChatBody(auditContext: AuditContext) {
   };
 }
 
-export function mergeAuditContextIntoChatBody(
-  rawBody: string,
-  auditContext: AuditContext,
-): string {
+export function mergeAuditContextIntoChatBody(rawBody: string, auditContext: AuditContext): string {
   const parsed = JSON.parse(rawBody) as Record<string, unknown>;
   const existingData =
-    parsed.data !== null &&
-    typeof parsed.data === 'object' &&
-    !Array.isArray(parsed.data)
+    parsed.data !== null && typeof parsed.data === 'object' && !Array.isArray(parsed.data)
       ? (parsed.data as Record<string, unknown>)
       : {};
 

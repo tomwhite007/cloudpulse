@@ -1,7 +1,6 @@
 import { sanitizeBranchName, type DraftPrRequest } from './draft-pr';
 
-export const DEFAULT_TERRAFORM_PATH =
-  'apps/infra/environments/sandbox/storage.tf';
+export const DEFAULT_TERRAFORM_PATH = 'apps/infra/environments/sandbox/storage.tf';
 
 export const DEFAULT_BRANCH_PREFIX = 'finops';
 
@@ -15,9 +14,7 @@ export type GitFlowEnv = {
   GITFLOW_BRANCH_TEMPLATE?: string;
 };
 
-export function gitFlowEnvFromProcess(
-  source: NodeJS.ProcessEnv = process.env,
-): GitFlowEnv {
+export function gitFlowEnvFromProcess(source: NodeJS.ProcessEnv = process.env): GitFlowEnv {
   return {
     GITHUB_TOKEN: source['GITHUB_TOKEN'],
     GITHUB_REPO_OWNER: source['GITHUB_REPO_OWNER'],
@@ -35,9 +32,7 @@ export type GitFlowConfig = {
   branchTemplate?: string;
 };
 
-export function getGitFlowConfig(
-  env: GitFlowEnv = gitFlowEnvFromProcess(),
-): GitFlowConfig {
+export function getGitFlowConfig(env: GitFlowEnv = gitFlowEnvFromProcess()): GitFlowConfig {
   const branchTemplate = env.GITFLOW_BRANCH_TEMPLATE?.trim();
 
   return {
@@ -91,10 +86,7 @@ export function interpolateBranchTemplate(
 }
 
 export function resolveGitFlowBranchName(
-  input: Pick<
-    DraftPrRequest,
-    'branchName' | 'actionType' | 'resourceId' | 'resourceName'
-  >,
+  input: Pick<DraftPrRequest, 'branchName' | 'actionType' | 'resourceId' | 'resourceName'>,
   env: GitFlowEnv,
 ): string {
   const prefix = resolveBranchPrefix(env);

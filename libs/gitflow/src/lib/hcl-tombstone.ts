@@ -22,10 +22,7 @@ export type TombstoneTarget = HclResourceBlock & {
   role: TombstoneRole;
 };
 
-export type TombstoneBlockReplacement =
-  | string
-  | { type?: string; name: string }
-  | HclResourceBlock;
+export type TombstoneBlockReplacement = string | { type?: string; name: string } | HclResourceBlock;
 
 export type TombstonePreviewTarget =
   | string
@@ -50,8 +47,7 @@ export function generateTombstoneDiffPreview(
   resourceNameOrTargets: TombstonePreviewTarget | readonly TombstonePreviewTarget[],
   filePath?: string,
 ): string {
-  const resolvedPath =
-    filePath?.trim() || getGitFlowConfig().terraformPath;
+  const resolvedPath = filePath?.trim() || getGitFlowConfig().terraformPath;
   const targets = normalizePreviewTargets(resourceNameOrTargets);
 
   const hunks = targets.map((target) => {
@@ -68,9 +64,7 @@ export function generateTombstoneDiffPreview(
   return [`# ${resolvedPath}`, ...hunks].join('\n');
 }
 
-export function parseResourceHeadersFromHcl(
-  hcl: string,
-): Array<{ type: string; name: string }> {
+export function parseResourceHeadersFromHcl(hcl: string): Array<{ type: string; name: string }> {
   const headerRe = /resource\s+"([^"]+)"\s+"([^"]+)"/g;
   const seen = new Set<string>();
   const headers: Array<{ type: string; name: string }> = [];
@@ -133,13 +127,9 @@ export function commentOutResourceBlocks(
   let result = hcl;
 
   for (const block of sorted) {
-    const prefix =
-      typeof header === 'function' ? header(block) : (header ?? '');
+    const prefix = typeof header === 'function' ? header(block) : (header ?? '');
     result =
-      result.slice(0, block.start) +
-      prefix +
-      commentOutLines(block.text) +
-      result.slice(block.end);
+      result.slice(0, block.start) + prefix + commentOutLines(block.text) + result.slice(block.end);
   }
 
   return result;
@@ -147,10 +137,7 @@ export function commentOutResourceBlocks(
 
 export function collectTombstoneTargets(
   hcl: string,
-  options: Pick<
-    TombstoneOptions,
-    'resourceName' | 'resourceId' | 'additionalBlocks' | 'hclDiff'
-  >,
+  options: Pick<TombstoneOptions, 'resourceName' | 'resourceId' | 'additionalBlocks' | 'hclDiff'>,
 ): TombstoneTarget[] {
   const blocks = findResourceBlocks(hcl);
   const primaries = blocks.filter((block) =>
@@ -183,10 +170,7 @@ export function collectTombstoneTargets(
   return [...byStart.values()].sort((a, b) => a.start - b.start);
 }
 
-export function tombstoneTargetedResource(
-  hcl: string,
-  options: TombstoneOptions,
-): string {
+export function tombstoneTargetedResource(hcl: string, options: TombstoneOptions): string {
   const targets = collectTombstoneTargets(hcl, options);
 
   if (targets.length > 0) {
@@ -232,9 +216,7 @@ function mergeAdditionalBlocks(
   const extras: TombstoneBlockReplacement[] = [];
 
   if (additionalBlocks != null) {
-    extras.push(
-      ...(Array.isArray(additionalBlocks) ? additionalBlocks : [additionalBlocks]),
-    );
+    extras.push(...(Array.isArray(additionalBlocks) ? additionalBlocks : [additionalBlocks]));
   }
 
   if (hclDiff?.trim()) {
@@ -266,15 +248,11 @@ function resolveAdditionalBlocks(
       if (headers.length > 0) {
         for (const header of headers) {
           resolved.push(
-            ...blocks.filter(
-              (block) => block.type === header.type && block.name === header.name,
-            ),
+            ...blocks.filter((block) => block.type === header.type && block.name === header.name),
           );
         }
       } else {
-        resolved.push(
-          ...blocks.filter((block) => blockMatchesTarget(block, item, item)),
-        );
+        resolved.push(...blocks.filter((block) => blockMatchesTarget(block, item, item)));
       }
       continue;
     }
@@ -286,8 +264,7 @@ function resolveAdditionalBlocks(
 
     resolved.push(
       ...blocks.filter(
-        (block) =>
-          (!item.type || block.type === item.type) && block.name === item.name,
+        (block) => (!item.type || block.type === item.type) && block.name === item.name,
       ),
     );
   }
@@ -312,9 +289,7 @@ function findCoupledSatelliteBlocks(
       continue;
     }
 
-    if (
-      primaries.some((primary) => referencesPrimary(block, primary, options))
-    ) {
+    if (primaries.some((primary) => referencesPrimary(block, primary, options))) {
       satellites.push(block);
     }
   }
@@ -391,10 +366,7 @@ function referencesPrimary(
 
   const resourceName = options.resourceName.trim();
   if (resourceName.length > 0) {
-    if (
-      text.includes(`"${resourceName}"`) ||
-      text.includes(`'${resourceName}'`)
-    ) {
+    if (text.includes(`"${resourceName}"`) || text.includes(`'${resourceName}'`)) {
       return true;
     }
   }

@@ -9,12 +9,8 @@ describe('NavHeader', () => {
   it('renders correctly', async () => {
     await renderPresenter(<NavHeader />);
 
-    expect(
-      screen.getByRole('heading', { name: 'CloudPulse' }),
-    ).toBeDefined();
-    
-    expect(
-      screen.getByRole('button', { name: 'Sync Telemetry' }),
-    ).toBeDefined();
+    expect(screen.getByRole('heading', { name: 'CloudPulse' })).toBeDefined();
+
+    expect(screen.getByRole('button', { name: 'Sync Telemetry' })).toBeDefined();
   });
 });

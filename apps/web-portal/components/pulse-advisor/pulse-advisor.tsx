@@ -13,9 +13,7 @@ function renderAdvisorToolParts(message: AdvisorUIMessage): ReactNode {
   return message.parts.map((part) => {
     if (part.type === 'tool-proposeTerraformRemediation') {
       if (part.state === 'output-available') {
-        return (
-          <RemediationProposalCard key={part.toolCallId} {...part.output} />
-        );
+        return <RemediationProposalCard key={part.toolCallId} {...part.output} />;
       }
 
       return (
@@ -48,20 +46,14 @@ function renderAdvisorToolParts(message: AdvisorUIMessage): ReactNode {
 }
 
 export function PulseAdvisor() {
-  const {
-    messages,
-    status,
-    isLoading,
-    setMessages,
-    sendAdvisorMessage,
-    auditSummary,
-  } = useAdvisorChat();
+  const { messages, status, isLoading, setMessages, sendAdvisorMessage, auditSummary } =
+    useAdvisorChat();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  const advisorPrompt = useDashboardStore(state => state.advisorPrompt);
-  const triggerAdvisorPrompt = useDashboardStore(state => state.triggerAdvisorPrompt);
-  const setReviewingRemediation = useDashboardStore(state => state.setReviewingRemediation);
+
+  const advisorPrompt = useDashboardStore((state) => state.advisorPrompt);
+  const triggerAdvisorPrompt = useDashboardStore((state) => state.triggerAdvisorPrompt);
+  const setReviewingRemediation = useDashboardStore((state) => state.setReviewingRemediation);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -78,7 +70,7 @@ export function PulseAdvisor() {
   }, [advisorPrompt, sendAdvisorMessage, triggerAdvisorPrompt, setReviewingRemediation]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value);
-  
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -86,37 +78,33 @@ export function PulseAdvisor() {
     setInput('');
   };
 
-  let promptPills = [
-    "Find zombie storage",
-    "How can I cut $2k?",
-    "Review RDS spend"
-  ];
+  let promptPills = ['Find zombie storage', 'How can I cut $2k?', 'Review RDS spend'];
 
   if (auditSummary.data) {
     promptPills = [];
-    const hasZombie = auditSummary.data.resources.some(r => r.status === 'ZOMBIE');
-    const hasRds = auditSummary.data.resources.some(r => r.resourceType === 'RDS');
+    const hasZombie = auditSummary.data.resources.some((r) => r.status === 'ZOMBIE');
+    const hasRds = auditSummary.data.resources.some((r) => r.resourceType === 'RDS');
     const totalWaste = auditSummary.data.totalIdentifiedWaste;
     const compliance = auditSummary.data.complianceScorePercent;
 
     if (hasZombie) {
-      promptPills.push("Find zombie storage");
+      promptPills.push('Find zombie storage');
     } else {
-      promptPills.push("Audit storage health");
+      promptPills.push('Audit storage health');
     }
 
     if (hasRds) {
-      promptPills.push("Review RDS spend");
+      promptPills.push('Review RDS spend');
     }
 
     if (totalWaste >= 1000) {
-      promptPills.push("How can I cut $1k+?");
+      promptPills.push('How can I cut $1k+?');
     } else {
-      promptPills.push("Explain waste findings");
+      promptPills.push('Explain waste findings');
     }
 
     if (compliance < 50 && promptPills.length < 4) {
-      promptPills.push("Explain compliance score");
+      promptPills.push('Explain compliance score');
     }
   }
 
@@ -129,7 +117,11 @@ export function PulseAdvisor() {
   };
 
   return (
-    <div role="complementary" aria-label="PulseAdvisor AI Assistant" className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/80 shadow-2xl backdrop-blur-xl">
+    <div
+      role="complementary"
+      aria-label="PulseAdvisor AI Assistant"
+      className="flex h-[calc(100vh-8rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/80 shadow-2xl backdrop-blur-xl"
+    >
       <div className="flex items-center gap-3 border-b border-white/10 p-4">
         <div className="flex size-8 items-center justify-center rounded-full bg-blue-600/20 text-blue-400">
           <Bot className="size-5" />
@@ -155,23 +147,29 @@ export function PulseAdvisor() {
           <div className="flex h-full flex-col items-center justify-center text-center text-zinc-400">
             <Bot className="mb-4 size-12 opacity-50" />
             <p className="max-w-[250px] text-sm">
-              I can analyze your cloud waste and help you automatically remediate it. How can I help today?
+              I can analyze your cloud waste and help you automatically remediate it. How can I help
+              today?
             </p>
           </div>
         ) : (
           <div className="flex flex-col gap-6">
             {messages.map((message) => (
-              <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div
+                key={message.id}
+                className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
                 {message.role !== 'user' && (
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400">
                     <Bot className="size-5" />
                   </div>
                 )}
-                <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
-                  message.role === 'user' 
-                    ? 'bg-blue-600 text-white rounded-tr-sm' 
-                    : 'bg-zinc-800/80 text-zinc-200 rounded-tl-sm border border-white/5'
-                }`}>
+                <div
+                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
+                    message.role === 'user'
+                      ? 'bg-blue-600 text-white rounded-tr-sm'
+                      : 'bg-zinc-800/80 text-zinc-200 rounded-tl-sm border border-white/5'
+                  }`}
+                >
                   {message.role === 'user' ? (
                     <p className="whitespace-pre-wrap">{advisorMessageMarkdown(message)}</p>
                   ) : (
@@ -183,14 +181,14 @@ export function PulseAdvisor() {
             ))}
             {isLoading && messages[messages.length - 1]?.role === 'user' && (
               <div className="flex items-center gap-3">
-                 <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400">
-                    <Bot className="size-5" />
-                  </div>
-                  <div className="flex items-center gap-1 rounded-2xl rounded-tl-sm bg-zinc-800/80 px-4 py-4 border border-white/5">
-                    <div className="size-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-0.3s]"></div>
-                    <div className="size-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-0.15s]"></div>
-                    <div className="size-1.5 animate-bounce rounded-full bg-zinc-500"></div>
-                  </div>
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-blue-600/20 text-blue-400">
+                  <Bot className="size-5" />
+                </div>
+                <div className="flex items-center gap-1 rounded-2xl rounded-tl-sm bg-zinc-800/80 px-4 py-4 border border-white/5">
+                  <div className="size-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-0.3s]"></div>
+                  <div className="size-1.5 animate-bounce rounded-full bg-zinc-500 [animation-delay:-0.15s]"></div>
+                  <div className="size-1.5 animate-bounce rounded-full bg-zinc-500"></div>
+                </div>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -212,7 +210,7 @@ export function PulseAdvisor() {
             ))}
           </div>
         )}
-        
+
         <form onSubmit={handleSubmit} className="relative flex items-center">
           <input
             id="advisor-input"

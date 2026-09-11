@@ -2,10 +2,7 @@ import type { CostAuditSummaryDto, ResourceStatusCardDto } from '@cloudpulse/api
 import { MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts/mocks';
 import type { LanguageModelV4Prompt } from '@ai-sdk/provider';
 import { describe, expect, it } from 'vitest';
-import {
-  ADVISOR_INSPECT_TOOL,
-  ADVISOR_REMEDIATION_TOOL,
-} from '../utils/pulse-advisor-tools';
+import { ADVISOR_INSPECT_TOOL, ADVISOR_REMEDIATION_TOOL } from '../utils/pulse-advisor-tools';
 import {
   MOCK_ADVISOR_FOLLOW_UP_TEXT,
   buildMockAdvisorStreamParts,
@@ -64,9 +61,7 @@ describe('mockAdvisorPromptUserText', () => {
 
   it('returns an empty string when there is no user message', () => {
     expect(mockAdvisorPromptUserText([])).toBe('');
-    expect(
-      mockAdvisorPromptUserText([{ role: 'system', content: 'system only' }]),
-    ).toBe('');
+    expect(mockAdvisorPromptUserText([{ role: 'system', content: 'system only' }])).toBe('');
   });
 });
 
@@ -129,20 +124,14 @@ describe('selectMockAdvisorReply', () => {
   });
 
   it('explains the compliance score and proposes the first finding when present', () => {
-    const withFinding = selectMockAdvisorReply(
-      'Explain compliance score',
-      MOCK_COST_AUDIT_SUMMARY,
-    );
+    const withFinding = selectMockAdvisorReply('Explain compliance score', MOCK_COST_AUDIT_SUMMARY);
     expect(withFinding.kind).toBe('propose');
     if (withFinding.kind === 'propose') {
       expect(withFinding.text).toContain('94%');
       expect(withFinding.proposal.resourceId).toBe('res-rds-prod-payments');
     }
 
-    const withoutFinding = selectMockAdvisorReply(
-      'Explain compliance score',
-      emptySummary,
-    );
+    const withoutFinding = selectMockAdvisorReply('Explain compliance score', emptySummary);
     expect(withoutFinding).toEqual({
       kind: 'text',
       text: 'Your score is 40% because 0 of 12 monitored assets is flagged as non-compliant waste.',
@@ -238,10 +227,7 @@ describe('buildMockAdvisorStreamParts', () => {
   });
 
   it('finishes with stop when there is no tool call', () => {
-    const parts = buildMockAdvisorStreamParts(
-      userPrompt('Find zombie storage'),
-      emptySummary,
-    );
+    const parts = buildMockAdvisorStreamParts(userPrompt('Find zombie storage'), emptySummary);
     const finish = parts.find((part) => part.type === 'finish');
     expect(finish?.type).toBe('finish');
     if (finish?.type === 'finish') {
@@ -251,10 +237,7 @@ describe('buildMockAdvisorStreamParts', () => {
   });
 
   it('emits follow-up text when the last prompt message is a tool result', () => {
-    const parts = buildMockAdvisorStreamParts(
-      toolFollowUpPrompt(),
-      MOCK_COST_AUDIT_SUMMARY,
-    );
+    const parts = buildMockAdvisorStreamParts(toolFollowUpPrompt(), MOCK_COST_AUDIT_SUMMARY);
     const delta = parts.find((part) => part.type === 'text-delta');
     expect(delta?.type).toBe('text-delta');
     if (delta?.type === 'text-delta') {

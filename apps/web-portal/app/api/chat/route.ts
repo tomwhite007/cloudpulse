@@ -44,9 +44,7 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as AdvisorChatBody;
     const messages = body.messages ?? [];
-    const auditContext = parseAuditContext(
-      body.auditContext ?? body.data?.auditContext,
-    );
+    const auditContext = parseAuditContext(body.auditContext ?? body.data?.auditContext);
 
     const auditorStatus = await fetchAuditStatus();
     const isDemoMode = isPulseAdvisorDemoMode({

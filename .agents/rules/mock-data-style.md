@@ -1,6 +1,6 @@
 ---
 description: Shared mock data layout, naming, and import paths
-globs: "**/mocks/**/*.ts,**/*.mock.ts,apps/auditor-api/src/**/*.module.ts,apps/web-portal/app/api/**/*.ts"
+globs: '**/mocks/**/*.ts,**/*.mock.ts,apps/auditor-api/src/**/*.module.ts,apps/web-portal/app/api/**/*.ts'
 alwaysApply: false
 ---
 
