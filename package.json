@@ -4,7 +4,7 @@
   "license": "MIT",
   "scripts": {
     "serve-mock-api": "nx serve auditor-api",
-    "serve-live-api": "USE_LIVE_AWS=true AWS_PROFILE=cloudpulse AWS_REGION=eu-west-1 nx serve auditor-api",
+    "serve-live-api": "USE_LIVE_AWS=true nx serve auditor-api",
     "serve-web-portal": "nx dev web-portal --port 4000",
     "test-web-portal": "nx test web-portal",
     "test-api-contracts": "nx run api-contracts:test",

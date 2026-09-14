@@ -54,6 +54,7 @@ out
 
 vitest.config.*.timestamp*
 apps/web-portal/.env.local
+apps/auditor-api/.env
 
 # Terraform
 **/.terraform/

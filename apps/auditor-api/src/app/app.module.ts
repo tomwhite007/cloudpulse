@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ApiKeyGuard } from './api-key.guard';
 import { CLOUD_AUDITOR_SERVICE } from './cloud-auditor.interface';
 import { MockCloudAuditorService } from '../mocks/cloud-auditor.mock';
 import { AwsCloudAuditorService } from '../auditor/aws-cloud-auditor.service';
@@ -12,6 +14,10 @@ import { McpModule } from '../mcp/mcp.module';
   controllers: [AppController],
   providers: [
     AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ApiKeyGuard,
+    },
     {
       provide: CLOUD_AUDITOR_SERVICE,
       useFactory: () => {

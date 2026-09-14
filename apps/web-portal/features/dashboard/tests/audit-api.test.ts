@@ -2,6 +2,7 @@ import type { RemediationRequestDto } from '@cloudpulse/api-contracts';
 import { MOCK_AUDIT_RESOURCES, MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts/mocks';
 import { describe, expect, it } from 'vitest';
 import {
+  auditorApiHeaders,
   fetchAuditSummary,
   fetchJson,
   postRemediation,
@@ -24,14 +25,14 @@ const matchingRequest: RemediationRequestDto = {
 };
 
 describe('resolveAuditorApiBaseUrl', () => {
-  it('uses the public URL in the browser even when a server URL is set', () => {
+  it('uses the same-origin proxy in the browser so the API key stays server-side', () => {
     expect(
       resolveAuditorApiBaseUrl({
         auditorApiUrl: 'http://cloudpulse-auditor-api:3333',
         publicAuditorApiUrl: 'http://localhost:3333',
         isBrowser: true,
       }),
-    ).toBe('http://localhost:3333');
+    ).toBe('');
   });
 
   it('prefers the server URL on the server', () => {
@@ -56,8 +57,8 @@ describe('resolveAuditorApiBaseUrl', () => {
 });
 
 describe('summaryEndpoint', () => {
-  it('uses the env API base by default', () => {
-    expect(summaryEndpoint()).toBe('http://localhost:3000/api/audit/summary');
+  it('uses the same-origin proxy by default in the browser', () => {
+    expect(summaryEndpoint()).toBe('/api/audit/summary');
   });
 
   it('prefers an explicit summary URL', () => {
@@ -68,14 +69,26 @@ describe('summaryEndpoint', () => {
 });
 
 describe('remediateEndpoint', () => {
-  it('uses the env API base by default', () => {
-    expect(remediateEndpoint()).toBe('http://localhost:3000/api/audit/remediate');
+  it('uses the same-origin proxy by default in the browser', () => {
+    expect(remediateEndpoint()).toBe('/api/audit/remediate');
   });
 
   it('prefers an explicit remediate URL', () => {
     expect(remediateEndpoint({ remediateUrl: 'https://auditor.test/remediate' })).toBe(
       'https://auditor.test/remediate',
     );
+  });
+});
+
+describe('auditorApiHeaders', () => {
+  it('omits the header when the key is unset', () => {
+    expect(auditorApiHeaders({})).toEqual({});
+  });
+
+  it('attaches x-api-key when the key is set', () => {
+    expect(auditorApiHeaders({ AUDITOR_API_KEY: ' secret-key ' })).toEqual({
+      'x-api-key': 'secret-key',
+    });
   });
 });
 
@@ -106,6 +119,28 @@ describe('fetchJson', () => {
     expect(received?.cache).toBe('no-store');
     expect(received?.signal).toBeInstanceOf(AbortSignal);
     expect(received?.method).toBe('GET');
+  });
+
+  it('attaches x-api-key when AUDITOR_API_KEY is set', async () => {
+    const previous = process.env.AUDITOR_API_KEY;
+    process.env.AUDITOR_API_KEY = 'secret-key';
+    try {
+      let received: RequestInit | undefined;
+      const fetchImpl: typeof fetch = async (_input, init) => {
+        received = init;
+        return jsonResponse({});
+      };
+
+      await fetchJson('http://example.test/summary', undefined, { fetchImpl });
+
+      expect(new Headers(received?.headers).get('x-api-key')).toBe('secret-key');
+    } finally {
+      if (previous === undefined) {
+        delete process.env.AUDITOR_API_KEY;
+      } else {
+        process.env.AUDITOR_API_KEY = previous;
+      }
+    }
   });
 });
 
