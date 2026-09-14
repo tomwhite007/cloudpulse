@@ -12,6 +12,7 @@ export function useAuditStatus(deps?: AuditApiDeps) {
     queryKey: auditKeys.status(),
     queryFn: () => fetchAuditStatus(deps),
     refetchInterval: 30000,
+    retry: false,
   });
 }
 
@@ -21,5 +22,6 @@ export function useAuditSummary(deps?: AuditApiDeps) {
     queryFn: () => fetchAuditSummary(deps),
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
     refetchOnWindowFocus: false, // Don't refetch on window focus
+    retry: false,
   });
 }

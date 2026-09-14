@@ -1,5 +1,6 @@
 import { Dashboard } from '@/features/dashboard';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
 import {
   assertNoAxeViolations,
   renderPresenter,
@@ -7,6 +8,13 @@ import {
 } from '../features/dashboard/tests/presenter-harness';
 
 usePresenterTestLifecycle();
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
 
 describe('Dashboard', () => {
   it('renders the FinOps screen landmarks', async () => {
@@ -27,8 +35,53 @@ describe('Dashboard', () => {
     ).toBeDefined();
   });
 
+  it('shows an error instead of mock data when the live auditor API fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/status')) {
+          return jsonResponse({ mode: 'LIVE', profile: 'sandbox' });
+        }
+        return jsonResponse({ error: true }, 503);
+      }),
+    );
+
+    await renderPresenter(<Dashboard />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Unable to load live audit data' })).toBeDefined();
+    });
+    expect(screen.getByRole('alert')).toHaveProperty(
+      'textContent',
+      'Request failed with status 503',
+    );
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeDefined();
+    expect(screen.queryByRole('region', { name: 'FinOps KPI metrics' })).toBeNull();
+    expect(screen.queryByRole('complementary', { name: 'PulseAdvisor AI Assistant' })).toBeNull();
+  });
+
   it('has no WCAG 2.1 AA axe violations', async () => {
     const { container } = await renderPresenter(<Dashboard />);
+    await assertNoAxeViolations(container);
+  });
+
+  it('has no WCAG 2.1 AA axe violations when live audit data fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/status')) {
+          return jsonResponse({ mode: 'LIVE', profile: 'sandbox' });
+        }
+        return jsonResponse({ error: true }, 503);
+      }),
+    );
+
+    const { container } = await renderPresenter(<Dashboard />);
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Unable to load live audit data' })).toBeDefined();
+    });
     await assertNoAxeViolations(container);
   });
 });

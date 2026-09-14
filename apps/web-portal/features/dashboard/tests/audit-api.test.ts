@@ -3,6 +3,7 @@ import { MOCK_AUDIT_RESOURCES, MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-c
 import { describe, expect, it } from 'vitest';
 import {
   auditorApiHeaders,
+  fetchAuditStatus,
   fetchAuditSummary,
   fetchJson,
   postRemediation,
@@ -217,7 +218,7 @@ describe('fetchAuditSummary', () => {
     expect(summary.totalMonthlySpend).toBe(MOCK_COST_AUDIT_SUMMARY.totalMonthlySpend);
   });
 
-  it('falls back to the mock summary when network fails', async () => {
+  it('falls back to the mock summary when network fails in simulated mode', async () => {
     const summary = await fetchAuditSummary({
       fetchJsonImpl: async () => {
         throw new Error('network down');
@@ -226,11 +227,57 @@ describe('fetchAuditSummary', () => {
     expect(summary).toEqual(MOCK_COST_AUDIT_SUMMARY);
   });
 
-  it('falls back when the payload fails Zod', async () => {
+  it('falls back when the payload fails Zod in simulated mode', async () => {
     const summary = await fetchAuditSummary({
       fetchJsonImpl: async () => ({ not: 'a summary' }),
     });
     expect(summary).toEqual(MOCK_COST_AUDIT_SUMMARY);
+  });
+
+  it('rethrows when the auditor is LIVE and the summary request fails', async () => {
+    await expect(
+      fetchAuditSummary({
+        fetchJsonImpl: async (url) => {
+          if (String(url).includes('/status')) {
+            return { mode: 'LIVE' };
+          }
+          throw new Error('network down');
+        },
+      }),
+    ).rejects.toThrow('network down');
+  });
+
+  it('rethrows when the auditor is LIVE and the payload fails Zod', async () => {
+    await expect(
+      fetchAuditSummary({
+        fetchJsonImpl: async (url) => {
+          if (String(url).includes('/status')) {
+            return { mode: 'LIVE' };
+          }
+          return { not: 'a summary' };
+        },
+      }),
+    ).rejects.toThrow();
+  });
+});
+
+describe('fetchAuditStatus', () => {
+  it('returns LIVE when the auditor reports live AWS', async () => {
+    await expect(
+      fetchAuditStatus({
+        fetchJsonImpl: async () => ({ mode: 'LIVE', profile: 'sandbox' }),
+      }),
+    ).resolves.toEqual({ mode: 'LIVE', profile: 'sandbox' });
+  });
+
+  it('falls back to SIMULATED when status cannot be reached', async () => {
+    await expect(
+      fetchAuditStatus({
+        fetchJsonImpl: async () => {
+          throw new Error('network down');
+        },
+      }),
+    ).resolves.toEqual({ mode: 'SIMULATED' });
   });
 });
 
@@ -248,7 +295,7 @@ describe('postRemediation', () => {
     expect(result).toEqual(payload);
   });
 
-  it('falls back to simulated remediation when cannot reach the API', async () => {
+  it('falls back to simulated remediation when cannot reach a simulated API', async () => {
     const result = await postRemediation(matchingRequest, {
       fetchJsonImpl: async () => {
         throw new Error('network down');
@@ -268,5 +315,18 @@ describe('postRemediation', () => {
     });
     expect(result.success).toBe(true);
     expect(result.resourceId).toBe(matchingRequest.resourceId);
+  });
+
+  it('rethrows when the auditor is LIVE and remediation fails', async () => {
+    await expect(
+      postRemediation(matchingRequest, {
+        fetchJsonImpl: async (url) => {
+          if (String(url).includes('/status')) {
+            return { mode: 'LIVE' };
+          }
+          throw new Error('network down');
+        },
+      }),
+    ).rejects.toThrow('network down');
   });
 });

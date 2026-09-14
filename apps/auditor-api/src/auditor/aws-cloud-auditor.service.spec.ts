@@ -1,6 +1,7 @@
 import { TextDecoder, TextEncoder } from 'util';
 Object.assign(global, { TextDecoder, TextEncoder });
 
+import { InternalServerErrorException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AwsCloudAuditorService } from './aws-cloud-auditor.service';
 import { CostExplorerClient } from '@aws-sdk/client-cost-explorer';
@@ -46,19 +47,12 @@ describe('AwsCloudAuditorService', () => {
   });
 
   describe('getAuditSummary', () => {
-    it('should fallback gracefully when AWS clients fail', async () => {
-      // Mock failure
+    it('should throw when AWS clients fail', async () => {
       CostExplorerClient.prototype.send = jest.fn().mockRejectedValue(new Error('AccessDenied'));
       EC2Client.prototype.send = jest.fn().mockRejectedValue(new Error('AccessDenied'));
       RDSClient.prototype.send = jest.fn().mockRejectedValue(new Error('AccessDenied'));
 
-      const result = await service.getAuditSummary();
-
-      expect(result.totalMonthlySpend).toBe(0);
-      expect(result.resources).toEqual([]);
-      expect(result.spendByService).toEqual([]);
-      expect(result.activeAssetCount).toBe(0);
-      expect(result.complianceScorePercent).toBe(100);
+      await expect(service.getAuditSummary()).rejects.toBeInstanceOf(InternalServerErrorException);
     });
 
     it('should return combined data when clients succeed', async () => {

@@ -1,6 +1,8 @@
 import {
+  AuditStatusSchema,
   CostAuditSummarySchema,
   RemediationResponseSchema,
+  type AuditStatusDto,
   type CostAuditSummaryDto,
   type RemediationRequestDto,
   type RemediationResponseDto,
@@ -18,10 +20,10 @@ export interface FetchJsonOptions {
   timeoutMs?: number;
 }
 
-export function auditorApiHeaders(source?: {
-  AUDITOR_API_KEY?: string;
-}): Record<string, string> {
-  const apiKey = (source ?? { AUDITOR_API_KEY: process.env.AUDITOR_API_KEY }).AUDITOR_API_KEY?.trim();
+export function auditorApiHeaders(source?: { AUDITOR_API_KEY?: string }): Record<string, string> {
+  const apiKey = (
+    source ?? { AUDITOR_API_KEY: process.env.AUDITOR_API_KEY }
+  ).AUDITOR_API_KEY?.trim();
   if (!apiKey) {
     return {};
   }
@@ -100,14 +102,19 @@ export function statusEndpoint(deps: AuditApiDeps = {}): string {
     : `${auditorApiBaseUrl(deps)}/api/audit/status`;
 }
 
-export async function fetchAuditStatus(deps: AuditApiDeps = {}) {
+export async function fetchAuditStatus(deps: AuditApiDeps = {}): Promise<AuditStatusDto> {
   const fetchJsonImpl = deps.fetchJsonImpl ?? fetchJson;
   try {
     const payload = await fetchJsonImpl(statusEndpoint(deps));
-    return payload as { mode: 'SIMULATED' | 'LIVE'; profile?: string };
+    return AuditStatusSchema.parse(payload);
   } catch {
-    return { mode: 'SIMULATED' as const };
+    return { mode: 'SIMULATED' };
   }
+}
+
+async function isLiveAuditorMode(deps: AuditApiDeps): Promise<boolean> {
+  const status = await fetchAuditStatus(deps);
+  return status.mode === 'LIVE';
 }
 
 export async function fetchAuditSummary(deps: AuditApiDeps = {}): Promise<CostAuditSummaryDto> {
@@ -116,7 +123,10 @@ export async function fetchAuditSummary(deps: AuditApiDeps = {}): Promise<CostAu
   try {
     const payload = await fetchJsonImpl(summaryEndpoint(deps));
     return CostAuditSummarySchema.parse(payload);
-  } catch {
+  } catch (error) {
+    if (await isLiveAuditorMode(deps)) {
+      throw error;
+    }
     return MOCK_COST_AUDIT_SUMMARY;
   }
 }
@@ -135,7 +145,10 @@ export async function postRemediation(
       body: JSON.stringify(request),
     });
     return RemediationResponseSchema.parse(payload);
-  } catch {
+  } catch (error) {
+    if (await isLiveAuditorMode(deps)) {
+      throw error;
+    }
     return simulate(request);
   }
 }
