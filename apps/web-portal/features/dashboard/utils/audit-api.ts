@@ -20,9 +20,30 @@ export interface FetchJsonOptions {
   timeoutMs?: number;
 }
 
+function stripTrailingSlash(url: string): string {
+  return url.trim().replace(/\/$/, '');
+}
+
+function firstNonEmptyBaseUrl(...candidates: Array<string | undefined>): string | undefined {
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue;
+    }
+    const normalized = stripTrailingSlash(candidate);
+    if (normalized.length > 0) {
+      return normalized;
+    }
+  }
+  return undefined;
+}
+
+function isBrowserRuntime(): boolean {
+  return typeof window !== 'undefined';
+}
+
 export function auditorApiHeaders(source?: { AUDITOR_API_KEY?: string }): Record<string, string> {
   const apiKey = (
-    source ?? { AUDITOR_API_KEY: process.env.AUDITOR_API_KEY }
+    source ?? (isBrowserRuntime() ? {} : { AUDITOR_API_KEY: process.env.AUDITOR_API_KEY })
   ).AUDITOR_API_KEY?.trim();
   if (!apiKey) {
     return {};
@@ -61,9 +82,11 @@ export interface AuditApiDeps {
   remediateUrl?: string;
   simulated?: typeof createMockRemediationResponse;
   baseUrl?: string;
+  isBrowser?: boolean;
 }
 
 export function resolveAuditorApiBaseUrl(source: {
+  auditorApiBaseUrl?: string;
   auditorApiUrl?: string;
   publicAuditorApiUrl: string;
   isBrowser: boolean;
@@ -71,20 +94,24 @@ export function resolveAuditorApiBaseUrl(source: {
   if (source.isBrowser) {
     return '';
   }
-  if (source.auditorApiUrl && source.auditorApiUrl.length > 0) {
-    return source.auditorApiUrl.replace(/\/$/, '');
-  }
-  return source.publicAuditorApiUrl.replace(/\/$/, '');
+  return (
+    firstNonEmptyBaseUrl(
+      source.auditorApiBaseUrl,
+      source.auditorApiUrl,
+      source.publicAuditorApiUrl,
+    ) ?? ''
+  );
 }
 
 export function auditorApiBaseUrl(deps: AuditApiDeps = {}): string {
   if (deps.baseUrl && deps.baseUrl.length > 0) {
-    return deps.baseUrl.replace(/\/$/, '');
+    return stripTrailingSlash(deps.baseUrl);
   }
   return resolveAuditorApiBaseUrl({
+    auditorApiBaseUrl: process.env.AUDITOR_API_BASE_URL,
     auditorApiUrl: process.env.AUDITOR_API_URL,
     publicAuditorApiUrl: env.NEXT_PUBLIC_AUDITOR_API_URL,
-    isBrowser: typeof window !== 'undefined',
+    isBrowser: deps.isBrowser ?? isBrowserRuntime(),
   });
 }
 

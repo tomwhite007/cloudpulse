@@ -1,7 +1,8 @@
 import type { RemediationRequestDto } from '@cloudpulse/api-contracts';
 import { MOCK_AUDIT_RESOURCES, MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts/mocks';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  auditorApiBaseUrl,
   auditorApiHeaders,
   fetchAuditStatus,
   fetchAuditSummary,
@@ -29,6 +30,7 @@ describe('resolveAuditorApiBaseUrl', () => {
   it('uses the same-origin proxy in the browser so the API key stays server-side', () => {
     expect(
       resolveAuditorApiBaseUrl({
+        auditorApiBaseUrl: 'http://ecs.example:3333',
         auditorApiUrl: 'http://cloudpulse-auditor-api:3333',
         publicAuditorApiUrl: 'http://localhost:3333',
         isBrowser: true,
@@ -36,9 +38,21 @@ describe('resolveAuditorApiBaseUrl', () => {
     ).toBe('');
   });
 
-  it('prefers the server URL on the server', () => {
+  it('prefers AUDITOR_API_BASE_URL over AUDITOR_API_URL on the server', () => {
     expect(
       resolveAuditorApiBaseUrl({
+        auditorApiBaseUrl: 'http://ecs.example:3333/',
+        auditorApiUrl: 'http://legacy.example:3333/',
+        publicAuditorApiUrl: 'http://localhost:3333',
+        isBrowser: false,
+      }),
+    ).toBe('http://ecs.example:3333');
+  });
+
+  it('falls back to AUDITOR_API_URL when AUDITOR_API_BASE_URL is empty', () => {
+    expect(
+      resolveAuditorApiBaseUrl({
+        auditorApiBaseUrl: '  ',
         auditorApiUrl: 'http://cloudpulse-auditor-api:3333/',
         publicAuditorApiUrl: 'http://localhost:3333',
         isBrowser: false,
@@ -46,14 +60,48 @@ describe('resolveAuditorApiBaseUrl', () => {
     ).toBe('http://cloudpulse-auditor-api:3333');
   });
 
-  it('falls back to the public URL on the server when the server URL is empty', () => {
+  it('falls back to the public URL on the server when internal URLs are empty', () => {
     expect(
       resolveAuditorApiBaseUrl({
+        auditorApiBaseUrl: '',
         auditorApiUrl: '',
         publicAuditorApiUrl: 'http://localhost:3000',
         isBrowser: false,
       }),
     ).toBe('http://localhost:3000');
+  });
+
+  it('returns an empty string when no server URLs are configured', () => {
+    expect(
+      resolveAuditorApiBaseUrl({
+        auditorApiBaseUrl: '',
+        auditorApiUrl: '',
+        publicAuditorApiUrl: '',
+        isBrowser: false,
+      }),
+    ).toBe('');
+  });
+});
+
+describe('auditorApiBaseUrl', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('strips a trailing slash from an injected base URL', () => {
+    expect(auditorApiBaseUrl({ baseUrl: 'http://auditor.test/' })).toBe('http://auditor.test');
+  });
+
+  it('prefers AUDITOR_API_BASE_URL over AUDITOR_API_URL on the server', () => {
+    vi.stubEnv('AUDITOR_API_BASE_URL', 'http://ecs.example:3333/');
+    vi.stubEnv('AUDITOR_API_URL', 'http://legacy.example:3333/');
+    expect(auditorApiBaseUrl({ isBrowser: false })).toBe('http://ecs.example:3333');
+  });
+
+  it('falls back to AUDITOR_API_URL when AUDITOR_API_BASE_URL is unset', () => {
+    vi.stubEnv('AUDITOR_API_BASE_URL', '');
+    vi.stubEnv('AUDITOR_API_URL', 'http://legacy.example:3333/');
+    expect(auditorApiBaseUrl({ isBrowser: false })).toBe('http://legacy.example:3333');
   });
 });
 
@@ -82,6 +130,11 @@ describe('remediateEndpoint', () => {
 });
 
 describe('auditorApiHeaders', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
   it('omits the header when the key is unset', () => {
     expect(auditorApiHeaders({})).toEqual({});
   });
@@ -90,6 +143,17 @@ describe('auditorApiHeaders', () => {
     expect(auditorApiHeaders({ AUDITOR_API_KEY: ' secret-key ' })).toEqual({
       'x-api-key': 'secret-key',
     });
+  });
+
+  it('does not read AUDITOR_API_KEY from the environment in the browser', () => {
+    vi.stubEnv('AUDITOR_API_KEY', 'secret-key');
+    expect(auditorApiHeaders()).toEqual({});
+  });
+
+  it('reads AUDITOR_API_KEY from the environment on the server', () => {
+    vi.stubEnv('AUDITOR_API_KEY', 'secret-key');
+    vi.stubGlobal('window', undefined);
+    expect(auditorApiHeaders()).toEqual({ 'x-api-key': 'secret-key' });
   });
 });
 
@@ -122,9 +186,8 @@ describe('fetchJson', () => {
     expect(received?.method).toBe('GET');
   });
 
-  it('attaches x-api-key when AUDITOR_API_KEY is set', async () => {
-    const previous = process.env.AUDITOR_API_KEY;
-    process.env.AUDITOR_API_KEY = 'secret-key';
+  it('does not attach x-api-key from process.env in the browser', async () => {
+    vi.stubEnv('AUDITOR_API_KEY', 'secret-key');
     try {
       let received: RequestInit | undefined;
       const fetchImpl: typeof fetch = async (_input, init) => {
@@ -134,13 +197,9 @@ describe('fetchJson', () => {
 
       await fetchJson('http://example.test/summary', undefined, { fetchImpl });
 
-      expect(new Headers(received?.headers).get('x-api-key')).toBe('secret-key');
+      expect(new Headers(received?.headers).has('x-api-key')).toBe(false);
     } finally {
-      if (previous === undefined) {
-        delete process.env.AUDITOR_API_KEY;
-      } else {
-        process.env.AUDITOR_API_KEY = previous;
-      }
+      vi.unstubAllEnvs();
     }
   });
 });

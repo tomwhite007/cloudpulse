@@ -22,6 +22,29 @@ describe('GET/POST /api/audit/[...path]', () => {
     expect(response.status).toBe(404);
   });
 
+  it('prefers AUDITOR_API_BASE_URL when forwarding to the auditor', async () => {
+    vi.stubEnv('AUDITOR_API_BASE_URL', 'http://ecs.test/');
+    vi.stubEnv('AUDITOR_API_URL', 'http://legacy.test');
+    vi.stubEnv('AUDITOR_API_KEY', 'secret-key');
+
+    let received: { url: string; init?: RequestInit } | undefined;
+    vi.stubGlobal(
+      'fetch',
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        received = { url: String(input), init };
+        return jsonResponse({ totalMonthlySpend: 1 });
+      },
+    );
+
+    const response = await GET(new Request('http://localhost/api/audit/summary'), {
+      params: Promise.resolve({ path: ['summary'] }),
+    });
+
+    expect(received?.url).toBe('http://ecs.test/api/audit/summary');
+    expect(new Headers(received?.init?.headers).get('x-api-key')).toBe('secret-key');
+    expect(response.status).toBe(200);
+  });
+
   it('forwards summary to the auditor with x-api-key', async () => {
     vi.stubEnv('AUDITOR_API_URL', 'http://auditor.test');
     vi.stubEnv('AUDITOR_API_KEY', 'secret-key');

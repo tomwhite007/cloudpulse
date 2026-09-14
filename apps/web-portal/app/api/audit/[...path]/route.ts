@@ -1,24 +1,17 @@
 import { NextResponse } from 'next/server';
-import { auditorApiHeaders } from '@/features/dashboard/utils/audit-api';
-import { env } from '@/lib/env';
+import { auditorApiBaseUrl, auditorApiHeaders } from '@/features/dashboard/utils/audit-api';
 
 const ALLOWED_AUDIT_PATHS = new Set(['summary', 'status', 'remediate']);
-
-function auditorOrigin(): string {
-  const internal = process.env.AUDITOR_API_URL?.trim().replace(/\/$/, '');
-  if (internal && internal.length > 0) {
-    return internal;
-  }
-  return env.NEXT_PUBLIC_AUDITOR_API_URL;
-}
 
 export async function proxyAuditRequest(request: Request, path: string[]): Promise<Response> {
   if (path.length !== 1 || !ALLOWED_AUDIT_PATHS.has(path[0])) {
     return NextResponse.json({ message: 'Not Found' }, { status: 404 });
   }
 
-  const target = `${auditorOrigin()}/api/audit/${path[0]}`;
-  const headers = new Headers(auditorApiHeaders());
+  const target = `${auditorApiBaseUrl({ isBrowser: false })}/api/audit/${path[0]}`;
+  const headers = new Headers(
+    auditorApiHeaders({ AUDITOR_API_KEY: process.env.AUDITOR_API_KEY }),
+  );
   const contentType = request.headers.get('content-type');
   if (contentType) {
     headers.set('content-type', contentType);
