@@ -55,10 +55,11 @@ jobs:
           auditor-api"
           fi
 
-          # Format as JSON array for matrix execution
-          JSON_ARRAY=$(echo "$AFFECTED" | jq -R . | jq -s -c .)
-          HAS_APPS="false"
-          if [ "$JSON_ARRAY" != "[]" ]; then
+          if [ -z "$AFFECTED" ]; then
+            JSON_ARRAY="[]"
+            HAS_APPS="false"
+          else
+            JSON_ARRAY=$(echo "$AFFECTED" | jq -R . | jq -s -c .)
             HAS_APPS="true"
           fi
 

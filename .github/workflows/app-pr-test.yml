@@ -45,9 +45,11 @@ jobs:
           set -e
           pnpm install --frozen-lockfile
           AFFECTED=$(pnpm nx show projects --affected --type=app | grep -E '^(web-portal|auditor-api)$' || true)
-          JSON_ARRAY=$(echo "$AFFECTED" | jq -R . | jq -s -c .)
-          HAS_APPS="false"
-          if [ "$JSON_ARRAY" != "[]" ]; then
+          if [ -z "$AFFECTED" ]; then
+            JSON_ARRAY="[]"
+            HAS_APPS="false"
+          else
+            JSON_ARRAY=$(echo "$AFFECTED" | jq -R . | jq -s -c .)
             HAS_APPS="true"
           fi
           echo "affected_apps=$JSON_ARRAY" >> "$GITHUB_OUTPUT"
