@@ -11,13 +11,21 @@ export function resolveAwsRegion(): string {
   return region && region.length > 0 ? region : DEFAULT_AWS_REGION;
 }
 
-/** Ensure the AWS SDK default provider chain uses the same profile as `--profile`. */
 export function applyLiveAwsEnv(): { profile: string; region: string } {
-  const profile = resolveLiveAwsProfile();
   const region = resolveAwsRegion();
-  process.env.AWS_PROFILE = profile;
   process.env.AWS_REGION = region;
-  return { profile, region };
+
+  const hasStaticEnvCreds = Boolean(
+    process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY,
+  );
+
+  if (!hasStaticEnvCreds) {
+    const profile = resolveLiveAwsProfile();
+    process.env.AWS_PROFILE = profile;
+    return { profile, region };
+  }
+
+  return { profile: process.env.AWS_PROFILE || '', region };
 }
 
 export function awsClientConfig() {

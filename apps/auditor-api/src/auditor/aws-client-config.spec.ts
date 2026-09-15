@@ -37,6 +37,8 @@ describe('resolveLiveAwsProfile', () => {
 describe('applyLiveAwsEnv', () => {
   const originalProfile = process.env.AWS_PROFILE;
   const originalRegion = process.env.AWS_REGION;
+  const originalAccessKeyId = process.env.AWS_ACCESS_KEY_ID;
+  const originalSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
 
   afterEach(() => {
     if (originalProfile === undefined) {
@@ -49,11 +51,23 @@ describe('applyLiveAwsEnv', () => {
     } else {
       process.env.AWS_REGION = originalRegion;
     }
+    if (originalAccessKeyId === undefined) {
+      delete process.env.AWS_ACCESS_KEY_ID;
+    } else {
+      process.env.AWS_ACCESS_KEY_ID = originalAccessKeyId;
+    }
+    if (originalSecretAccessKey === undefined) {
+      delete process.env.AWS_SECRET_ACCESS_KEY;
+    } else {
+      process.env.AWS_SECRET_ACCESS_KEY = originalSecretAccessKey;
+    }
   });
 
-  it('writes the default auditor profile into AWS_PROFILE', () => {
+  it('writes the default auditor profile into AWS_PROFILE when static credentials are absent', () => {
     delete process.env.AWS_PROFILE;
     delete process.env.AWS_REGION;
+    delete process.env.AWS_ACCESS_KEY_ID;
+    delete process.env.AWS_SECRET_ACCESS_KEY;
 
     const applied = applyLiveAwsEnv();
 
@@ -63,6 +77,33 @@ describe('applyLiveAwsEnv', () => {
     });
     expect(process.env.AWS_PROFILE).toBe(DEFAULT_LIVE_AWS_PROFILE);
     expect(process.env.AWS_REGION).toBe(DEFAULT_AWS_REGION);
+  });
+
+  it('does not set default AWS_PROFILE when static credentials (AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY) are present', () => {
+    delete process.env.AWS_PROFILE;
+    delete process.env.AWS_REGION;
+    process.env.AWS_ACCESS_KEY_ID = 'AKIAIOSFODNN7EXAMPLE';
+    process.env.AWS_SECRET_ACCESS_KEY = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY';
+
+    const applied = applyLiveAwsEnv();
+
+    expect(applied).toEqual({
+      profile: '',
+      region: DEFAULT_AWS_REGION,
+    });
+    expect(process.env.AWS_PROFILE).toBeUndefined();
+    expect(process.env.AWS_REGION).toBe(DEFAULT_AWS_REGION);
+  });
+
+  it('preserves explicit AWS_PROFILE when set alongside static credentials', () => {
+    process.env.AWS_PROFILE = 'custom-profile';
+    process.env.AWS_ACCESS_KEY_ID = 'AKIAIOSFODNN7EXAMPLE';
+    process.env.AWS_SECRET_ACCESS_KEY = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY';
+
+    const applied = applyLiveAwsEnv();
+
+    expect(applied.profile).toBe('custom-profile');
+    expect(process.env.AWS_PROFILE).toBe('custom-profile');
   });
 });
 

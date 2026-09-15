@@ -17,7 +17,9 @@
     "build-web-portal": "nx build web-portal",
     "docker-build-auditor-api": "docker build -f apps/auditor-api/Dockerfile -t cloudpulse-auditor-api:local .",
     "docker-build-web-portal": "docker build -f apps/web-portal/Dockerfile -t cloudpulse-web-portal:local .",
-    "docker-build-all": "pnpm docker-build-auditor-api && pnpm docker-build-web-portal"
+    "docker-build-all": "pnpm docker-build-auditor-api && pnpm docker-build-web-portal",
+    "smoke-test": "./private-tooling/smoke-test-containers.sh",
+    "smoke-test:stop": "./private-tooling/smoke-test-containers.sh --stop"
   },
   "private": true,
   "devDependencies": {
