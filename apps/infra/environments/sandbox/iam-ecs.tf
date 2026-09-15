@@ -32,6 +32,7 @@ data "aws_iam_policy_document" "auditor_task_audit" {
     sid    = "LeastPrivilegeAudit"
     effect = "Allow"
     actions = [
+      "ce:GetCostAndUsage",
       "ec2:DescribeVolumes",
       "ec2:DescribeInstances",
       "ec2:DescribeAddresses",

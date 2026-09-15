@@ -263,7 +263,7 @@ resource "aws_ecs_service" "auditor_api" {
   network_configuration {
     subnets          = data.aws_subnets.default.ids
     security_groups  = [aws_security_group.auditor_api_sg.id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   service_registries {

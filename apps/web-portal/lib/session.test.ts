@@ -22,9 +22,9 @@ describe('getSessionOptions', () => {
     });
   });
 
-  it('secures the cookie in production and prefers SESSION_SECRET', () => {
+  it('secures the cookie when COOKIE_SECURE is true and prefers SESSION_SECRET', () => {
     vi.stubEnv('SESSION_SECRET', 'a-custom-session-secret-that-is-32b');
-    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('COOKIE_SECURE', 'true');
 
     expect(getSessionOptions()).toMatchObject({
       cookieName: 'cloudpulse_evaluator_session',
