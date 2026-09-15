@@ -35,9 +35,12 @@ export function ResourceFeed({ resources }: { resources: ResourceStatusCardDto[]
           </p>
         </div>
         <Tabs value={statusFilter} onValueChange={(value) => setStatusFilter(String(value))}>
-          <TabsList className="h-auto flex-wrap" aria-label="Filter by status">
+          <TabsList
+            className="h-auto w-full flex-wrap justify-start group-data-horizontal/tabs:h-auto"
+            aria-label="Filter by status"
+          >
             {STATUS_FILTER_OPTIONS.map((item) => (
-              <TabsTrigger key={item.value} value={item.value}>
+              <TabsTrigger key={item.value} value={item.value} className="h-8 flex-none">
                 {item.label}
               </TabsTrigger>
             ))}
@@ -49,9 +52,13 @@ export function ResourceFeed({ resources }: { resources: ResourceStatusCardDto[]
         value={selectedResourceType}
         onValueChange={(value) => setSelectedResourceType(String(value))}
       >
-        <TabsList variant="line" className="h-auto flex-wrap" aria-label="Filter by resource type">
+        <TabsList
+          variant="line"
+          className="h-auto w-full flex-wrap justify-start pb-1 group-data-horizontal/tabs:h-auto"
+          aria-label="Filter by resource type"
+        >
           {RESOURCE_TYPE_FILTER_OPTIONS.map((item) => (
-            <TabsTrigger key={item.value} value={item.value}>
+            <TabsTrigger key={item.value} value={item.value} className="h-8 flex-none">
               {item.label}
             </TabsTrigger>
           ))}
