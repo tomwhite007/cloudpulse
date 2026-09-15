@@ -17,7 +17,7 @@ describe('AuditLoadError', () => {
       <AuditLoadError error={new Error('Request failed with status 503')} onRetry={onRetry} />,
     );
 
-    expect(screen.getByRole('heading', { name: 'Unable to load live audit data' })).toBeDefined();
+    expect(screen.getByRole('heading', { name: 'Unable to load audit data' })).toBeDefined();
     expect(screen.getByRole('alert')).toHaveProperty(
       'textContent',
       'Request failed with status 503',

@@ -48,8 +48,6 @@ export async function POST(req: Request) {
 
     const session = await getCloudPulseSession();
     const isDemoMode = isPulseAdvisorDemoMode({
-      demoMode: process.env.DEMO_MODE,
-      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
       isEvaluator: isEvaluatorSession(session),
     });
 

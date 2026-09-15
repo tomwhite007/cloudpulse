@@ -18,7 +18,11 @@
     "docker-build-web-portal": "docker build -f apps/web-portal/Dockerfile -t cloudpulse-web-portal:local .",
     "docker-build-all": "pnpm docker-build-auditor-api && pnpm docker-build-web-portal",
     "smoke-test": "./private-tooling/smoke-test-containers.sh",
-    "smoke-test:stop": "./private-tooling/smoke-test-containers.sh --stop"
+    "smoke-test:stop": "./private-tooling/smoke-test-containers.sh --stop",
+    "deploy-app": "./private-tooling/deploy-apps.sh",
+    "deploy-app:web": "./private-tooling/deploy-apps.sh web",
+    "deploy-app:api": "./private-tooling/deploy-apps.sh api",
+    "deploy-app:all": "./private-tooling/deploy-apps.sh all"
   },
   "private": true,
   "devDependencies": {

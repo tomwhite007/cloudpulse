@@ -7,9 +7,7 @@ import {
   type RemediationRequestDto,
   type RemediationResponseDto,
 } from '@cloudpulse/api-contracts';
-import { MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts/mocks';
 import { env } from '@/lib/env';
-import { createMockRemediationResponse } from '../mocks/audit-api.mock';
 
 export const REQUEST_TIMEOUT_MS = 4000;
 
@@ -65,7 +63,6 @@ export interface AuditApiDeps {
   fetchJsonImpl?: typeof fetchJson;
   summaryUrl?: string;
   remediateUrl?: string;
-  simulated?: typeof createMockRemediationResponse;
   baseUrl?: string;
   isBrowser?: boolean;
 }
@@ -116,31 +113,14 @@ export function statusEndpoint(deps: AuditApiDeps = {}): string {
 
 export async function fetchAuditStatus(deps: AuditApiDeps = {}): Promise<AuditStatusDto> {
   const fetchJsonImpl = deps.fetchJsonImpl ?? fetchJson;
-  try {
-    const payload = await fetchJsonImpl(statusEndpoint(deps));
-    return AuditStatusSchema.parse(payload);
-  } catch {
-    return { mode: 'SIMULATED' };
-  }
-}
-
-async function isLiveAuditorMode(deps: AuditApiDeps): Promise<boolean> {
-  const status = await fetchAuditStatus(deps);
-  return status.mode === 'LIVE';
+  const payload = await fetchJsonImpl(statusEndpoint(deps));
+  return AuditStatusSchema.parse(payload);
 }
 
 export async function fetchAuditSummary(deps: AuditApiDeps = {}): Promise<CostAuditSummaryDto> {
   const fetchJsonImpl = deps.fetchJsonImpl ?? fetchJson;
-
-  try {
-    const payload = await fetchJsonImpl(summaryEndpoint(deps));
-    return CostAuditSummarySchema.parse(payload);
-  } catch (error) {
-    if (await isLiveAuditorMode(deps)) {
-      throw error;
-    }
-    return MOCK_COST_AUDIT_SUMMARY;
-  }
+  const payload = await fetchJsonImpl(summaryEndpoint(deps));
+  return CostAuditSummarySchema.parse(payload);
 }
 
 export async function postRemediation(
@@ -148,19 +128,10 @@ export async function postRemediation(
   deps: AuditApiDeps = {},
 ): Promise<RemediationResponseDto> {
   const fetchJsonImpl = deps.fetchJsonImpl ?? fetchJson;
-  const simulate = deps.simulated ?? createMockRemediationResponse;
-
-  try {
-    const payload = await fetchJsonImpl(remediateEndpoint(deps), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
-    });
-    return RemediationResponseSchema.parse(payload);
-  } catch (error) {
-    if (await isLiveAuditorMode(deps)) {
-      throw error;
-    }
-    return simulate(request);
-  }
+  const payload = await fetchJsonImpl(remediateEndpoint(deps), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  return RemediationResponseSchema.parse(payload);
 }

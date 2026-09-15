@@ -135,6 +135,24 @@ resource "aws_lb_listener" "http" {
   protocol          = "HTTP"
 
   default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+resource "aws_lb_listener" "https" {
+  load_balancer_arn = aws_lb.alb.arn
+  port              = 443
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+  certificate_arn   = aws_acm_certificate_validation.cert.certificate_arn
+
+  default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.web.arn
   }
@@ -303,7 +321,24 @@ resource "aws_ecs_task_definition" "web" {
       { name = "PORT", value = "3000" },
       { name = "HOSTNAME", value = "0.0.0.0" },
       { name = "AUDITOR_API_URL", value = "http://auditor-api.cloudpulse.local:3333" },
-      { name = "NEXT_PUBLIC_AUDITOR_API_URL", value = "" }
+      { name = "NEXT_PUBLIC_AUDITOR_API_URL", value = "" },
+      { name = "COOKIE_SECURE", value = "true" },
+      { name = "GITHUB_REPO_OWNER", value = "tomwhite007" },
+      { name = "GITHUB_REPO_NAME", value = "cloudpulse" }
+    ]
+    secrets = [
+      {
+        name      = "ANTHROPIC_API_KEY"
+        valueFrom = data.aws_ssm_parameter.anthropic_api_key.arn
+      },
+      {
+        name      = "GITHUB_TOKEN"
+        valueFrom = data.aws_ssm_parameter.github_token.arn
+      },
+      {
+        name      = "DEMO_INVITE_PASSPHRASE"
+        valueFrom = data.aws_ssm_parameter.demo_invite_passphrase.arn
+      }
     ]
     logConfiguration = {
       logDriver = "awslogs"
@@ -344,7 +379,7 @@ resource "aws_ecs_service" "web" {
     container_port   = 3000
   }
 
-  depends_on = [aws_lb_listener.http]
+  depends_on = [aws_lb_listener.https]
 
   tags = {
     Name        = "cloudpulse-web"

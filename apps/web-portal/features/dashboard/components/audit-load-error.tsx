@@ -9,7 +9,7 @@ export function AuditLoadError({ error, onRetry }: { error: unknown; onRetry: ()
       className="rounded-xl bg-card/80 p-6 ring-1 ring-rose-500/20"
     >
       <h2 id="audit-error-heading" className="text-sm font-semibold tracking-tight">
-        Unable to load live audit data
+        Unable to load audit data
       </h2>
       <p role="alert" className="mt-2 text-sm text-muted-foreground">
         {errorMessage}

@@ -9,9 +9,11 @@ export interface UnlockRouteDeps {
 }
 
 function resolveInvitePassphrase(deps: UnlockRouteDeps = {}): string {
-  return (
-    deps.invitePassphrase ?? process.env.DEMO_INVITE_PASSPHRASE ?? DEFAULT_DEMO_INVITE_PASSPHRASE
-  );
+  if (deps.invitePassphrase) {
+    return deps.invitePassphrase;
+  }
+  const envVal = process.env.DEMO_INVITE_PASSPHRASE?.trim();
+  return envVal && envVal.length > 0 ? envVal : DEFAULT_DEMO_INVITE_PASSPHRASE;
 }
 
 async function readPassphrase(request: Request): Promise<string | undefined> {

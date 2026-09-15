@@ -3,6 +3,7 @@ import type { RemediationRequestDto } from '@cloudpulse/api-contracts';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CLOUD_AUDITOR_SERVICE } from './cloud-auditor.interface';
+import { MockCloudAuditorService } from '../mocks/cloud-auditor.mock';
 
 describe('AppController', () => {
   let appController: AppController;
@@ -16,6 +17,7 @@ describe('AppController', () => {
       controllers: [AppController],
       providers: [
         AppService,
+        MockCloudAuditorService,
         {
           provide: CLOUD_AUDITOR_SERVICE,
           useValue: mockCloudAuditorService,
@@ -33,29 +35,42 @@ describe('AppController', () => {
   });
 
   describe('audit/status', () => {
-    it('reports live AWS mode with the resolved profile', () => {
-      expect(appController.getAuditStatus()).toEqual({
+    it('reports live AWS mode when mode is not demo', () => {
+      expect(appController.getAuditStatus('live')).toEqual({
         mode: 'LIVE',
         profile: expect.any(String),
+      });
+    });
+
+    it('reports SIMULATED mode when mode is demo', () => {
+      expect(appController.getAuditStatus('demo')).toEqual({
+        mode: 'SIMULATED',
+        profile: 'mock',
       });
     });
   });
 
   describe('audit/summary', () => {
-    it('should return audit summary from cloud auditor', async () => {
-      const summary = await appController.getAuditSummary();
+    it('should return audit summary from live cloud auditor when mode is live', async () => {
+      const summary = await appController.getAuditSummary('live');
       expect(summary).toEqual({ totalWaste: 100 });
       expect(mockCloudAuditorService.getAuditSummary).toHaveBeenCalled();
+    });
+
+    it('should return mock audit summary when mode is demo', async () => {
+      const summary = await appController.getAuditSummary('demo');
+      expect(summary).toHaveProperty('resources');
+      expect(summary).toHaveProperty('totalIdentifiedWaste');
     });
   });
 
   describe('audit/remediate', () => {
-    it('should remediate resource via cloud auditor', async () => {
+    it('should remediate resource via live cloud auditor when mode is live', async () => {
       const request: RemediationRequestDto = {
         resourceId: 'res-1',
         actionId: 'act-terminate',
       };
-      const response = await appController.remediateResource(request);
+      const response = await appController.remediateResource(request, 'live');
       expect(response).toEqual({ success: true });
       expect(mockCloudAuditorService.remediateResource).toHaveBeenCalledWith(request);
     });
