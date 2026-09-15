@@ -3,7 +3,12 @@ import type {
   RemediationResponseDto,
   ResourceStatusCardDto,
 } from '@cloudpulse/api-contracts';
-import { MOCK_AUDIT_RESOURCES } from '@cloudpulse/api-contracts/mocks';
+import { MOCK_AUDIT_RESOURCES, MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts/mocks';
+
+export const MOCK_SIMULATED_AUDIT_STATUS = {
+  mode: 'SIMULATED',
+  status: 'ok',
+} as const;
 
 export interface MockRemediationDeps {
   resources?: ResourceStatusCardDto[];
@@ -34,4 +39,35 @@ export function createMockRemediationResponse(
     message: `Queued ${resource.recommendedAction.label} for ${resource.resourceName}. Terraform patch will apply in the next plan.`,
     queuedAt,
   };
+}
+
+function readRemediationRequestBody(body: unknown): RemediationRequestDto {
+  let resourceId = '';
+  let actionId = '';
+  if (body && typeof body === 'object') {
+    if ('resourceId' in body && typeof body.resourceId === 'string') {
+      resourceId = body.resourceId;
+    }
+    if ('actionId' in body && typeof body.actionId === 'string') {
+      actionId = body.actionId;
+    }
+  }
+  return { resourceId, actionId };
+}
+
+export async function createMockAuditBffPayload(path: string, request: Request): Promise<unknown> {
+  if (path === 'status') {
+    return MOCK_SIMULATED_AUDIT_STATUS;
+  }
+  if (path === 'summary') {
+    return MOCK_COST_AUDIT_SUMMARY;
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    body = undefined;
+  }
+  return createMockRemediationResponse(readRemediationRequestBody(body));
 }

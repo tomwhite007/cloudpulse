@@ -12,12 +12,14 @@ Paths relative to `apps/web-portal/`. Contract DTOs from `@cloudpulse/api-contra
 
 ```text
 app/                       # routing only
+app/api/audit/             # BFF proxy; unauthenticated payloads from features/dashboard/mocks
+app/api/auth/              # evaluator session unlock
 app/api/chat/              # PulseAdvisor Route Handler
 app/api/remediation/       # draft-PR Route Handler
 components/ui/             # shadcn
 components/providers/      # QueryProvider
 components/pulse-advisor/  # copilot shell
-lib/                       # cn, Zod env
+lib/                       # cn, Zod env, iron-session
 features/dashboard/
   index.ts                 # public surface (Dashboard only)
   components/              # client island + presenters
@@ -32,8 +34,8 @@ features/dashboard/
 - `'use client'` only on the island boundary (`features/dashboard/components/dashboard.tsx`), `components/providers/query-provider.tsx`, and `app/error.tsx`. Never on `page.tsx` / `layout.tsx`. Descendants of the island do not repeat it.
 - Query is the auditor-api cache: hooks in `features/*/hooks/`, parse with contract Zod, defaults 5m stale / no focus refetch. Create the client with `useState(createQueryClient)` in QueryProvider. Do not copy Query data into Zustand.
 - Zustand holds dashboard chrome only (filters, queued PR ids). Filters are not URL state.
-- PulseAdvisor demo: `isPulseAdvisorDemoMode` (`DEMO_MODE`, missing Anthropic key, or auditor not `LIVE`). Do not rename `DEMO_MODE` / `USE_LIVE_AWS` / `SIMULATED`|`LIVE`.
-- Chat and draft-PR are Route Handlers, not Server Actions. Draft-PR uses Zod + `fetch` + sonner. Do not add a second fetch library.
+- PulseAdvisor demo: `isPulseAdvisorDemoMode` (`DEMO_MODE`, missing Anthropic key, or no evaluator session). Chat and draft-PR read `getCloudPulseSession()`. Do not rename `DEMO_MODE` / `SIMULATED`|`LIVE`.
+- Chat, draft-PR, and the audit BFF are Route Handlers, not Server Actions. Draft-PR uses Zod + `fetch` + sonner. Do not add a second fetch library. Unauthenticated audit payloads come from `features/dashboard/mocks/` (`createMockAuditBffPayload`); do not implement mock responses in `app/api/**/route.ts` (see mock-data-style).
 - Tests: `features/*/tests/*.test.ts(x)`, colocated `app/api/**/route.test.ts` and `lib/*.test.ts`, page RTL in `specs/`. Query with `getByRole` / `getByLabelText`. Prefer DI over `vi.mock()`. Axe WCAG 2.1 AA on composed presenters/pages (`assertNoAxeViolations`), not shadcn atoms.
 - Target **WCAG 2.1 Level AA**. Semantic HTML, labelled controls, keyboard operability, visible `focus-visible` (never `outline-none` alone). Advisor-reviewing cards use inset ring + wash + text; focus rings stay offset on the control. Honour `prefers-reduced-motion`.
 - Public env only via Zod `lib/env.ts` (`NEXT_PUBLIC_AUDITOR_API_URL`). Secrets are server-only, never `NEXT_PUBLIC_`.

@@ -32,6 +32,15 @@ describe('AppController', () => {
     });
   });
 
+  describe('audit/status', () => {
+    it('reports live AWS mode with the resolved profile', () => {
+      expect(appController.getAuditStatus()).toEqual({
+        mode: 'LIVE',
+        profile: expect.any(String),
+      });
+    });
+  });
+
   describe('audit/summary', () => {
     it('should return audit summary from cloud auditor', async () => {
       const summary = await appController.getAuditSummary();

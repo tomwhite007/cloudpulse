@@ -11,7 +11,7 @@ import {
   resolveAuditorApiBaseUrl,
   summaryEndpoint,
 } from '../utils/audit-api';
-import { createMockRemediationResponse } from '../mocks/audit-api.mock';
+import { createMockAuditBffPayload, createMockRemediationResponse } from '../mocks/audit-api.mock';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -219,6 +219,86 @@ describe('createMockRemediationResponse', () => {
       resourceId: 'custom-rds',
       message: 'Queued Resize Custom for custom-rds. Terraform patch will apply in the next plan.',
       queuedAt,
+    });
+  });
+});
+
+describe('createMockAuditBffPayload', () => {
+  it('returns simulated status for the status path', async () => {
+    await expect(
+      createMockAuditBffPayload('status', new Request('http://localhost/api/audit/status')),
+    ).resolves.toEqual({ mode: 'SIMULATED', status: 'ok' });
+  });
+
+  it('returns the canned summary for the summary path', async () => {
+    await expect(
+      createMockAuditBffPayload('summary', new Request('http://localhost/api/audit/summary')),
+    ).resolves.toEqual(MOCK_COST_AUDIT_SUMMARY);
+  });
+
+  it('builds a mock remediation payload from a matching body', async () => {
+    const resource = MOCK_AUDIT_RESOURCES[0];
+    const payload = await createMockAuditBffPayload(
+      'remediate',
+      new Request('http://localhost/api/audit/remediate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resourceId: resource.id,
+          actionId: resource.recommendedAction.actionId,
+        }),
+      }),
+    );
+
+    expect(payload).toMatchObject({
+      success: true,
+      resourceId: resource.id,
+      message: expect.stringContaining(resource.recommendedAction.label),
+    });
+  });
+
+  it('ignores non-string remediation fields and invalid JSON', async () => {
+    const nonStringFields = await createMockAuditBffPayload(
+      'remediate',
+      new Request('http://localhost/api/audit/remediate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resourceId: 1, actionId: 2 }),
+      }),
+    );
+    expect(nonStringFields).toMatchObject({ success: false, resourceId: '' });
+
+    const invalidJson = await createMockAuditBffPayload(
+      'remediate',
+      new Request('http://localhost/api/audit/remediate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{',
+      }),
+    );
+    expect(invalidJson).toMatchObject({ success: false, resourceId: '' });
+
+    const nonObjectBody = await createMockAuditBffPayload(
+      'remediate',
+      new Request('http://localhost/api/audit/remediate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(null),
+      }),
+    );
+    expect(nonObjectBody).toMatchObject({ success: false, resourceId: '' });
+
+    const resourceIdOnly = await createMockAuditBffPayload(
+      'remediate',
+      new Request('http://localhost/api/audit/remediate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resourceId: MOCK_AUDIT_RESOURCES[0].id }),
+      }),
+    );
+    expect(resourceIdOnly).toMatchObject({
+      success: false,
+      resourceId: MOCK_AUDIT_RESOURCES[0].id,
     });
   });
 });

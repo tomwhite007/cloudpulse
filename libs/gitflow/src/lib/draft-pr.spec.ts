@@ -45,7 +45,7 @@ describe('remediationPrTitle', () => {
 
 describe('isGitFlowDemoMode', () => {
   it('simulates when no GitHub token is configured', () => {
-    expect(isGitFlowDemoMode({ auditorMode: 'LIVE' })).toBe(true);
+    expect(isGitFlowDemoMode({ isEvaluator: true })).toBe(true);
   });
 
   it('simulates when DEMO_MODE is true even with a token', () => {
@@ -53,26 +53,26 @@ describe('isGitFlowDemoMode', () => {
       isGitFlowDemoMode({
         githubToken: 'token',
         demoMode: 'true',
-        auditorMode: 'LIVE',
+        isEvaluator: true,
       }),
     ).toBe(true);
   });
 
-  it('simulates when the auditor is not live, even with a token', () => {
+  it('simulates when the evaluator session is missing, even with a token', () => {
     expect(
       isGitFlowDemoMode({
         githubToken: 'token',
-        auditorMode: 'SIMULATED',
+        isEvaluator: false,
       }),
     ).toBe(true);
     expect(isGitFlowDemoMode({ githubToken: 'token' })).toBe(true);
   });
 
-  it('runs live only when a token is present and the auditor is live', () => {
+  it('runs live only when a token is present and the evaluator session is unlocked', () => {
     expect(
       isGitFlowDemoMode({
         githubToken: 'token',
-        auditorMode: 'LIVE',
+        isEvaluator: true,
       }),
     ).toBe(false);
   });

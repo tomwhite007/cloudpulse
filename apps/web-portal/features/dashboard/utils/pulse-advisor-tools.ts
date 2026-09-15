@@ -179,7 +179,7 @@ export async function toAdvisorModelMessages(
 export function isPulseAdvisorDemoMode(options: {
   demoMode?: string;
   anthropicApiKey?: string;
-  auditorMode?: 'SIMULATED' | 'LIVE';
+  isEvaluator?: boolean;
 }): boolean {
   if (options.demoMode === 'true') {
     return true;
@@ -189,7 +189,7 @@ export function isPulseAdvisorDemoMode(options: {
     return true;
   }
 
-  return options.auditorMode !== 'LIVE';
+  return options.isEvaluator !== true;
 }
 
 export function isAnthropicFallbackError(error: unknown): boolean {

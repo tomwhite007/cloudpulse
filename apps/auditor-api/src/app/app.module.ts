@@ -2,9 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CLOUD_AUDITOR_SERVICE } from './cloud-auditor.interface';
-import { MockCloudAuditorService } from '../mocks/cloud-auditor.mock';
-import { AwsCloudAuditorService } from '../auditor/aws-cloud-auditor.service';
-import { applyLiveAwsEnv } from '../auditor/aws-client-config';
+import { createCloudAuditorService } from '../auditor/cloud-auditor.factory';
 import { McpModule } from '../mcp/mcp.module';
 
 @Module({
@@ -14,13 +12,7 @@ import { McpModule } from '../mcp/mcp.module';
     AppService,
     {
       provide: CLOUD_AUDITOR_SERVICE,
-      useFactory: () => {
-        if (process.env.USE_LIVE_AWS === 'true') {
-          applyLiveAwsEnv();
-          return new AwsCloudAuditorService();
-        }
-        return new MockCloudAuditorService();
-      },
+      useFactory: createCloudAuditorService,
     },
   ],
 })

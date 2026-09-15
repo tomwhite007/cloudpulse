@@ -23,10 +23,9 @@ export class AppController {
 
   @Get('audit/status')
   getAuditStatus() {
-    const isLive = process.env.USE_LIVE_AWS === 'true';
     return {
-      mode: isLive ? 'LIVE' : 'SIMULATED',
-      profile: isLive ? resolveLiveAwsProfile() : undefined,
+      mode: 'LIVE' as const,
+      profile: resolveLiveAwsProfile(),
     };
   }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { Toaster } from '@/components/ui/sonner';
-import { useAuditSummary } from '../hooks/use-audit-data';
+import { useAuditSummary, useEvaluatorSession } from '../hooks/use-audit-data';
 import { PulseAdvisor } from '../../../components/pulse-advisor/pulse-advisor';
 import { AuditLoadError } from './audit-load-error';
 import { KpiGrid } from './kpi-grid';
@@ -10,9 +10,11 @@ import { ResourceFeed } from './resource-feed';
 
 export function Dashboard() {
   const { data: summary, error, isError, refetch } = useAuditSummary();
+  const { data: evaluatorSession } = useEvaluatorSession();
   const resources = [...(summary?.resources ?? [])].sort(
     (left, right) => right.potentialMonthlySavings - left.potentialMonthlySavings,
   );
+  const advisorSessionKey = evaluatorSession?.isEvaluator === true ? 'live' : 'demo';
 
   return (
     <div className="min-h-screen bg-background">
@@ -40,7 +42,7 @@ export function Dashboard() {
               <ResourceFeed resources={resources} />
             </main>
             <div className="lg:sticky lg:top-20 lg:w-1/3">
-              <PulseAdvisor />
+              <PulseAdvisor key={advisorSessionKey} />
             </div>
           </>
         )}

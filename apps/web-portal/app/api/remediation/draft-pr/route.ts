@@ -5,7 +5,7 @@ import {
 } from '@cloudpulse/gitflow';
 import { MOCK_DRAFT_PR } from '@cloudpulse/gitflow/mocks';
 import { NextResponse } from 'next/server';
-import { fetchAuditStatus } from '@/features/dashboard/utils/audit-api';
+import { getCloudPulseSession, isEvaluatorSession } from '@/lib/session';
 
 const DEMO_MODE_NOTICE = 'GitFlow draft PR running in deterministic DEMO mode; skipping GitHub';
 
@@ -25,12 +25,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const auditorStatus = await fetchAuditStatus();
+    const session = await getCloudPulseSession();
     if (
       isGitFlowDemoMode({
         githubToken: process.env.GITHUB_TOKEN,
         demoMode: process.env.DEMO_MODE,
-        auditorMode: auditorStatus.mode,
+        isEvaluator: isEvaluatorSession(session),
       })
     ) {
       console.log(DEMO_MODE_NOTICE);

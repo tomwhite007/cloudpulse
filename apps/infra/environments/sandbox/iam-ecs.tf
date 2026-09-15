@@ -27,24 +27,6 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_role" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
-data "aws_iam_policy_document" "ecs_execution_ssm" {
-  statement {
-    sid    = "ReadAuditorApiKey"
-    effect = "Allow"
-    actions = [
-      "ssm:GetParameters",
-      "ssm:GetParameter",
-    ]
-    resources = [data.aws_ssm_parameter.auditor_api_key.arn]
-  }
-}
-
-resource "aws_iam_role_policy" "ecs_execution_ssm" {
-  name   = "cloudpulse-ecs-execution-ssm"
-  role   = aws_iam_role.ecs_execution_role.id
-  policy = data.aws_iam_policy_document.ecs_execution_ssm.json
-}
-
 data "aws_iam_policy_document" "auditor_task_audit" {
   statement {
     sid    = "LeastPrivilegeAudit"

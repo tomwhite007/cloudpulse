@@ -35,7 +35,7 @@ export function remediationPrTitle(commitMessage: string): string {
 export function isGitFlowDemoMode(options: {
   githubToken?: string;
   demoMode?: string;
-  auditorMode?: 'SIMULATED' | 'LIVE';
+  isEvaluator?: boolean;
 }): boolean {
   if (options.demoMode === 'true') {
     return true;
@@ -45,7 +45,7 @@ export function isGitFlowDemoMode(options: {
     return true;
   }
 
-  return options.auditorMode !== 'LIVE';
+  return options.isEvaluator !== true;
 }
 
 export function listRemediatedResources(

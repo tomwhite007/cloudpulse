@@ -1,12 +1,16 @@
 import { MOCK_DRAFT_PR } from '@cloudpulse/gitflow/mocks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const fetchAuditStatus = vi.hoisted(() => vi.fn());
+const getCloudPulseSession = vi.hoisted(() => vi.fn());
 const createGitHubRemediationPr = vi.hoisted(() => vi.fn());
 
-vi.mock('@/features/dashboard/utils/audit-api', () => ({
-  fetchAuditStatus,
-}));
+vi.mock('@/lib/session', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/session')>('@/lib/session');
+  return {
+    ...actual,
+    getCloudPulseSession,
+  };
+});
 
 vi.mock('@cloudpulse/gitflow', async () => {
   const actual = await vi.importActual<typeof import('@cloudpulse/gitflow')>('@cloudpulse/gitflow');
@@ -36,14 +40,14 @@ function jsonRequest(body: unknown): Request {
 
 describe('POST /api/remediation/draft-pr', () => {
   beforeEach(() => {
-    fetchAuditStatus.mockReset();
+    getCloudPulseSession.mockReset();
     createGitHubRemediationPr.mockReset();
     vi.unstubAllEnvs();
   });
 
-  it('returns the canned mock PR and does not call GitHub when the auditor is simulated', async () => {
+  it('returns the canned mock PR and does not call GitHub without an evaluator session', async () => {
     vi.stubEnv('GITHUB_TOKEN', 'token');
-    fetchAuditStatus.mockResolvedValue({ mode: 'SIMULATED' });
+    getCloudPulseSession.mockResolvedValue({});
 
     const { POST } = await import('./route');
     const response = await POST(jsonRequest(validPayload));
@@ -53,10 +57,10 @@ describe('POST /api/remediation/draft-pr', () => {
     expect(createGitHubRemediationPr).not.toHaveBeenCalled();
   });
 
-  it('creates a live GitHub PR only when the auditor is live and a token is present', async () => {
+  it('creates a live GitHub PR only when the evaluator session is unlocked and a token is present', async () => {
     vi.stubEnv('GITHUB_TOKEN', 'token');
     vi.stubEnv('DEMO_MODE', 'false');
-    fetchAuditStatus.mockResolvedValue({ mode: 'LIVE' });
+    getCloudPulseSession.mockResolvedValue({ isEvaluator: true });
     createGitHubRemediationPr.mockResolvedValue({
       success: true,
       simulated: false,

@@ -11,7 +11,7 @@ alwaysApply: false
 Paths relative to `apps/auditor-api/`. Payloads: `@cloudpulse/api-contracts`. Mocks: mock-data-style.
 
 - Thin controllers: route, extract, call service, return. No business logic in controllers.
-- `CLOUD_AUDITOR_SERVICE`: `USE_LIVE_AWS === 'true'` → `AwsCloudAuditorService` (AWS SDK clients in `src/auditor/`); else `MockCloudAuditorService` from `src/mocks/`. Wire only via module `useFactory`. Status is `LIVE` | `SIMULATED`. Do not rename `USE_LIVE_AWS` / `DEMO_MODE` / those mode strings.
+- `CLOUD_AUDITOR_SERVICE`: always `AwsCloudAuditorService` via `createCloudAuditorService` (`applyLiveAwsEnv` + AWS SDK clients in `src/auditor/`). Wire only via module `useFactory`. Status is always `LIVE` with `resolveLiveAwsProfile()`. `MockCloudAuditorService` is for specs only. Portal demo vs live is the evaluator session, not an auditor env flag. Do not rename `DEMO_MODE` / `SIMULATED`|`LIVE`.
 - No ORM and no Repository layer. AWS SDK lives in auditor services.
 - Validate request bodies with contract Zod (`safeParse`), not class-validator.
 - Use Nest `HttpException` subclasses (`BadRequestException`, …). Do not add a global exception filter unless one is introduced on purpose.

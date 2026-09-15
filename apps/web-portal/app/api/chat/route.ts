@@ -1,7 +1,6 @@
 import { anthropic } from '@ai-sdk/anthropic';
 import { stepCountIs, streamText } from 'ai';
 import type { LanguageModel, UIMessage } from 'ai';
-import { fetchAuditStatus } from '@/features/dashboard/utils/audit-api';
 import { createMockAdvisorLanguageModel } from '@/features/dashboard/mocks/pulse-advisor-model.mock';
 import {
   buildAdvisorSystemPrompt,
@@ -11,6 +10,7 @@ import {
   parseAuditContext,
   toAdvisorModelMessages,
 } from '@/features/dashboard/utils/pulse-advisor-tools';
+import { getCloudPulseSession, isEvaluatorSession } from '@/lib/session';
 
 const DEMO_MODE_NOTICE = 'PulseAdvisor running in deterministic DEMO mode';
 const PULSE_ADVISOR_MODEL = 'claude-sonnet-5';
@@ -46,11 +46,11 @@ export async function POST(req: Request) {
     const messages = body.messages ?? [];
     const auditContext = parseAuditContext(body.auditContext ?? body.data?.auditContext);
 
-    const auditorStatus = await fetchAuditStatus();
+    const session = await getCloudPulseSession();
     const isDemoMode = isPulseAdvisorDemoMode({
       demoMode: process.env.DEMO_MODE,
       anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-      auditorMode: auditorStatus.mode,
+      isEvaluator: isEvaluatorSession(session),
     });
 
     if (isDemoMode) {

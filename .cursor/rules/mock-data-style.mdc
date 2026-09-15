@@ -20,10 +20,11 @@ CloudPulse mocks are **runtime demo doubles** and shared canned datasets, not Je
 
 - Live barrels (`@cloudpulse/api-contracts`, `@cloudpulse/gitflow`) export contracts and real functions only. They MUST NOT re-export `MOCK_*` or fake implementations.
 - Import mocks from a dedicated path (`@cloudpulse/api-contracts/mocks`, `@cloudpulse/gitflow/mocks`, or a relative `../mocks/...` file).
-- Composition roots (Nest `useFactory`, Next `route.ts`) MAY import mocks. Domain files MUST NOT declare mock datasets inline.
+- Composition roots (Nest `useFactory`, Next `route.ts`) MAY import mocks and return them. They MUST NOT define mock datasets, factories, path switches, or response builders in the live file. A demo/unauthenticated branch is a thin call only: `return NextResponse.json(MOCK_X)` or `return createMockY(...)`. Request parsing and per-path mock payloads belong in `mocks/<domain>.mock.ts`.
+- Domain files MUST NOT declare mock datasets inline.
 
 ## Product flags
 
-Do **not** rename mode switches or API enums: `DEMO_MODE`, `USE_LIVE_AWS`, `AuditStatusDto.mode` (`SIMULATED` / `LIVE`). Those are flags, not datasets. Skip live I/O in composition roots using those flags (see react-nextjs-style, nestjs-backend-style, gitflow-style).
+Do **not** rename mode switches or API enums: `DEMO_MODE`, `AuditStatusDto.mode` (`SIMULATED` / `LIVE`). Those are flags, not datasets. Portal demo vs live is the evaluator session. Skip live I/O in composition roots using those flags (see react-nextjs-style, nestjs-backend-style, gitflow-style).
 
 Leave one-off objects that exist only inside a single spec in that spec unless they are reused.

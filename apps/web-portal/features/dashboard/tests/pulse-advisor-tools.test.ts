@@ -198,7 +198,7 @@ describe('isPulseAdvisorDemoMode', () => {
       isPulseAdvisorDemoMode({
         demoMode: 'true',
         anthropicApiKey: 'key',
-        auditorMode: 'LIVE',
+        isEvaluator: true,
       }),
     ).toBe(true);
   });
@@ -206,25 +206,24 @@ describe('isPulseAdvisorDemoMode', () => {
   it('uses the deterministic mock when no Anthropic key is configured', () => {
     expect(
       isPulseAdvisorDemoMode({
-        auditorMode: 'LIVE',
+        isEvaluator: true,
       }),
     ).toBe(true);
   });
 
-  it('uses the deterministic mock when the auditor is simulated', () => {
+  it('uses the deterministic mock when the evaluator session is missing', () => {
     expect(
       isPulseAdvisorDemoMode({
         anthropicApiKey: 'key',
-        auditorMode: 'SIMULATED',
       }),
     ).toBe(true);
   });
 
-  it('uses Anthropic only for live AWS with a configured key', () => {
+  it('uses Anthropic only for an unlocked evaluator with a configured key', () => {
     expect(
       isPulseAdvisorDemoMode({
         anthropicApiKey: 'key',
-        auditorMode: 'LIVE',
+        isEvaluator: true,
       }),
     ).toBe(false);
   });
