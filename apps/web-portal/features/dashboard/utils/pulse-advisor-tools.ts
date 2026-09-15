@@ -176,19 +176,7 @@ export async function toAdvisorModelMessages(
   }
 }
 
-export function isPulseAdvisorDemoMode(options: {
-  demoMode?: string;
-  anthropicApiKey?: string;
-  isEvaluator?: boolean;
-}): boolean {
-  if (options.demoMode === 'true') {
-    return true;
-  }
-
-  if (!options.anthropicApiKey) {
-    return true;
-  }
-
+export function isPulseAdvisorDemoMode(options: { isEvaluator?: boolean }): boolean {
   return options.isEvaluator !== true;
 }
 

@@ -193,39 +193,13 @@ describe('toAdvisorModelMessages', () => {
 });
 
 describe('isPulseAdvisorDemoMode', () => {
-  it('uses the deterministic mock when DEMO_MODE is true', () => {
-    expect(
-      isPulseAdvisorDemoMode({
-        demoMode: 'true',
-        anthropicApiKey: 'key',
-        isEvaluator: true,
-      }),
-    ).toBe(true);
-  });
-
-  it('uses the deterministic mock when no Anthropic key is configured', () => {
-    expect(
-      isPulseAdvisorDemoMode({
-        isEvaluator: true,
-      }),
-    ).toBe(true);
-  });
-
   it('uses the deterministic mock when the evaluator session is missing', () => {
-    expect(
-      isPulseAdvisorDemoMode({
-        anthropicApiKey: 'key',
-      }),
-    ).toBe(true);
+    expect(isPulseAdvisorDemoMode({})).toBe(true);
+    expect(isPulseAdvisorDemoMode({ isEvaluator: false })).toBe(true);
   });
 
-  it('uses Anthropic only for an unlocked evaluator with a configured key', () => {
-    expect(
-      isPulseAdvisorDemoMode({
-        anthropicApiKey: 'key',
-        isEvaluator: true,
-      }),
-    ).toBe(false);
+  it('uses Anthropic when the in-app Live Sandbox session is unlocked', () => {
+    expect(isPulseAdvisorDemoMode({ isEvaluator: true })).toBe(false);
   });
 });
 
