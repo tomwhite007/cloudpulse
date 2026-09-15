@@ -322,7 +322,19 @@ resource "aws_ecs_task_definition" "web" {
       { name = "HOSTNAME", value = "0.0.0.0" },
       { name = "AUDITOR_API_URL", value = "http://auditor-api.cloudpulse.local:3333" },
       { name = "NEXT_PUBLIC_AUDITOR_API_URL", value = "" },
-      { name = "COOKIE_SECURE", value = "true" }
+      { name = "COOKIE_SECURE", value = "true" },
+      { name = "GITHUB_REPO_OWNER", value = "tomwhite007" },
+      { name = "GITHUB_REPO_NAME", value = "cloudpulse" }
+    ]
+    secrets = [
+      {
+        name      = "ANTHROPIC_API_KEY"
+        valueFrom = data.aws_ssm_parameter.anthropic_api_key.arn
+      },
+      {
+        name      = "GITHUB_TOKEN"
+        valueFrom = data.aws_ssm_parameter.github_token.arn
+      }
     ]
     logConfiguration = {
       logDriver = "awslogs"
