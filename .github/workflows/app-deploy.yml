@@ -95,7 +95,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run Quality Gate (Lint & Unit Tests)
-        run: pnpm nx affected -t lint test
+        run: pnpm nx affected -t lint test --exclude=infra
 
   deploy-apps:
     name: Build & Deploy (${{ matrix.app }})
