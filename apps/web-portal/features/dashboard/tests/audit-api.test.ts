@@ -196,7 +196,7 @@ describe('createMockRemediationResponse', () => {
     expect(result.success).toBe(false);
   });
 
-  it('uses an injected resource catalog instead of the contract mock', () => {
+  it('uses an injected resource catalogue instead of the contract mock', () => {
     const queuedAt = '2026-09-04T12:00:00.000Z';
     const custom = {
       ...MOCK_AUDIT_RESOURCES[0],

@@ -15,7 +15,7 @@ describe('audit contracts', () => {
       region: 'us-east-1',
       monthlyCost: 100,
       potentialMonthlySavings: 40,
-      telemetrySummary: 'low utilization',
+      telemetrySummary: 'low utilisation',
       recommendedAction: {
         actionId: 'act-1',
         label: 'Resize',

@@ -101,9 +101,9 @@ Do not add `export const dynamic`, `export const revalidate`, or `export const f
 
 ---
 
-## ORM adapters and serialization
+## ORM adapters and serialisation
 
-Do not pass raw database entities (Prisma, Drizzle rows) across the RSC-to-client boundary. Reshape ORM/HTTP internals in `features/<feature>/utils/*.adapters.ts` before client props. Pass only JSON-serializable fields: no functions, `Date`, `Map`, `Set`, or class instances as props to client components.
+Do not pass raw database entities (Prisma, Drizzle rows) across the RSC-to-client boundary. Reshape ORM/HTTP internals in `features/<feature>/utils/*.adapters.ts` before client props. Pass only JSON-serialisable fields: no functions, `Date`, `Map`, `Set`, or class instances as props to client components.
 
 Contract DTOs that already are the view-model should not be wrapped in a second adapter.
 
@@ -152,6 +152,6 @@ These patterns remain good generic advice. CloudPulse already follows the subset
 
 - One HTTP cache library (TanStack Query). Do not add SWR or RTK Query beside it. Put Query hooks in `features/<feature>/hooks/`. Extract pure fetch/parse helpers to `utils/` and test them. Put every input that changes the result in `queryKey`; prefer a key factory. Parse payloads with Zod. Do not fetch in `useEffect`. Do not copy Query data into `useState` or Zustand.
 - Zustand for shared client UI chrome (drawers, filters, queued ids), not for server data. Feature-scoped stores; no app-root `store/` folder.
-- Vitest: colocate `features/<feature>/tests/*.test.ts(x)`. Test presenters by visible behavior, not internal state. Query with `getByRole` / `getByLabelText`. Prefer dependency injection over `vi.mock()`. Do not render RSCs in Vitest.
+- Vitest: colocate `features/<feature>/tests/*.test.ts(x)`. Test presenters by visible behaviour, not internal state. Query with `getByRole` / `getByLabelText`. Prefer dependency injection over `vi.mock()`. Do not render RSCs in Vitest.
 
 **CloudPulse:** Query defaults and `useState(createQueryClient)` as above. Zustand is dashboard chrome only.

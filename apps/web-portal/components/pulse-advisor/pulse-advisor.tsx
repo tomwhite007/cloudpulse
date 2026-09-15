@@ -48,7 +48,7 @@ function renderAdvisorToolParts(message: AdvisorUIMessage): ReactNode {
               aria-hidden="true"
             />
           )}
-          {done ? 'Analyzed Waste Summary' : 'Analyzing Waste Summary...'}
+          {done ? 'Analysed Waste Summary' : 'Analysing Waste Summary...'}
         </div>
       );
     }
@@ -170,7 +170,7 @@ export function PulseAdvisor() {
           <div className="flex h-full flex-col items-center justify-center text-center text-zinc-400">
             <Bot className="mb-4 size-12 opacity-50" aria-hidden="true" />
             <p className="max-w-[250px] text-sm">
-              I can analyze your cloud waste and help you automatically remediate it. How can I help
+              I can analyse your cloud waste and help you automatically remediate it. How can I help
               today?
             </p>
           </div>

@@ -99,7 +99,7 @@ describe('filterResources', () => {
   });
 });
 
-describe('filter option catalogs', () => {
+describe('filter option catalogues', () => {
   it('lists both audit modes', () => {
     expect(AUDIT_MODE_OPTIONS.map((item) => item.id)).toEqual(['SIMULATED', 'LIVE']);
   });

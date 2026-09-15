@@ -133,7 +133,7 @@ export function buildAdvisorSystemPrompt(auditContext: CostAuditSummaryDto): str
 
   return [
     'You are an Elite Enterprise FinOps Copilot (PulseAdvisor).',
-    'Help the operator analyze cloud waste and propose safe Terraform remediations.',
+    'Help the operator analyse cloud waste and propose safe Terraform remediations.',
     'Always reference real resource IDs from the audit findings below.',
     'Whenever you suggest an infrastructure change, you MUST execute the proposeTerraformRemediation tool so the UI can render a proposal card.',
     'Do not invent resources that are not present in the audit context.',

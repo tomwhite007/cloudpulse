@@ -106,7 +106,7 @@ describe('Dashboard', () => {
     expect(screen.queryByRole('button', { name: 'Clear chat' })).toBeNull();
     expect(
       screen.getByText(
-        'I can analyze your cloud waste and help you automatically remediate it. How can I help today?',
+        'I can analyse your cloud waste and help you automatically remediate it. How can I help today?',
       ),
     ).toBeDefined();
 
@@ -171,7 +171,7 @@ describe('Dashboard', () => {
     expect(screen.queryByRole('button', { name: 'Clear chat' })).toBeNull();
     expect(
       screen.getByText(
-        'I can analyze your cloud waste and help you automatically remediate it. How can I help today?',
+        'I can analyse your cloud waste and help you automatically remediate it. How can I help today?',
       ),
     ).toBeDefined();
   });
