@@ -334,6 +334,10 @@ resource "aws_ecs_task_definition" "web" {
       {
         name      = "GITHUB_TOKEN"
         valueFrom = data.aws_ssm_parameter.github_token.arn
+      },
+      {
+        name      = "DEMO_INVITE_PASSPHRASE"
+        valueFrom = data.aws_ssm_parameter.demo_invite_passphrase.arn
       }
     ]
     logConfiguration = {

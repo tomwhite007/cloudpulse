@@ -1,6 +1,7 @@
 locals {
-  anthropic_api_key_ssm_name = "/cloudpulse/sandbox/web/ANTHROPIC_API_KEY"
-  github_token_ssm_name      = "/cloudpulse/sandbox/web/GITHUB_TOKEN"
+  anthropic_api_key_ssm_name      = "/cloudpulse/sandbox/web/ANTHROPIC_API_KEY"
+  github_token_ssm_name           = "/cloudpulse/sandbox/web/GITHUB_TOKEN"
+  demo_invite_passphrase_ssm_name = "/cloudpulse/sandbox/web/DEMO_INVITE_PASSPHRASE"
 }
 
 data "aws_ssm_parameter" "anthropic_api_key" {
@@ -10,6 +11,11 @@ data "aws_ssm_parameter" "anthropic_api_key" {
 
 data "aws_ssm_parameter" "github_token" {
   name            = local.github_token_ssm_name
+  with_decryption = false
+}
+
+data "aws_ssm_parameter" "demo_invite_passphrase" {
+  name            = local.demo_invite_passphrase_ssm_name
   with_decryption = false
 }
 
@@ -24,6 +30,7 @@ data "aws_iam_policy_document" "ecs_execution_secrets" {
     resources = [
       data.aws_ssm_parameter.anthropic_api_key.arn,
       data.aws_ssm_parameter.github_token.arn,
+      data.aws_ssm_parameter.demo_invite_passphrase.arn,
     ]
   }
 }
@@ -33,4 +40,3 @@ resource "aws_iam_role_policy" "ecs_execution_secrets" {
   role   = aws_iam_role.ecs_execution_role.id
   policy = data.aws_iam_policy_document.ecs_execution_secrets.json
 }
-
