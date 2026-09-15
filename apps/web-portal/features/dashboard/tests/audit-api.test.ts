@@ -3,7 +3,6 @@ import { MOCK_AUDIT_RESOURCES, MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-c
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   auditorApiBaseUrl,
-  auditorApiHeaders,
   fetchAuditStatus,
   fetchAuditSummary,
   fetchJson,
@@ -27,7 +26,7 @@ const matchingRequest: RemediationRequestDto = {
 };
 
 describe('resolveAuditorApiBaseUrl', () => {
-  it('uses the same-origin proxy in the browser so the API key stays server-side', () => {
+  it('uses the same-origin proxy in the browser', () => {
     expect(
       resolveAuditorApiBaseUrl({
         auditorApiBaseUrl: 'http://ecs.example:3333',
@@ -129,34 +128,6 @@ describe('remediateEndpoint', () => {
   });
 });
 
-describe('auditorApiHeaders', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    vi.unstubAllGlobals();
-  });
-
-  it('omits the header when the key is unset', () => {
-    expect(auditorApiHeaders({})).toEqual({});
-  });
-
-  it('attaches x-api-key when the key is set', () => {
-    expect(auditorApiHeaders({ AUDITOR_API_KEY: ' secret-key ' })).toEqual({
-      'x-api-key': 'secret-key',
-    });
-  });
-
-  it('does not read AUDITOR_API_KEY from the environment in the browser', () => {
-    vi.stubEnv('AUDITOR_API_KEY', 'secret-key');
-    expect(auditorApiHeaders()).toEqual({});
-  });
-
-  it('reads AUDITOR_API_KEY from the environment on the server', () => {
-    vi.stubEnv('AUDITOR_API_KEY', 'secret-key');
-    vi.stubGlobal('window', undefined);
-    expect(auditorApiHeaders()).toEqual({ 'x-api-key': 'secret-key' });
-  });
-});
-
 describe('fetchJson', () => {
   it('returns parsed JSON for a successful response', async () => {
     const fetchImpl: typeof fetch = async () => jsonResponse({ ok: true });
@@ -184,23 +155,6 @@ describe('fetchJson', () => {
     expect(received?.cache).toBe('no-store');
     expect(received?.signal).toBeInstanceOf(AbortSignal);
     expect(received?.method).toBe('GET');
-  });
-
-  it('does not attach x-api-key from process.env in the browser', async () => {
-    vi.stubEnv('AUDITOR_API_KEY', 'secret-key');
-    try {
-      let received: RequestInit | undefined;
-      const fetchImpl: typeof fetch = async (_input, init) => {
-        received = init;
-        return jsonResponse({});
-      };
-
-      await fetchJson('http://example.test/summary', undefined, { fetchImpl });
-
-      expect(new Headers(received?.headers).has('x-api-key')).toBe(false);
-    } finally {
-      vi.unstubAllEnvs();
-    }
   });
 });
 

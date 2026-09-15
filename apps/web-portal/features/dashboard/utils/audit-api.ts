@@ -41,16 +41,6 @@ function isBrowserRuntime(): boolean {
   return typeof window !== 'undefined';
 }
 
-export function auditorApiHeaders(source?: { AUDITOR_API_KEY?: string }): Record<string, string> {
-  const apiKey = (
-    source ?? (isBrowserRuntime() ? {} : { AUDITOR_API_KEY: process.env.AUDITOR_API_KEY })
-  ).AUDITOR_API_KEY?.trim();
-  if (!apiKey) {
-    return {};
-  }
-  return { 'x-api-key': apiKey };
-}
-
 export async function fetchJson(
   url: string,
   init?: RequestInit,
@@ -58,13 +48,8 @@ export async function fetchJson(
 ): Promise<unknown> {
   const fetchImpl = options.fetchImpl ?? fetch;
   const timeoutMs = options.timeoutMs ?? REQUEST_TIMEOUT_MS;
-  const headers = new Headers(init?.headers);
-  for (const [key, value] of Object.entries(auditorApiHeaders())) {
-    headers.set(key, value);
-  }
   const response = await fetchImpl(url, {
     ...init,
-    headers,
     cache: 'no-store',
     signal: AbortSignal.timeout(timeoutMs),
   });

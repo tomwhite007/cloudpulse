@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auditorApiBaseUrl, auditorApiHeaders } from '@/features/dashboard/utils/audit-api';
+import { auditorApiBaseUrl } from '@/features/dashboard/utils/audit-api';
 
 const ALLOWED_AUDIT_PATHS = new Set(['summary', 'status', 'remediate']);
 
@@ -9,9 +9,7 @@ export async function proxyAuditRequest(request: Request, path: string[]): Promi
   }
 
   const target = `${auditorApiBaseUrl({ isBrowser: false })}/api/audit/${path[0]}`;
-  const headers = new Headers(
-    auditorApiHeaders({ AUDITOR_API_KEY: process.env.AUDITOR_API_KEY }),
-  );
+  const headers = new Headers();
   const contentType = request.headers.get('content-type');
   if (contentType) {
     headers.set('content-type', contentType);

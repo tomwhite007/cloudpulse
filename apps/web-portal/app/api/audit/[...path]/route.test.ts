@@ -25,7 +25,6 @@ describe('GET/POST /api/audit/[...path]', () => {
   it('prefers AUDITOR_API_BASE_URL when forwarding to the auditor', async () => {
     vi.stubEnv('AUDITOR_API_BASE_URL', 'http://ecs.test/');
     vi.stubEnv('AUDITOR_API_URL', 'http://legacy.test');
-    vi.stubEnv('AUDITOR_API_KEY', 'secret-key');
 
     let received: { url: string; init?: RequestInit } | undefined;
     vi.stubGlobal(
@@ -41,13 +40,12 @@ describe('GET/POST /api/audit/[...path]', () => {
     });
 
     expect(received?.url).toBe('http://ecs.test/api/audit/summary');
-    expect(new Headers(received?.init?.headers).get('x-api-key')).toBe('secret-key');
     expect(response.status).toBe(200);
   });
 
-  it('forwards summary to the auditor with x-api-key', async () => {
+  it('forwards summary to the auditor', async () => {
+    vi.stubEnv('AUDITOR_API_BASE_URL', '');
     vi.stubEnv('AUDITOR_API_URL', 'http://auditor.test');
-    vi.stubEnv('AUDITOR_API_KEY', 'secret-key');
 
     let received: { url: string; init?: RequestInit } | undefined;
     vi.stubGlobal(
@@ -63,14 +61,13 @@ describe('GET/POST /api/audit/[...path]', () => {
     });
 
     expect(received?.url).toBe('http://auditor.test/api/audit/summary');
-    expect(new Headers(received?.init?.headers).get('x-api-key')).toBe('secret-key');
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ totalMonthlySpend: 1 });
   });
 
   it('forwards remediate POST bodies', async () => {
+    vi.stubEnv('AUDITOR_API_BASE_URL', '');
     vi.stubEnv('AUDITOR_API_URL', 'http://auditor.test');
-    vi.stubEnv('AUDITOR_API_KEY', 'secret-key');
 
     let received: { url: string; init?: RequestInit } | undefined;
     vi.stubGlobal(
