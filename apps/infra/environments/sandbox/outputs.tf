@@ -12,3 +12,8 @@ output "alb_dns_name" {
   description = "DNS name of the sandbox Application Load Balancer"
   value       = aws_lb.alb.dns_name
 }
+
+output "custom_domain_url" {
+  description = "HTTPS URL for the sandbox custom domain"
+  value       = "https://cloudpulse-ops.com"
+}
