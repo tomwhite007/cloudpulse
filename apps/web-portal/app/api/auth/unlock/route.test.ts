@@ -31,6 +31,7 @@ describe('/api/auth/unlock', () => {
   });
 
   it('sets the evaluator session when the passphrase matches', async () => {
+    vi.stubEnv('DEMO_INVITE_PASSPHRASE', '');
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-04-01T12:00:00.000Z'));
     const session = createSession();
@@ -47,6 +48,7 @@ describe('/api/auth/unlock', () => {
   });
 
   it('accepts a passphrase with surrounding whitespace', async () => {
+    vi.stubEnv('DEMO_INVITE_PASSPHRASE', '');
     const session = createSession();
     const response = await unlockEvaluator(unlockRequest(`  ${DEFAULT_DEMO_INVITE_PASSPHRASE}  `), {
       getSession: async () => session,
