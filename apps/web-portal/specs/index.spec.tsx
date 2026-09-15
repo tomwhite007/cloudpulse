@@ -191,7 +191,7 @@ describe('Dashboard', () => {
     await renderPresenter(<Dashboard />);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Unable to load live audit data' })).toBeDefined();
+      expect(screen.getByRole('heading', { name: 'Unable to load audit data' })).toBeDefined();
     });
     expect(screen.getByRole('alert')).toHaveProperty(
       'textContent',
@@ -221,7 +221,7 @@ describe('Dashboard', () => {
 
     const { container } = await renderPresenter(<Dashboard />);
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'Unable to load live audit data' })).toBeDefined();
+      expect(screen.getByRole('heading', { name: 'Unable to load audit data' })).toBeDefined();
     });
     await assertNoAxeViolations(container);
   });

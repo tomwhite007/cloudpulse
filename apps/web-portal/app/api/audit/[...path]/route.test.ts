@@ -1,4 +1,3 @@
-import { MOCK_AUDIT_RESOURCES, MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts/mocks';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { CloudPulseSessionData } from '@/lib/session';
 import { GET, POST, proxyAuditRequest } from './route';
@@ -37,8 +36,15 @@ describe('GET/POST /api/audit/[...path]', () => {
     expect(response.status).toBe(404);
   });
 
-  it('returns simulated status when the evaluator session is missing', async () => {
-    const fetchImpl = vi.fn();
+  it('forwards anonymous requests with x-cloudpulse-mode: demo header', async () => {
+    vi.stubEnv('AUDITOR_API_URL', 'http://auditor.test');
+
+    let received: { url: string; init?: RequestInit } | undefined;
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      received = { url: String(input), init };
+      return jsonResponse({ mode: 'SIMULATED' });
+    });
+
     const response = await GET(
       new Request('http://localhost/api/audit/status'),
       {
@@ -47,52 +53,40 @@ describe('GET/POST /api/audit/[...path]', () => {
       { ...anonymousSession, fetchImpl },
     );
 
-    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(fetchImpl).toHaveBeenCalled();
+    expect(received?.url).toBe('http://auditor.test/api/audit/status');
+    const headers = received?.init?.headers as Headers;
+    expect(headers.get('x-cloudpulse-mode')).toBe('demo');
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ mode: 'SIMULATED', status: 'ok' });
+    await expect(response.json()).resolves.toEqual({ mode: 'SIMULATED' });
   });
 
-  it('returns canned summary data when the evaluator session is missing', async () => {
-    const fetchImpl = vi.fn();
-    const response = await GET(
-      new Request('http://localhost/api/audit/summary'),
-      {
-        params: Promise.resolve({ path: ['summary'] }),
-      },
-      { ...anonymousSession, fetchImpl },
-    );
+  it('forwards evaluator requests with x-cloudpulse-mode: live header', async () => {
+    vi.stubEnv('AUDITOR_API_URL', 'http://auditor.test');
 
-    expect(fetchImpl).not.toHaveBeenCalled();
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual(MOCK_COST_AUDIT_SUMMARY);
-  });
-
-  it('returns a mock remediation payload when the evaluator session is missing', async () => {
-    const fetchImpl = vi.fn();
-    const resource = MOCK_AUDIT_RESOURCES[0];
-    const response = await POST(
-      new Request('http://localhost/api/audit/remediate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          resourceId: resource.id,
-          actionId: resource.recommendedAction.actionId,
-        }),
-      }),
-      { params: Promise.resolve({ path: ['remediate'] }) },
-      { ...anonymousSession, fetchImpl },
-    );
-
-    expect(fetchImpl).not.toHaveBeenCalled();
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({
-      success: true,
-      resourceId: resource.id,
-      message: expect.stringContaining(resource.recommendedAction.label),
+    let received: { url: string; init?: RequestInit } | undefined;
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      received = { url: String(input), init };
+      return jsonResponse({ mode: 'LIVE' });
     });
+
+    const response = await GET(
+      new Request('http://localhost/api/audit/status'),
+      {
+        params: Promise.resolve({ path: ['status'] }),
+      },
+      { ...evaluatorSession, fetchImpl },
+    );
+
+    expect(fetchImpl).toHaveBeenCalled();
+    expect(received?.url).toBe('http://auditor.test/api/audit/status');
+    const headers = received?.init?.headers as Headers;
+    expect(headers.get('x-cloudpulse-mode')).toBe('live');
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ mode: 'LIVE' });
   });
 
-  it('prefers AUDITOR_API_BASE_URL when forwarding authenticated requests', async () => {
+  it('prefers AUDITOR_API_BASE_URL when forwarding requests', async () => {
     vi.stubEnv('AUDITOR_API_BASE_URL', 'http://ecs.test/');
     vi.stubEnv('AUDITOR_API_URL', 'http://legacy.test');
 
@@ -114,30 +108,7 @@ describe('GET/POST /api/audit/[...path]', () => {
     expect(response.status).toBe(200);
   });
 
-  it('forwards authenticated summary requests to the auditor', async () => {
-    vi.stubEnv('AUDITOR_API_BASE_URL', '');
-    vi.stubEnv('AUDITOR_API_URL', 'http://auditor.test');
-
-    let received: { url: string; init?: RequestInit } | undefined;
-    vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
-      received = { url: String(input), init };
-      return jsonResponse({ totalMonthlySpend: 1 });
-    });
-
-    const response = await GET(
-      new Request('http://localhost/api/audit/summary'),
-      {
-        params: Promise.resolve({ path: ['summary'] }),
-      },
-      evaluatorSession,
-    );
-
-    expect(received?.url).toBe('http://auditor.test/api/audit/summary');
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ totalMonthlySpend: 1 });
-  });
-
-  it('forwards authenticated remediate POST bodies', async () => {
+  it('forwards remediate POST bodies to the auditor', async () => {
     vi.stubEnv('AUDITOR_API_BASE_URL', '');
     vi.stubEnv('AUDITOR_API_URL', 'http://auditor.test');
 

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { auditorApiBaseUrl } from '@/features/dashboard/utils/audit-api';
-import { createMockAuditBffPayload } from '@/features/dashboard/mocks/audit-api.mock';
 import { getCloudPulseSession, isEvaluatorSession } from '@/lib/session';
 
 const ALLOWED_AUDIT_PATHS = new Set(['summary', 'status', 'remediate']);
@@ -21,9 +20,7 @@ export async function proxyAuditRequest(
 
   const getSession = deps.getSession ?? getCloudPulseSession;
   const session = await getSession();
-  if (!isEvaluatorSession(session)) {
-    return NextResponse.json(await createMockAuditBffPayload(path[0], request));
-  }
+  const isEvaluator = isEvaluatorSession(session);
 
   const target = `${auditorApiBaseUrl({ isBrowser: false })}/api/audit/${path[0]}`;
   const headers = new Headers();
@@ -31,6 +28,7 @@ export async function proxyAuditRequest(
   if (contentType) {
     headers.set('content-type', contentType);
   }
+  headers.set('x-cloudpulse-mode', isEvaluator ? 'live' : 'demo');
 
   const fetchImpl = deps.fetchImpl ?? fetch;
   const response = await fetchImpl(target, {

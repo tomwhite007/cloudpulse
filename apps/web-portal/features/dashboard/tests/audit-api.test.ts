@@ -11,7 +11,7 @@ import {
   resolveAuditorApiBaseUrl,
   summaryEndpoint,
 } from '../utils/audit-api';
-import { createMockAuditBffPayload, createMockRemediationResponse } from '../mocks/audit-api.mock';
+import { createMockRemediationResponse } from '../mocks/audit-api.mock';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -195,167 +195,37 @@ describe('createMockRemediationResponse', () => {
     );
     expect(result.success).toBe(false);
   });
-
-  it('uses an injected resource catalogue instead of the contract mock', () => {
-    const queuedAt = '2026-09-04T12:00:00.000Z';
-    const custom = {
-      ...MOCK_AUDIT_RESOURCES[0],
-      id: 'custom-rds',
-      resourceName: 'custom-rds',
-      recommendedAction: {
-        ...MOCK_AUDIT_RESOURCES[0].recommendedAction,
-        actionId: 'act-custom',
-        label: 'Resize Custom',
-      },
-    };
-
-    expect(
-      createMockRemediationResponse(
-        { resourceId: 'custom-rds', actionId: 'act-custom' },
-        { resources: [custom], nowIso: queuedAt },
-      ),
-    ).toEqual({
-      success: true,
-      resourceId: 'custom-rds',
-      message: 'Queued Resize Custom for custom-rds. Terraform patch will apply in the next plan.',
-      queuedAt,
-    });
-  });
-});
-
-describe('createMockAuditBffPayload', () => {
-  it('returns simulated status for the status path', async () => {
-    await expect(
-      createMockAuditBffPayload('status', new Request('http://localhost/api/audit/status')),
-    ).resolves.toEqual({ mode: 'SIMULATED', status: 'ok' });
-  });
-
-  it('returns the canned summary for the summary path', async () => {
-    await expect(
-      createMockAuditBffPayload('summary', new Request('http://localhost/api/audit/summary')),
-    ).resolves.toEqual(MOCK_COST_AUDIT_SUMMARY);
-  });
-
-  it('builds a mock remediation payload from a matching body', async () => {
-    const resource = MOCK_AUDIT_RESOURCES[0];
-    const payload = await createMockAuditBffPayload(
-      'remediate',
-      new Request('http://localhost/api/audit/remediate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          resourceId: resource.id,
-          actionId: resource.recommendedAction.actionId,
-        }),
-      }),
-    );
-
-    expect(payload).toMatchObject({
-      success: true,
-      resourceId: resource.id,
-      message: expect.stringContaining(resource.recommendedAction.label),
-    });
-  });
-
-  it('ignores non-string remediation fields and invalid JSON', async () => {
-    const nonStringFields = await createMockAuditBffPayload(
-      'remediate',
-      new Request('http://localhost/api/audit/remediate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resourceId: 1, actionId: 2 }),
-      }),
-    );
-    expect(nonStringFields).toMatchObject({ success: false, resourceId: '' });
-
-    const invalidJson = await createMockAuditBffPayload(
-      'remediate',
-      new Request('http://localhost/api/audit/remediate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{',
-      }),
-    );
-    expect(invalidJson).toMatchObject({ success: false, resourceId: '' });
-
-    const nonObjectBody = await createMockAuditBffPayload(
-      'remediate',
-      new Request('http://localhost/api/audit/remediate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(null),
-      }),
-    );
-    expect(nonObjectBody).toMatchObject({ success: false, resourceId: '' });
-
-    const resourceIdOnly = await createMockAuditBffPayload(
-      'remediate',
-      new Request('http://localhost/api/audit/remediate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resourceId: MOCK_AUDIT_RESOURCES[0].id }),
-      }),
-    );
-    expect(resourceIdOnly).toMatchObject({
-      success: false,
-      resourceId: MOCK_AUDIT_RESOURCES[0].id,
-    });
-  });
 });
 
 describe('fetchAuditSummary', () => {
-  it('parses a live payload', async () => {
+  it('parses a valid payload', async () => {
     const summary = await fetchAuditSummary({
       fetchJsonImpl: async () => MOCK_COST_AUDIT_SUMMARY,
     });
     expect(summary.totalMonthlySpend).toBe(MOCK_COST_AUDIT_SUMMARY.totalMonthlySpend);
   });
 
-  it('falls back to the mock summary when network fails in simulated mode', async () => {
-    const summary = await fetchAuditSummary({
-      fetchJsonImpl: async () => {
-        throw new Error('network down');
-      },
-    });
-    expect(summary).toEqual(MOCK_COST_AUDIT_SUMMARY);
-  });
-
-  it('falls back when the payload fails Zod in simulated mode', async () => {
-    const summary = await fetchAuditSummary({
-      fetchJsonImpl: async () => ({ not: 'a summary' }),
-    });
-    expect(summary).toEqual(MOCK_COST_AUDIT_SUMMARY);
-  });
-
-  it('rethrows when the auditor is LIVE and the summary request fails', async () => {
+  it('throws when network fails', async () => {
     await expect(
       fetchAuditSummary({
-        fetchJsonImpl: async (url) => {
-          if (String(url).includes('/status')) {
-            return { mode: 'LIVE' };
-          }
+        fetchJsonImpl: async () => {
           throw new Error('network down');
         },
       }),
     ).rejects.toThrow('network down');
   });
 
-  it('rethrows when the auditor is LIVE and the payload fails Zod', async () => {
+  it('throws when the payload fails Zod schema validation', async () => {
     await expect(
       fetchAuditSummary({
-        fetchJsonImpl: async (url) => {
-          if (String(url).includes('/status')) {
-            return { mode: 'LIVE' };
-          }
-          return { not: 'a summary' };
-        },
+        fetchJsonImpl: async () => ({ not: 'a summary' }),
       }),
     ).rejects.toThrow();
   });
 });
 
 describe('fetchAuditStatus', () => {
-  it('returns LIVE when the auditor reports live AWS', async () => {
+  it('returns status payload when status endpoint succeeds', async () => {
     await expect(
       fetchAuditStatus({
         fetchJsonImpl: async () => ({ mode: 'LIVE', profile: 'sandbox' }),
@@ -363,14 +233,14 @@ describe('fetchAuditStatus', () => {
     ).resolves.toEqual({ mode: 'LIVE', profile: 'sandbox' });
   });
 
-  it('falls back to SIMULATED when status cannot be reached', async () => {
+  it('throws when status endpoint cannot be reached', async () => {
     await expect(
       fetchAuditStatus({
         fetchJsonImpl: async () => {
           throw new Error('network down');
         },
       }),
-    ).resolves.toEqual({ mode: 'SIMULATED' });
+    ).rejects.toThrow('network down');
   });
 });
 
@@ -388,35 +258,10 @@ describe('postRemediation', () => {
     expect(result).toEqual(payload);
   });
 
-  it('falls back to simulated remediation when cannot reach a simulated API', async () => {
-    const result = await postRemediation(matchingRequest, {
-      fetchJsonImpl: async () => {
-        throw new Error('network down');
-      },
-      simulated: (request) =>
-        createMockRemediationResponse(request, { nowIso: '2026-09-04T12:00:00.000Z' }),
-    });
-    expect(result.success).toBe(true);
-    expect(result.resourceId).toBe(matchingRequest.resourceId);
-  });
-
-  it('falls back to the default simulated helper when none is injected', async () => {
-    const result = await postRemediation(matchingRequest, {
-      fetchJsonImpl: async () => {
-        throw new Error('network down');
-      },
-    });
-    expect(result.success).toBe(true);
-    expect(result.resourceId).toBe(matchingRequest.resourceId);
-  });
-
-  it('rethrows when the auditor is LIVE and remediation fails', async () => {
+  it('throws when remediation API request fails', async () => {
     await expect(
       postRemediation(matchingRequest, {
-        fetchJsonImpl: async (url) => {
-          if (String(url).includes('/status')) {
-            return { mode: 'LIVE' };
-          }
+        fetchJsonImpl: async () => {
           throw new Error('network down');
         },
       }),
