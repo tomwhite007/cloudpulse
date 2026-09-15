@@ -1,7 +1,7 @@
 import type { CostAuditSummaryDto } from '@cloudpulse/api-contracts';
 import { MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts/mocks';
 import { APICallError } from 'ai';
-import type { UIMessage } from 'ai';
+import type { ToolExecutionOptions, UIMessage } from 'ai';
 import { describe, expect, it, vi } from 'vitest';
 import {
   alignProposalWithGitFlow,
@@ -14,6 +14,7 @@ import {
   parseAuditContext,
   toAdvisorModelMessages,
   toFallbackModelMessages,
+  type RemediationProposal,
 } from '../utils/pulse-advisor-tools';
 
 const emptySummary: CostAuditSummaryDto = {
@@ -108,29 +109,41 @@ describe('alignProposalWithGitFlow', () => {
   });
 });
 
-const toolCallOptions = {
+const toolCallOptions: ToolExecutionOptions<Record<string, unknown>> = {
   toolCallId: 'call-test',
-  messages: [] as const,
+  messages: [],
   abortSignal: new AbortController().signal,
+  context: {},
 };
 
-async function executeInspect(audit: CostAuditSummaryDto) {
+function isAsyncIterable<T>(value: T | AsyncIterable<T>): value is AsyncIterable<T> {
+  return typeof value === 'object' && value !== null && Symbol.asyncIterator in value;
+}
+
+function unwrapToolResult<T>(value: T | AsyncIterable<T>): T {
+  if (isAsyncIterable(value)) {
+    throw new Error('Expected a non-streaming tool result');
+  }
+  return value;
+}
+
+async function executeInspect(audit: CostAuditSummaryDto): Promise<CostAuditSummaryDto> {
   const execute = createAdvisorTools(audit).inspectWasteSummary.execute;
   if (typeof execute !== 'function') {
     throw new Error('inspectWasteSummary.execute is required');
   }
-  return execute({}, toolCallOptions);
+  return unwrapToolResult(await execute({}, toolCallOptions));
 }
 
 async function executePropose(
   audit: CostAuditSummaryDto,
-  proposal: ReturnType<typeof createProposalFromFinding>,
-) {
+  proposal: RemediationProposal,
+): Promise<RemediationProposal> {
   const execute = createAdvisorTools(audit).proposeTerraformRemediation.execute;
   if (typeof execute !== 'function') {
     throw new Error('proposeTerraformRemediation.execute is required');
   }
-  return execute(proposal, toolCallOptions);
+  return unwrapToolResult(await execute(proposal, toolCallOptions));
 }
 
 describe('createAdvisorTools', () => {
