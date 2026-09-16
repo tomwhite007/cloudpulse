@@ -4,6 +4,26 @@
 
 ---
 
+## 📋 Table of Contents
+
+- [1. Architectural Philosophy & Topology](#1-architectural-philosophy--topology)
+  - [System Topology](#system-topology)
+- [2. Core Capabilities & Architectural Highlights](#2-core-capabilities--architectural-highlights)
+  - [Architecture-Driven Development (ADD)](#-architecture-driven-development-add)
+  - [Closed-Loop GitFlow Auto-Remediation](#-closed-loop-gitflow-auto-remediation)
+  - [Enterprise Security & Isolation](#-enterprise-security--isolation)
+  - [Cost-Conscious Lifecycle Management](#-cost-conscious-lifecycle-management)
+  - [Architectural Trade-Off: ALB vs. API Gateway Strategy](#%EF%B8%8F-architectural-trade-off-alb-vs-api-gateway-strategy)
+- [3. GitHub Actions CI/CD Pipelines](#3-github-actions-cicd-pipelines)
+  - [Workflow Execution Flow](#workflow-execution-flow)
+  - [Key Workflows](#key-workflows)
+- [4. Technology Stack](#4-technology-stack)
+- [5. Repository Structure](#5-repository-structure)
+- [6. Local Development & Testing](#6-local-development--testing)
+- [7. Roadmap & Upcoming Features](#-7-roadmap--upcoming-features)
+
+---
+
 ## 1. Architectural Philosophy & Topology
 
 CloudPulse pairs a **Next.js Web Portal (acting as a Backend-for-Frontend / BFF)** with a **NestJS Auditor API (the cloud telemetry engine)**. Both components are co-located within an AWS VPC on **AWS ECS Fargate (ARM64 / Graviton)**, completely eliminating cross-cloud public API tokens.
@@ -63,6 +83,10 @@ Unlike traditional monitoring dashboards that require manual engineer interventi
 
 ### 💰 Cost-Conscious Lifecycle Management
 * **ALB Toggle:** Terraform variables allow disabling the ALB (`enable_alb = false`) or scaling task counts to zero when idle to keep sandbox infrastructure costs near zero.
+
+### ⚖️ Architectural Trade-Off: ALB vs. API Gateway Strategy
+* **Selected Pattern (ALB + Next.js BFF):** In CloudPulse, the AWS Application Load Balancer (ALB) terminates HTTPS traffic and routes directly to the Next.js BFF container. Because Next.js handles server-side session validation (`iron-session`) and internal VPC proxying to NestJS, adding an AWS API Gateway layer in front of the ALB would introduce unnecessary dual-layer proxy latency, API Gateway payload fees, and redundant routing rules.
+* **Enterprise Extension:** For multi-tenant public API distribution requiring edge WAF rules, rate-limiting quotas, or SigV4 third-party authentication, an AWS API Gateway or VPC Lattice layer can be fronted in front of the ALB without modifying the internal ECS container topology.
 
 ---
 
