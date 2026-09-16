@@ -1,10 +1,72 @@
 # CloudPulse
 
-CloudPulse is a cloud telemetry and remediation platform built with a Next.js web portal (`web-portal`), a NestJS auditor backend (`auditor-api`), shared contract libraries, and Terraform infrastructure management (`infra`).
+> Cloud Cost (FinOps) & Security Intelligence Platform demonstrating enterprise-grade platform engineering, closed-loop IaC auto-remediation, and zero-public-ingress container orchestration on AWS. Engineered using **Architecture-Driven Development (ADD)** principles.
 
 ---
 
-## 🚀 GitHub Actions CI/CD Pipelines
+## 1. Architectural Philosophy & Topology
+
+CloudPulse pairs a **Next.js Web Portal (acting as a Backend-for-Frontend / BFF)** with a **NestJS Auditor API (the cloud telemetry engine)**. Both components are co-located within an AWS VPC on **AWS ECS Fargate (ARM64 / Graviton)**, completely eliminating cross-cloud public API tokens.
+
+### System Topology
+
+```
+                  [ Public Internet / Evaluators ]
+                                 │
+                                 ▼ Port 80 / 443
+           ┌───────────────────────────────────────────┐
+           │    AWS Application Load Balancer (ALB)    │
+           │       (cloudpulse-sandbox-alb)            │
+           └─────────────────────┬─────────────────────┘
+                                 │ Forward to Target Group (:3000)
+                                 ▼
+    ┌─────────────────────────────────────────────────────────┐
+    │                      AWS VPC                            │
+    │                                                         │
+    │  ┌───────────────────────────────────────────────────┐  │
+    │  │  ECS Fargate: Next.js Web Container (Port 3000)   │  │
+    │  │  - ARM64 / Graviton (`output: standalone`)        │  │
+    │  │  - Evaluates encrypted AES-256 session cookie     │  │
+    │  │  - Serves Mock Telemetry to public visitors       │  │
+    │  │  - Gated by DEMO_INVITE_PASSPHRASE from SSM       │  │
+    │  └─────────────────────────┬─────────────────────────┘  │
+    │                            │                            │
+    │                            │ Internal VPC Routing       │
+    │                            │ http://auditor-api:3333    │
+    │                            ▼                            │
+    │  ┌───────────────────────────────────────────────────┐  │
+    │  │  ECS Fargate: NestJS Auditor API (Port 3333)      │  │
+    │  │  - Zero public IP / Zero internet ingress         │  │
+    │  │  - Security Group: Ingress ONLY from Next.js SG   │  │
+    │  │  - Read-only AWS STS / CloudWatch / EC2 SDK      │  │
+    │  └───────────────────────────────────────────────────┘  │
+    └─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 2. Core Capabilities & Architectural Highlights
+
+### 📐 Architecture-Driven Development (ADD)
+CloudPulse was engineered using **Architecture-Driven Development (ADD)**—a methodology that encodes domain-specific architectural opinions and security constraints directly into local agent/LLM harnesses (`.agents/rules/` and `.cursor/rules/`). Whenever architectural drift or shortcuts occur, the harness itself is updated, ensuring AI tooling acts as a force multiplier for enterprise engineering standards.
+
+### ⚡ Closed-Loop GitFlow Auto-Remediation
+Unlike traditional monitoring dashboards that require manual engineer intervention, CloudPulse automates infrastructure decommission via Pull Requests:
+* **Managed Resource Tombstoning:** Finds HCL definitions in `storage.tf` and comments out target `resource` blocks, triggering native Terraform destruction upon merge.
+* **Unmanaged Resource Execution:** For resources created out-of-band via AWS CLI, generates apply-time `terraform_data` provisioners (`aws ec2 release-address` / `aws ec2 delete-volume`) to ensure 100% cleanup execution.
+* **PR Consolidation:** Multi-card approvals automatically consolidate into a single active `finops/` branch to eliminate PR clutter.
+* **Self-Cleaning State Pruning:** Queries live audit data during PR generation to automatically prune completed `terraform_data` records once AWS confirms resource absence.
+
+### 🔒 Enterprise Security & Isolation
+* **Zero Public Ingress Backend:** The NestJS API compute container has no public IP address and accepts ingress exclusively from the Next.js container Security Group.
+* **Two-Tier Access Model:** Public visitors view deterministic mock telemetry. Invited evaluators enter a passphrase stored in **AWS SSM Parameter Store**, issuing an encrypted `iron-session` cookie (`HttpOnly`) that enables live AWS SDK calls.
+
+### 💰 Cost-Conscious Lifecycle Management
+* **ALB Toggle:** Terraform variables allow disabling the ALB (`enable_alb = false`) or scaling task counts to zero when idle to keep sandbox infrastructure costs near zero.
+
+---
+
+## 3. GitHub Actions CI/CD Pipelines
 
 CloudPulse utilizes a unified, automated CI/CD architecture powered by **Nx affected dependency graph detection** across both application software and Terraform infrastructure.
 
@@ -20,15 +82,13 @@ graph TD
     D -->|infra| G["terraform-apply (Terraform Init & Apply)"]
 ```
 
----
-
 ### Key Workflows
 
 1. **Application Deployments Workflow ([`.github/workflows/app-deploy.yml`](.github/workflows/app-deploy.yml))**:
    - **Trigger**: Push to `main` or manual `workflow_dispatch`.
    - **Nx Affected Detection**: Uses `nrwl/nx-set-shas@v4` and `pnpm nx show projects --affected` to inspect git diffs and identify affected components (`web-portal`, `auditor-api`, `api-contracts`, `gitflow`).
    - **Quality Gate**: Runs `pnpm nx affected -t lint test --exclude=infra` in the `lint-and-test` job. If any unit test or lint check fails, deployment is aborted immediately.
-   - **Container Build & Deploy**: Builds `linux/arm64` container images via Docker Buildx & QEMU, tags images with `:latest` and `:${{ github.sha }}`, pushes to AWS ECR, and triggers `aws ecs update-service --force-new-deployment` for rolling updates.
+   - **Container Build & Deploy**: Builds `linux/arm64` container images via Docker Buildx & QEMU, tags images with `:latest` and `${{ github.sha }}`, pushes to AWS ECR, and triggers `aws ecs update-service --force-new-deployment` for rolling updates.
 
 2. **PR Validation Workflow ([`.github/workflows/app-pr-test.yml`](.github/workflows/app-pr-test.yml))**:
    - **Trigger**: Pull Request targeting `main`.
@@ -40,20 +100,62 @@ graph TD
 
 ---
 
-## 🛠️ Local Development & Testing Commands
+## 4. Technology Stack
 
-To run tests and lint checks locally across affected or specific workspace projects:
+* **Monorepo Architecture:** NX workspace with `pnpm`
+* **Frontend / BFF:** Next.js 16 (App Router, React 19, Server Actions, Standalone Output)
+* **Backend:** NestJS, TypeScript, AWS SDK v3
+* **IaC & Automation:** Terraform 1.7+ (Remote S3 backend, state locking), GitHub Actions
+* **Compute:** AWS ECS Fargate ARM64 (AWS Graviton)
+
+---
+
+## 5. Repository Structure
+
+```
+cloudpulse/
+├── apps/
+│   ├── auditor-api/            # NestJS backend (AWS telemetry engine)
+│   ├── web-portal/             # Next.js frontend (UI & BFF proxy)
+│   └── infra/
+│       └── environments/
+│           └── sandbox/        # Terraform root (ECR, ECS, ALB, IAM, SSM, storage.tf)
+├── libs/
+│   ├── api-contracts/          # Shared TypeScript interfaces & Zod schemas
+│   └── gitflow/                # GitFlow PR consolidation & HCL tombstoning engine
+├── .agents/rules/              # Local Architecture-Driven Development agent rules
+├── .cursor/rules/              # Local Architecture-Driven Development Cursor rules
+└── .github/workflows/          # GitHub Actions CI/CD & terraform apply pipelines
+```
+
+---
+
+## 6. Local Development & Testing
+
+### Running the Local Serving Environment
 
 ```bash
-# Install dependencies
-pnpm install
+# Terminal 1: Start the Auditor API backend
+pnpm run serve-auditor-api
 
-# Run lint & unit tests across affected projects (excluding infra)
-pnpm nx affected -t lint test --exclude=infra
-
-# Run auditor API unit tests directly
-pnpm run test-auditor-api
-
-# Run web portal unit tests directly
-pnpm run test-web-portal
+# Terminal 2: Start the Web Portal frontend (port 4000)
+pnpm run serve-web-portal
 ```
+
+*(Note: Private test helper scripts are maintained under `private-tooling/` for out-of-band managed and unmanaged test fixture generation during local evaluation.)*
+
+### Running Test Suite
+
+```bash
+# Run all vitest & jest test suites (214+ passing)
+pnpm run test-all
+```
+
+---
+
+## 🚀 7. Roadmap & Upcoming Features
+
+- [ ] **Concurrent Multi-Region Account Sweeper**: Expand auditing beyond single-region configuration (`AWS_REGION`) to dynamically iterate and sweep all enabled AWS regions across the account in a single audit pass.
+- [ ] **S3 Bucket Lifecycle & Stale Data Auditor**: Deep scanning of unutilized S3 buckets via CloudWatch metrics & object last-modified date analysis to identify zero-access storage waste.
+- [ ] **Playwright Visual Snapshot Testing**: Automated visual regression testing across multi-viewport breakpoints to ensure UI layout & component consistency.
+- [ ] **Multi-Cloud Provider Support**: Extending FinOps auditing & automated GitFlow remediation to GCP and Azure.
