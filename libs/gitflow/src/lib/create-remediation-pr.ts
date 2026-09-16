@@ -45,42 +45,55 @@ export async function createGitHubRemediationPr(
 
   if (openPr) {
     const branchName = openPr.branch;
-    const existing = await readTerraformFile(octokit, owner, repo, branchName, terraformPath);
-    const currentHcl = existing.content ?? FALLBACK_SANDBOX_STORAGE;
-    const tombstoneOptions = {
-      resourceName: input.resourceName,
-      resourceId: input.resourceId,
-      hclDiff: input.hclDiff,
-    };
-    const patched = tombstoneTargetedResource(currentHcl, tombstoneOptions);
+    const maxAttempts = 5;
+    let attempt = 0;
 
-    await octokit.rest.repos.createOrUpdateFileContents({
-      owner,
-      repo,
-      path: terraformPath,
-      message: input.commitMessage,
-      content: Buffer.from(patched, 'utf8').toString('base64'),
-      branch: branchName,
-      ...(existing.sha ? { sha: existing.sha } : {}),
-    });
+    while (attempt < maxAttempts) {
+      attempt++;
+      try {
+        const existing = await readTerraformFile(octokit, owner, repo, branchName, terraformPath);
+        const currentHcl = existing.content ?? FALLBACK_SANDBOX_STORAGE;
+        const tombstoneOptions = {
+          resourceName: input.resourceName,
+          resourceId: input.resourceId,
+          hclDiff: input.hclDiff,
+        };
+        const patched = tombstoneTargetedResource(currentHcl, tombstoneOptions);
 
-    const updatedBody = updateConsolidatedPrBody(openPr.body, input);
-    const updatedTitle = updateConsolidatedPrTitle(openPr.title, input);
+        await octokit.rest.repos.createOrUpdateFileContents({
+          owner,
+          repo,
+          path: terraformPath,
+          message: input.commitMessage,
+          content: Buffer.from(patched, 'utf8').toString('base64'),
+          branch: branchName,
+          ...(existing.sha ? { sha: existing.sha } : {}),
+        });
 
-    await octokit.rest.pulls.update({
-      owner,
-      repo,
-      pull_number: openPr.number,
-      title: updatedTitle,
-      body: updatedBody,
-    });
+        const updatedBody = updateConsolidatedPrBody(openPr.body, input);
+        const updatedTitle = updateConsolidatedPrTitle(openPr.title, input);
 
-    return {
-      success: true,
-      simulated: false,
-      prNumber: openPr.number,
-      prUrl: openPr.html_url,
-    };
+        await octokit.rest.pulls.update({
+          owner,
+          repo,
+          pull_number: openPr.number,
+          title: updatedTitle,
+          body: updatedBody,
+        });
+
+        return {
+          success: true,
+          simulated: false,
+          prNumber: openPr.number,
+          prUrl: openPr.html_url,
+        };
+      } catch (err) {
+        if (attempt >= maxAttempts) {
+          throw err;
+        }
+        await new Promise((res) => setTimeout(res, 300 * attempt));
+      }
+    }
   }
 
   // Standard flow for creating a new PR
