@@ -201,25 +201,10 @@ export function tombstoneTargetedResource(hcl: string, options: TombstoneOptions
     );
   }
 
-  const tfType = resolveResourceType(options);
-  const identifierName = hclResourceIdentifier(
-    `remediated_${options.resourceName}_${options.resourceId}`,
-  );
-
   const appendix = [
     '',
     `# TOMBSTONED by CloudPulse (FinOps Remediation) — ${options.resourceName} (${options.resourceId})`,
-    `import {`,
-    `  to = ${tfType}.${identifierName}`,
-    `  id = "${options.resourceId}"`,
-    `}`,
-    '',
-    `removed {`,
-    `  from = ${tfType}.${identifierName}`,
-    `  lifecycle {`,
-    `    destroy = true`,
-    `  }`,
-    `}`,
+    `# Unmanaged AWS resource (not found in HCL configuration). Decommissioned out-of-band.`,
     '',
   ].join('\n');
 

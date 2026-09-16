@@ -76,17 +76,15 @@ describe('tombstoneTargetedResource', () => {
     expect(patched).not.toMatch(/^resource "aws_eip_association"/m);
   });
 
-  it('appends an import and removed destroy block when no resource block matches', () => {
+  it('appends an unmanaged comment block when no resource block matches', () => {
     const patched = tombstoneTargetedResource('locals { env = "sandbox" }\n', {
       resourceName: 'missing-volume',
       resourceId: 'vol-missing',
       hclDiff: 'resource "aws_ebs_volume" "gone" {}',
     });
 
-    expect(patched).toContain('import {');
-    expect(patched).toContain('id = "vol-missing"');
-    expect(patched).toContain('removed {');
-    expect(patched).toContain('destroy = true');
+    expect(patched).toContain('# TOMBSTONED by CloudPulse (FinOps Remediation) — missing-volume (vol-missing)');
+    expect(patched).toContain('# Unmanaged AWS resource (not found in HCL configuration).');
     expect(patched).toContain('locals { env = "sandbox" }');
   });
 });
