@@ -135,3 +135,17 @@ resource "terraform_data" "cloudpulse_remediate_eipalloc_0067d835824b94ae8" {
     EOT
   }
 }
+# TOMBSTONED by CloudPulse (FinOps Remediation) — cloudpulse-zombie-vol-2026-09-16 (vol-0949326d1ddfd1ce6)
+# Unmanaged AWS resource: delete during the next Terraform apply.
+resource "terraform_data" "cloudpulse_remediate_vol_0949326d1ddfd1ce6" {
+  triggers_replace = ["vol-0949326d1ddfd1ce6"]
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      volume_id="vol-0949326d1ddfd1ce6"
+      if aws ec2 describe-volumes --volume-ids "$volume_id" --query 'Volumes[0].VolumeId' --output text 2>/dev/null | grep -q '^vol-'; then
+        aws ec2 delete-volume --volume-id "$volume_id"
+      fi
+    EOT
+  }
+}
