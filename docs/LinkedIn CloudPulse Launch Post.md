@@ -7,7 +7,7 @@ I promised to share a real-world open-source project built with this exact metho
 During development, I hit a classic speed-vs-rigor crossroads:
 The quick hack was deploying the Next.js frontend to Vercel and calling a private NestJS backend on AWS ECS over public IPv4 using a shared API key (`x-api-key`). It worked locally and passed basic smoke tests.
 
-However, from an Architecture-Driven lens, it failed enterprise standards:
+However, through an Architecture-Driven lens, it fell short of the enterprise standards I hold my projects to:
 
 - A long-lived symmetric secret bridging two public cloud networks.
 - An API compute container exposed directly to the open internet.

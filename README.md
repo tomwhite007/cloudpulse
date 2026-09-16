@@ -10,37 +10,37 @@ CloudPulse pairs a **Next.js Web Portal (acting as a Backend-for-Frontend / BFF)
 
 ### System Topology
 
-```
-                  [ Public Internet / Evaluators ]
-                                 │
-                                 ▼ Port 80 / 443
-           ┌───────────────────────────────────────────┐
-           │    AWS Application Load Balancer (ALB)    │
-           │       (cloudpulse-sandbox-alb)            │
-           └─────────────────────┬─────────────────────┘
-                                 │ Forward to Target Group (:3000)
-                                 ▼
-    ┌─────────────────────────────────────────────────────────┐
-    │                      AWS VPC                            │
-    │                                                         │
-    │  ┌───────────────────────────────────────────────────┐  │
-    │  │  ECS Fargate: Next.js Web Container (Port 3000)   │  │
-    │  │  - ARM64 / Graviton (`output: standalone`)        │  │
-    │  │  - Evaluates encrypted AES-256 session cookie     │  │
-    │  │  - Serves Mock Telemetry to public visitors       │  │
-    │  │  - Gated by DEMO_INVITE_PASSPHRASE from SSM       │  │
-    │  └─────────────────────────┬─────────────────────────┘  │
-    │                            │                            │
-    │                            │ Internal VPC Routing       │
-    │                            │ http://auditor-api:3333    │
-    │                            ▼                            │
-    │  ┌───────────────────────────────────────────────────┐  │
-    │  │  ECS Fargate: NestJS Auditor API (Port 3333)      │  │
-    │  │  - Zero public IP / Zero internet ingress         │  │
-    │  │  - Security Group: Ingress ONLY from Next.js SG   │  │
-    │  │  - Read-only AWS STS / CloudWatch / EC2 SDK      │  │
-    │  └───────────────────────────────────────────────────┘  │
-    └─────────────────────────────────────────────────────────┘
+```text
+                      Public Internet / Evaluators
+                                   │
+                                   ▼ Port 80 / 443
+             ┌───────────────────────────────────────────┐
+             │    AWS Application Load Balancer (ALB)    │
+             │       (cloudpulse-sandbox-alb)            │
+             └─────────────────────┬─────────────────────┘
+                                   │ Forward to Target Group (:3000)
+                                   ▼
+      ┌─────────────────────────────────────────────────────────┐
+      │                 AWS VPC (Sandbox)                       │
+      │                                                         │
+      │  ┌───────────────────────────────────────────────────┐  │
+      │  │  ECS Fargate: Next.js Web Container (Port 3000)   │  │
+      │  │  - ARM64 / Graviton (standalone output)           │  │
+      │  │  - Evaluates encrypted AES-256 session cookie     │  │
+      │  │  - Serves Mock Telemetry to public visitors       │  │
+      │  │  - Gated by DEMO_INVITE_PASSPHRASE from SSM       │  │
+      │  └─────────────────────────┬─────────────────────────┘  │
+      │                            │                            │
+      │                            │ Internal VPC Routing       │
+      │                            │ http://auditor-api:3333    │
+      │                            ▼                            │
+      │  ┌───────────────────────────────────────────────────┐  │
+      │  │  ECS Fargate: NestJS Auditor API Container (:3333)│  │
+      │  │  - Zero public IP / Zero internet ingress         │  │
+      │  │  - Security Group: Ingress ONLY from Next.js SG   │  │
+      │  │  - Read-only AWS STS / CloudWatch / EC2 SDK       │  │
+      │  └───────────────────────────────────────────────────┘  │
+      └─────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -72,14 +72,33 @@ CloudPulse utilizes a unified, automated CI/CD architecture powered by **Nx affe
 
 ### Workflow Execution Flow
 
-```mermaid
-graph TD
-    A["Push to main / PR / Dispatch"] --> B["detect-affected (nrwl/nx-set-shas)"]
-    B --> C["lint-and-test (pnpm nx affected -t lint test --exclude=infra)"]
-    C -->|✅ Pass| D{"Project Type Affected?"}
-    C -->|❌ Fail| E["⛔ ABORT (No Deployments / No Terraform Apply)"]
-    D -->|web-portal / auditor-api| F["deploy-apps (ARM64 ECR Build & ECS Update)"]
-    D -->|infra| G["terraform-apply (Terraform Init & Apply)"]
+```text
+               Git Event (Push to main / PR / Dispatch)
+                                   │
+                                   ▼
+             ┌───────────────────────────────────────────┐
+             │ detect-affected (nrwl/nx-set-shas)        │
+             └─────────────────────┬─────────────────────┘
+                                   │
+                                   ▼
+             ┌───────────────────────────────────────────┐
+             │ lint-and-test                             │
+             │ pnpm nx affected -t lint test --no-infra  │
+             └──────────┬─────────────────────┬──────────┘
+                        │                     │
+               [ PASS ] │                     │ [ FAIL ]
+                        ▼                     ▼
+             ┌─────────────────────┐   ┌─────────────────────┐
+             │ Project Affected?   │   │ ABORT               │
+             └─────┬─────────┬─────┘   │ No Deploy / Apply   │
+                   │         │         └─────────────────────┘
+        [ App ]    │         │ [ Infra ]
+                   ▼         ▼
+     ┌──────────────────┐   ┌───────────────────────────┐
+     │ deploy-apps      │   │ terraform-apply           │
+     │ ARM64 ECR Build  │   │ terraform init & validate │
+     │ ECS Force Refresh│   │ terraform apply           │
+     └──────────────────┘   └───────────────────────────┘
 ```
 
 ### Key Workflows
