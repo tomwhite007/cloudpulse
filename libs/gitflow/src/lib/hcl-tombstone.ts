@@ -170,6 +170,25 @@ export function collectTombstoneTargets(
   return [...byStart.values()].sort((a, b) => a.start - b.start);
 }
 
+export function resolveResourceType(options: TombstoneOptions): string {
+  if (options.resourceId.startsWith('vol-')) {
+    return 'aws_ebs_volume';
+  }
+  if (options.resourceId.startsWith('eipalloc-')) {
+    return 'aws_eip';
+  }
+  if (options.resourceId.startsWith('db-')) {
+    return 'aws_db_instance';
+  }
+  if (options.hclDiff) {
+    const headers = parseResourceHeadersFromHcl(options.hclDiff);
+    if (headers.length > 0 && headers[0].type) {
+      return headers[0].type;
+    }
+  }
+  return 'aws_ebs_volume';
+}
+
 export function tombstoneTargetedResource(hcl: string, options: TombstoneOptions): string {
   const targets = collectTombstoneTargets(hcl, options);
 
@@ -182,12 +201,25 @@ export function tombstoneTargetedResource(hcl: string, options: TombstoneOptions
     );
   }
 
+  const tfType = resolveResourceType(options);
+  const identifierName = hclResourceIdentifier(
+    `remediated_${options.resourceName}_${options.resourceId}`,
+  );
+
   const appendix = [
     '',
-    `# TOMBSTONED by CloudPulse — ${options.resourceName} (${options.resourceId})`,
-    options.hclDiff
-      ? commentOutLines(options.hclDiff)
-      : `# resource removed: ${options.resourceName}`,
+    `# TOMBSTONED by CloudPulse (FinOps Remediation) — ${options.resourceName} (${options.resourceId})`,
+    `import {`,
+    `  to = ${tfType}.${identifierName}`,
+    `  id = "${options.resourceId}"`,
+    `}`,
+    '',
+    `removed {`,
+    `  from = ${tfType}.${identifierName}`,
+    `  lifecycle {`,
+    `    destroy = true`,
+    `  }`,
+    `}`,
     '',
   ].join('\n');
 

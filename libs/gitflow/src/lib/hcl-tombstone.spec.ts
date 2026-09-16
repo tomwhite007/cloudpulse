@@ -76,14 +76,17 @@ describe('tombstoneTargetedResource', () => {
     expect(patched).not.toMatch(/^resource "aws_eip_association"/m);
   });
 
-  it('appends a commented patch when no resource block matches', () => {
+  it('appends an import and removed destroy block when no resource block matches', () => {
     const patched = tombstoneTargetedResource('locals { env = "sandbox" }\n', {
       resourceName: 'missing-volume',
       resourceId: 'vol-missing',
       hclDiff: 'resource "aws_ebs_volume" "gone" {}',
     });
 
-    expect(patched).toContain('# resource "aws_ebs_volume" "gone" {}');
+    expect(patched).toContain('import {');
+    expect(patched).toContain('id = "vol-missing"');
+    expect(patched).toContain('removed {');
+    expect(patched).toContain('destroy = true');
     expect(patched).toContain('locals { env = "sandbox" }');
   });
 });

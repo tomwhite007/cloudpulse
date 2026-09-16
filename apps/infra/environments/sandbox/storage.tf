@@ -26,31 +26,54 @@
 #     Purpose     = "CloudPulseZombieTest"
 #   }
 # }
-# TOMBSTONED by CloudPulse — cloudpulse-zombie-vol (vol-02f8da166848b65bc)
-# apps/infra/environments/sandbox/storage.tf
-# - resource "aws_ebs_volume" "cloudpulse_zombie_vol" {
-# -   ...
-# - }
-# + # TOMBSTONED by CloudPulse (FinOps Remediation)
-# + # resource "aws_ebs_volume" "cloudpulse_zombie_vol" { ... }
-# TOMBSTONED by CloudPulse — cloudpulse-zombie-vol-2026-09-15 (vol-01ad1fe87cbeb4a38)
-# apps/infra/environments/sandbox/storage.tf
-# - resource "aws_ebs_volume" "cloudpulse_zombie_vol_2026_09_15" {
-# -   ...
-# - }
-# + # TOMBSTONED by CloudPulse (FinOps Remediation)
-# + # resource "aws_ebs_volume" "cloudpulse_zombie_vol_2026_09_15" { ... }
-# TOMBSTONED by CloudPulse — 52.18.132.197 (eipalloc-0bd2e01043721d5d7)
-# apps/infra/environments/sandbox/storage.tf
-# - resource "aws_eip" "cloudpulse_eip_52_18_132_197" {
-# -   ...
-# - }
-# + # TOMBSTONED by CloudPulse (FinOps Remediation)
-# + # resource "aws_eip" "cloudpulse_eip_52_18_132_197" { ... }
-# TOMBSTONED by CloudPulse — 54.247.132.19 (eipalloc-050c132df2341fedf)
-# apps/infra/environments/sandbox/storage.tf
-# - resource "aws_eip" "cloudpulse_eip_54_247_132_19" {
-# -   ...
-# - }
-# + # TOMBSTONED by CloudPulse (FinOps Remediation)
-# + # resource "aws_eip" "cloudpulse_eip_54_247_132_19" { ... }
+# TOMBSTONED by CloudPulse (FinOps Remediation) — cloudpulse-zombie-vol (vol-02f8da166848b65bc)
+import {
+  to = aws_ebs_volume.remediated_vol_02f8da166848b65bc
+  id = "vol-02f8da166848b65bc"
+}
+
+removed {
+  from = aws_ebs_volume.remediated_vol_02f8da166848b65bc
+  lifecycle {
+    destroy = true
+  }
+}
+
+# TOMBSTONED by CloudPulse (FinOps Remediation) — cloudpulse-zombie-vol-2026-09-15 (vol-01ad1fe87cbeb4a38)
+import {
+  to = aws_ebs_volume.remediated_vol_01ad1fe87cbeb4a38
+  id = "vol-01ad1fe87cbeb4a38"
+}
+
+removed {
+  from = aws_ebs_volume.remediated_vol_01ad1fe87cbeb4a38
+  lifecycle {
+    destroy = true
+  }
+}
+
+# TOMBSTONED by CloudPulse (FinOps Remediation) — 52.18.132.197 (eipalloc-0bd2e01043721d5d7)
+import {
+  to = aws_eip.remediated_eip_0bd2e01043721d5d7
+  id = "eipalloc-0bd2e01043721d5d7"
+}
+
+removed {
+  from = aws_eip.remediated_eip_0bd2e01043721d5d7
+  lifecycle {
+    destroy = true
+  }
+}
+
+# TOMBSTONED by CloudPulse (FinOps Remediation) — 54.247.132.19 (eipalloc-050c132df2341fedf)
+import {
+  to = aws_eip.remediated_eip_050c132df2341fedf
+  id = "eipalloc-050c132df2341fedf"
+}
+
+removed {
+  from = aws_eip.remediated_eip_050c132df2341fedf
+  lifecycle {
+    destroy = true
+  }
+}
