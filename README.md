@@ -202,7 +202,7 @@ pnpm run test-all
 CloudPulse is designed for modular deployment to any AWS Account:
 
 1. **Infrastructure Prerequisites:** AWS CLI configured with deployer permissions, Terraform 1.7+, Docker Buildx, and an active S3 remote state bucket.
-2. **Environment Secrets:** Provision `/cloudpulse/sandbox/DEMO_INVITE_PASSPHRASE` and `/cloudpulse/sandbox/SESSION_SECRET` in AWS SSM Parameter Store.
+2. **Environment Secrets:** Provision AWS SSM Parameter Store keys declared in `apps/infra/environments/sandbox/secrets.tf` (including `DEMO_INVITE_PASSPHRASE`, `GITHUB_TOKEN` for automated GitFlow PR creation, and optional `ANTHROPIC_API_KEY` for PulseAdvisor AI features).
 3. **Terraform Provisioning:** Update variables in `apps/infra/environments/sandbox/` and execute `terraform init && terraform apply`.
 
 > 💡 **Custom Enterprise Integration:** Need multi-account AWS Organization onboarding, custom cloud provider adapters, or enterprise deployment guidance? Connect with [Tom White on LinkedIn](https://www.linkedin.com/in/tom-white-111a9a34/) to discuss implementation and consulting.
