@@ -13,6 +13,7 @@ type DraftState =
 export function RemediationProposalCard({
   resourceId,
   resourceName,
+  resourceAliases,
   monthlySavingsUsd,
   hclDiff,
   actionType,
@@ -38,6 +39,7 @@ export function RemediationProposalCard({
         body: JSON.stringify({
           resourceId,
           resourceName,
+          resourceAliases,
           actionType,
           branchName,
           commitMessage,

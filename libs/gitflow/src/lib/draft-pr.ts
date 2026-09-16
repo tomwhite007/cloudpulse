@@ -11,6 +11,7 @@ export type RemediatedResource = z.infer<typeof remediatedResourceSchema>;
 export const draftPrRequestSchema = z.object({
   resourceId: z.string().min(1),
   resourceName: z.string().min(1),
+  resourceAliases: z.array(z.string().min(1)).optional(),
   actionType: z.string().min(1),
   branchName: z.string().min(1),
   commitMessage: z.string().min(1),

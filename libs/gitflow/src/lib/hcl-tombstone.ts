@@ -34,6 +34,7 @@ export type TombstonePreviewTarget =
 export type TombstoneOptions = {
   resourceName: string;
   resourceId: string;
+  resourceAliases?: readonly string[];
   hclDiff?: string;
   additionalBlocks?: TombstoneBlockReplacement | TombstoneBlockReplacement[];
 };
@@ -137,11 +138,19 @@ export function commentOutResourceBlocks(
 
 export function collectTombstoneTargets(
   hcl: string,
-  options: Pick<TombstoneOptions, 'resourceName' | 'resourceId' | 'additionalBlocks' | 'hclDiff'>,
+  options: Pick<
+    TombstoneOptions,
+    'resourceName' | 'resourceId' | 'resourceAliases' | 'additionalBlocks' | 'hclDiff'
+  >,
 ): TombstoneTarget[] {
   const blocks = findResourceBlocks(hcl);
   const primaries = blocks.filter((block) =>
-    isPrimaryResourceBlock(block, options.resourceName, options.resourceId),
+    isPrimaryResourceBlock(
+      block,
+      options.resourceName,
+      options.resourceId,
+      options.resourceAliases,
+    ),
   );
   const extras = resolveAdditionalBlocks(
     blocks,
@@ -292,7 +301,7 @@ function resolveAdditionalBlocks(
 function findCoupledSatelliteBlocks(
   blocks: readonly HclResourceBlock[],
   primaries: readonly HclResourceBlock[],
-  options: { resourceName: string; resourceId: string },
+  options: Pick<TombstoneOptions, 'resourceName' | 'resourceId' | 'resourceAliases'>,
 ): HclResourceBlock[] {
   if (primaries.length === 0) {
     return [];
@@ -340,8 +349,9 @@ function isPrimaryResourceBlock(
   block: HclResourceBlock,
   resourceName: string,
   resourceId: string,
+  resourceAliases?: readonly string[],
 ): boolean {
-  if (isDirectIdentityMatch(block, resourceName, resourceId)) {
+  if (isDirectIdentityMatch(block, resourceName, resourceId, resourceAliases)) {
     return true;
   }
 
@@ -349,19 +359,20 @@ function isPrimaryResourceBlock(
     return false;
   }
 
-  return blockMatchesTarget(block, resourceName, resourceId);
+  return blockMatchesTarget(block, resourceName, resourceId, resourceAliases);
 }
 
 function isDirectIdentityMatch(
   block: HclResourceBlock,
   resourceName: string,
   resourceId: string,
+  resourceAliases: readonly string[] = [],
 ): boolean {
   const normBlockName = normalizeIdentity(block.name);
   const normBlockNameNoTf = normBlockName.replace(/tf$/i, '');
   const normFull = normalizeIdentity(`${block.type}.${block.name}`);
 
-  const candidates = [resourceName, resourceId, resourceName.replace(/-/g, '_')]
+  const candidates = [resourceName, resourceId, resourceName.replace(/-/g, '_'), ...resourceAliases]
     .filter((v) => Boolean(v && v.trim().length > 0))
     .map(normalizeIdentity);
 
@@ -384,7 +395,7 @@ function isDirectIdentityMatch(
 function referencesPrimary(
   satellite: HclResourceBlock,
   primary: HclResourceBlock,
-  options: { resourceName: string; resourceId: string },
+  options: Pick<TombstoneOptions, 'resourceName' | 'resourceId' | 'resourceAliases'>,
 ): boolean {
   const text = satellite.text;
 
@@ -400,6 +411,18 @@ function referencesPrimary(
   const resourceName = options.resourceName.trim();
   if (resourceName.length > 0) {
     if (text.includes(`"${resourceName}"`) || text.includes(`'${resourceName}'`)) {
+      return true;
+    }
+  }
+
+  for (const alias of options.resourceAliases ?? []) {
+    const trimmedAlias = alias.trim();
+    if (
+      trimmedAlias.length >= 4 &&
+      (text.includes(trimmedAlias) ||
+        text.includes(`"${trimmedAlias}"`) ||
+        text.includes(`'${trimmedAlias}'`))
+    ) {
       return true;
     }
   }
@@ -452,14 +475,18 @@ function blockMatchesTarget(
   block: HclResourceBlock,
   resourceName: string,
   resourceId: string,
+  resourceAliases: readonly string[] = [],
 ): boolean {
-  if (isDirectIdentityMatch(block, resourceName, resourceId)) {
+  if (isDirectIdentityMatch(block, resourceName, resourceId, resourceAliases)) {
     return true;
   }
 
-  const trimmedId = resourceId.trim();
-  if (trimmedId.length >= 4 && block.text.includes(trimmedId)) {
-    return true;
+  const literalIdentities = [resourceId, ...resourceAliases];
+  for (const identity of literalIdentities) {
+    const trimmedIdentity = identity.trim();
+    if (trimmedIdentity.length >= 4 && block.text.includes(trimmedIdentity)) {
+      return true;
+    }
   }
 
   const nameTagMatches = block.text.match(/Name\s*=\s*"([^"]+)"/i);
@@ -467,7 +494,7 @@ function blockMatchesTarget(
     const tagValue = nameTagMatches[1];
     const normTag = normalizeIdentity(tagValue);
     const normTagNoTf = normTag.replace(/tf$/i, '');
-    const candidates = [resourceName, resourceName.replace(/-/g, '_')]
+    const candidates = [resourceName, resourceName.replace(/-/g, '_'), ...resourceAliases]
       .filter((v) => Boolean(v && v.trim().length > 0))
       .map(normalizeIdentity);
 

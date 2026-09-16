@@ -33,7 +33,8 @@ describe('audit contracts', () => {
 
     const card = ResourceStatusCardSchema.parse({
       id: 'eipalloc-0123456789abcdef0',
-      resourceName: '54.216.0.12',
+      resourceName: 'cloudpulse-zombie-eip',
+      resourceAliases: ['eipalloc-0123456789abcdef0', '54.216.0.12'],
       resourceType: 'ELASTIC_IP',
       status: 'ZOMBIE',
       region: 'eu-west-1',
@@ -49,6 +50,7 @@ describe('audit contracts', () => {
     });
 
     expect(card.resourceType).toBe('ELASTIC_IP');
+    expect(card.resourceAliases).toContain('54.216.0.12');
     expect(card.status).toBe('ZOMBIE');
     expect(card.monthlyCost).toBe(3.65);
   });

@@ -83,6 +83,7 @@ describe('AwsCloudAuditorService', () => {
           {
             AllocationId: 'eipalloc-0123456789abcdef0',
             PublicIp: '54.216.0.12',
+            Tags: [{ Key: 'Name', Value: 'cloudpulse-zombie-eip-2026-09-16-tf' }],
           },
           {
             AllocationId: 'eipalloc-attached',
@@ -120,7 +121,12 @@ describe('AwsCloudAuditorService', () => {
       const elasticIp = result.resources.find((resource) => resource.resourceType === 'ELASTIC_IP');
       expect(elasticIp).toMatchObject({
         id: 'eipalloc-0123456789abcdef0',
-        resourceName: '54.216.0.12',
+        resourceName: 'cloudpulse-zombie-eip-2026-09-16-tf',
+        resourceAliases: [
+          'eipalloc-0123456789abcdef0',
+          '54.216.0.12',
+          'cloudpulse-zombie-eip-2026-09-16-tf',
+        ],
         status: 'ZOMBIE',
         monthlyCost: 3.65,
         potentialMonthlySavings: 3.65,

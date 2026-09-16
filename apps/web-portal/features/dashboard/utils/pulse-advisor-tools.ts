@@ -8,6 +8,7 @@ import {
   generateTombstoneDiffPreview,
   gitFlowEnvFromProcess,
   parseResourceHeadersFromHcl,
+  resolveResourceType,
   resolveGitFlowBranchName,
   resolveTerraformPath,
   slugResourceName,
@@ -23,6 +24,10 @@ export const ADVISOR_REMEDIATION_TOOL = 'proposeTerraformRemediation';
 export const remediationProposalSchema = z.object({
   resourceId: z.string().describe('Real cloud resource ID from the audit findings'),
   resourceName: z.string().describe('Human-readable resource name'),
+  resourceAliases: z
+    .array(z.string().min(1))
+    .optional()
+    .describe('Stable cloud identifiers and display aliases used to locate the Terraform resource'),
   actionType: z
     .enum(['RESIZE', 'TERMINATE', 'SCHEDULE_SLEEP'])
     .describe('Remediation action to apply'),
@@ -54,7 +59,7 @@ export function parseAuditContext(auditContext: unknown): CostAuditSummaryDto {
 export function alignProposalWithGitFlow(
   proposal: Pick<
     RemediationProposal,
-    'branchName' | 'actionType' | 'resourceId' | 'resourceName'
+    'branchName' | 'actionType' | 'resourceId' | 'resourceName' | 'resourceAliases'
   > & { hclDiff?: string },
 ): Pick<RemediationProposal, 'branchName' | 'hclDiff'> {
   const env = gitFlowEnvFromProcess();
@@ -65,7 +70,10 @@ export function alignProposalWithGitFlow(
           resourceName: block.name,
           resourceType: block.type,
         }))
-      : proposal.resourceName;
+      : {
+          resourceName: proposal.resourceName,
+          resourceType: resolveResourceType(proposal),
+        };
 
   return {
     branchName: resolveGitFlowBranchName(proposal, env),
@@ -77,6 +85,7 @@ export function createProposalFromFinding(finding: ResourceStatusCardDto): Remed
   const gitFlow = alignProposalWithGitFlow({
     resourceId: finding.id,
     resourceName: finding.resourceName,
+    resourceAliases: finding.resourceAliases,
     actionType: finding.recommendedAction.actionType,
     branchName: `${finding.recommendedAction.actionType.toLowerCase()}-vol-${slugResourceName(finding.resourceName)}`,
   });
@@ -84,6 +93,7 @@ export function createProposalFromFinding(finding: ResourceStatusCardDto): Remed
   return {
     resourceId: finding.id,
     resourceName: finding.resourceName,
+    resourceAliases: finding.resourceAliases,
     actionType: finding.recommendedAction.actionType,
     monthlySavingsUsd: finding.potentialMonthlySavings,
     branchName: gitFlow.branchName,
@@ -236,10 +246,18 @@ export function createAdvisorTools(auditContext: CostAuditSummaryDto) {
         'Propose a Terraform remediation for a real audited resource. Call this whenever you suggest an infrastructure change so the UI can render a proposal card. Inspect the entire Terraform file at the resolved GitFlow path, not only the target block. Include coupled satellites (aws_eip_association, associated aws_eip, aws_volume_attachment) in hclDiff when they reference the primary waste resource. Document that linked-resource tombstoning in commitMessage. branchName and hclDiff are aligned with the operator-configured GitFlow Terraform path and branch prefix.',
       inputSchema: remediationProposalSchema,
       execute: async (params): Promise<RemediationProposal> => {
-        const gitFlow = alignProposalWithGitFlow(params);
+        const finding = auditContext.resources.find(
+          (resource) => resource.id === params.resourceId,
+        );
+        const groundedParams = {
+          ...params,
+          resourceName: finding?.resourceName ?? params.resourceName,
+          resourceAliases: finding ? finding.resourceAliases : params.resourceAliases,
+        };
+        const gitFlow = alignProposalWithGitFlow(groundedParams);
 
         return {
-          ...params,
+          ...groundedParams,
           branchName: gitFlow.branchName,
           hclDiff: gitFlow.hclDiff,
           isSimulated: params.isSimulated ?? false,

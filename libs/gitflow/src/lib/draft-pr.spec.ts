@@ -23,6 +23,13 @@ describe('draftPrRequestSchema', () => {
     expect(draftPrRequestSchema.parse(validPayload)).toEqual(validPayload);
   });
 
+  it('preserves resource aliases used for Terraform identity matching', () => {
+    const resourceAliases = ['eipalloc-0123456789abcdef0', '54.216.0.12', 'managed-eip'];
+    expect(
+      draftPrRequestSchema.parse({ ...validPayload, resourceAliases }).resourceAliases,
+    ).toEqual(resourceAliases);
+  });
+
   it('rejects a missing resource id', () => {
     expect(() => draftPrRequestSchema.parse({ ...validPayload, resourceId: '' })).toThrow();
   });

@@ -34,6 +34,15 @@ resource "aws_eip_association" "web_eip" {
 }
 `;
 
+const MANAGED_ELASTIC_IP = `resource "aws_eip" "cloudpulse_zombie_eip_2026_09_16" {
+  domain = "vpc"
+
+  tags = {
+    Name = "cloudpulse-zombie-eip-2026-09-16-tf"
+  }
+}
+`;
+
 describe('findResourceBlocks', () => {
   it('parses nested terraform resource blocks', () => {
     const blocks = findResourceBlocks(SANDBOX_STORAGE);
@@ -76,6 +85,21 @@ describe('tombstoneTargetedResource', () => {
     expect(patched).not.toMatch(/^resource "aws_eip_association"/m);
   });
 
+  it('matches a managed Elastic IP through an authoritative resource alias', () => {
+    const patched = tombstoneTargetedResource(MANAGED_ELASTIC_IP, {
+      resourceName: '34.251.238.255',
+      resourceId: 'eipalloc-0123e2e86d4cbbbe0',
+      resourceAliases: ['cloudpulse-zombie-eip-2026-09-16-tf'],
+    });
+
+    expect(patched).toContain(
+      '# TOMBSTONED by CloudPulse — 34.251.238.255 (eipalloc-0123e2e86d4cbbbe0)',
+    );
+    expect(patched).toContain('# resource "aws_eip" "cloudpulse_zombie_eip_2026_09_16" {');
+    expect(patched).not.toContain('Unmanaged AWS resource');
+    expect(patched).not.toMatch(/^resource "aws_eip"/m);
+  });
+
   it('appends an unmanaged comment block when no resource block matches', () => {
     const patched = tombstoneTargetedResource('locals { env = "sandbox" }\n', {
       resourceName: 'missing-volume',
@@ -83,7 +107,9 @@ describe('tombstoneTargetedResource', () => {
       hclDiff: 'resource "aws_ebs_volume" "gone" {}',
     });
 
-    expect(patched).toContain('# TOMBSTONED by CloudPulse (FinOps Remediation) — missing-volume (vol-missing)');
+    expect(patched).toContain(
+      '# TOMBSTONED by CloudPulse (FinOps Remediation) — missing-volume (vol-missing)',
+    );
     expect(patched).toContain('# Unmanaged AWS resource (not found in HCL configuration).');
     expect(patched).toContain('locals { env = "sandbox" }');
   });

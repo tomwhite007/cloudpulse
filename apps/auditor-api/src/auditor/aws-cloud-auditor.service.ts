@@ -241,10 +241,16 @@ export class AwsCloudAuditorService implements ICloudAuditorService {
 
       const allocationId = address.AllocationId;
       const publicIp = address.PublicIp || allocationId;
+      const nameTag = address.Tags?.find((tag) => tag.Key === 'Name')?.Value;
+      const resourceName = nameTag || publicIp;
+      const resourceAliases = [
+        ...new Set([allocationId, publicIp, nameTag].filter(Boolean)),
+      ] as string[];
 
       findings.push({
         id: allocationId,
-        resourceName: publicIp,
+        resourceName,
+        resourceAliases,
         resourceType: 'ELASTIC_IP',
         status: 'ZOMBIE',
         region: this.region,

@@ -161,6 +161,31 @@ describe('createAdvisorTools', () => {
     expect(output.branchName).toContain('finops/');
   });
 
+  it('grounds an Elastic IP proposal with authoritative audit identities', async () => {
+    const finding = {
+      ...MOCK_COST_AUDIT_SUMMARY.resources[3],
+      id: 'eipalloc-0123e2e86d4cbbbe0',
+      resourceName: 'cloudpulse-zombie-eip-2026-09-16-tf',
+      resourceAliases: [
+        'eipalloc-0123e2e86d4cbbbe0',
+        '34.251.238.255',
+        'cloudpulse-zombie-eip-2026-09-16-tf',
+      ],
+    };
+    const audit = { ...MOCK_COST_AUDIT_SUMMARY, resources: [finding] };
+    const proposal = {
+      ...createProposalFromFinding(finding),
+      resourceName: '34.251.238.255',
+      resourceAliases: undefined,
+    };
+
+    const output = await executePropose(audit, proposal);
+
+    expect(output.resourceName).toBe('cloudpulse-zombie-eip-2026-09-16-tf');
+    expect(output.resourceAliases).toEqual(finding.resourceAliases);
+    expect(output.hclDiff).toContain('resource "aws_eip" "cloudpulse_zombie_eip_2026_09_16_tf"');
+  });
+
   it('preserves an explicit isSimulated flag', async () => {
     const proposal = createProposalFromFinding(MOCK_COST_AUDIT_SUMMARY.resources[1]);
     const output = await executePropose(MOCK_COST_AUDIT_SUMMARY, proposal);

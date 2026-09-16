@@ -56,6 +56,7 @@ export async function createGitHubRemediationPr(
         const tombstoneOptions = {
           resourceName: input.resourceName,
           resourceId: input.resourceId,
+          resourceAliases: input.resourceAliases,
           hclDiff: input.hclDiff,
         };
         const patched = tombstoneTargetedResource(currentHcl, tombstoneOptions);
@@ -115,6 +116,7 @@ export async function createGitHubRemediationPr(
   const tombstoneOptions = {
     resourceName: input.resourceName,
     resourceId: input.resourceId,
+    resourceAliases: input.resourceAliases,
     hclDiff: input.hclDiff,
   };
   const remediatedTargets = collectTombstoneTargets(currentHcl, tombstoneOptions);

@@ -13,6 +13,7 @@ export const RecommendedActionSchema = z.object({
 export const ResourceStatusCardSchema = z.object({
   id: z.string(),
   resourceName: z.string(),
+  resourceAliases: z.array(z.string().min(1)).optional(),
   resourceType: CloudResourceTypeSchema,
   status: z.enum(['HEALTHY', 'IDLE', 'OVER_PROVISIONED', 'ZOMBIE']),
   region: z.string(),

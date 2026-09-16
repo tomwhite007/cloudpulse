@@ -14,6 +14,7 @@ usePresenterTestLifecycle();
 const proposal = {
   resourceId: 'vol-0123456789abcdefg',
   resourceName: 'cloudpulse-test-waste',
+  resourceAliases: ['cloudpulse_test_waste'],
   monthlySavingsUsd: 4.5,
   hclDiff: '- resource "aws_ebs_volume" "cloudpulse_test_waste" {}',
   actionType: 'TERMINATE' as const,
@@ -24,7 +25,7 @@ const proposal = {
 
 describe('RemediationProposalCard', () => {
   it('drafts a pull request and links to the returned URL', async () => {
-    const fetchMock = vi.fn(() =>
+    const fetchMock = vi.fn((_input: RequestInfo | URL, _init?: RequestInit) =>
       Promise.resolve({
         ok: true,
         json: async () => ({
@@ -46,6 +47,13 @@ describe('RemediationProposalCard', () => {
       '/api/remediation/draft-pr',
       expect.objectContaining({ method: 'POST' }),
     );
+    const request = fetchMock.mock.calls[0]?.[1];
+    if (!request) {
+      throw new Error('Expected draft PR request options');
+    }
+    expect(JSON.parse(String(request.body))).toMatchObject({
+      resourceAliases: ['cloudpulse_test_waste'],
+    });
     expect(useDashboardStore.getState().queuedRemediationPrs[proposal.resourceId]).toEqual({
       prNumber: 88,
       prUrl: 'https://github.com/tomwhite007/cloudpulse/pull/88',
