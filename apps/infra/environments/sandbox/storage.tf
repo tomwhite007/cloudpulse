@@ -26,3 +26,10 @@
 #     Purpose     = "CloudPulseZombieTest"
 #   }
 # }
+# TOMBSTONED by CloudPulse — cloudpulse-zombie-vol (vol-02f8da166848b65bc)
+# apps/infra/environments/sandbox/storage.tf
+# - resource "aws_ebs_volume" "cloudpulse_zombie_vol" {
+# -   ...
+# - }
+# + # TOMBSTONED by CloudPulse (FinOps Remediation)
+# + # resource "aws_ebs_volume" "cloudpulse_zombie_vol" { ... }
