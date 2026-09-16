@@ -49,3 +49,5 @@ resource "aws_eip" "cloudpulse_zombie_eip_2026_09_16" {
     ManagedBy   = "Terraform"
   }
 }
+# TOMBSTONED by CloudPulse (FinOps Remediation) — 34.251.238.255 (eipalloc-0123e2e86d4cbbbe0)
+# Unmanaged AWS resource (not found in HCL configuration). Decommissioned out-of-band.
