@@ -22,6 +22,11 @@ export type TombstoneTarget = HclResourceBlock & {
   role: TombstoneRole;
 };
 
+export type CleanupPruneResult = {
+  hcl: string;
+  prunedResourceIds: string[];
+};
+
 export type TombstoneBlockReplacement = string | { type?: string; name: string } | HclResourceBlock;
 
 export type TombstonePreviewTarget =
@@ -210,6 +215,14 @@ export function tombstoneTargetedResource(hcl: string, options: TombstoneOptions
     );
   }
 
+  if (
+    findResourceBlocks(hcl).some(
+      (block) => block.type === 'terraform_data' && cleanupResourceId(block) === options.resourceId,
+    )
+  ) {
+    return hcl;
+  }
+
   const unmanagedRemediation = generateUnmanagedRemediationBlock(options.resourceId);
   const appendix = [
     '',
@@ -262,6 +275,54 @@ export function generateUnmanagedRemediationBlock(resourceId: string): string | 
   }
 
   return undefined;
+}
+
+export function pruneCompletedCleanupActions(
+  hcl: string,
+  activeResourceIds?: readonly string[],
+): CleanupPruneResult {
+  if (!activeResourceIds) {
+    return { hcl, prunedResourceIds: [] };
+  }
+
+  const activeIds = new Set(activeResourceIds);
+  const completedBlocks = findResourceBlocks(hcl).filter((block) => {
+    if (block.type !== 'terraform_data' || !block.name.startsWith('cloudpulse_remediate_')) {
+      return false;
+    }
+
+    const resourceId = cleanupResourceId(block);
+    return resourceId !== undefined && !activeIds.has(resourceId);
+  });
+
+  let prunedHcl = hcl;
+  for (const block of [...completedBlocks].sort((a, b) => b.start - a.start)) {
+    prunedHcl = prunedHcl.slice(0, block.start) + prunedHcl.slice(block.end);
+  }
+
+  return {
+    hcl: prunedHcl,
+    prunedResourceIds: completedBlocks
+      .map(cleanupResourceId)
+      .filter((resourceId): resourceId is string => resourceId !== undefined),
+  };
+}
+
+function cleanupResourceId(block: HclResourceBlock): string | undefined {
+  const triggerMatch = block.text.match(/triggers_replace\s*=\s*\[\s*"([^"]+)"\s*\]/);
+  const resourceId = triggerMatch?.[1];
+  if (!resourceId) {
+    return undefined;
+  }
+
+  const expectedName = hclResourceIdentifier(`cloudpulse_remediate_${resourceId}`);
+  const generatedRemediation = generateUnmanagedRemediationBlock(resourceId);
+  const expectedBlock = generatedRemediation?.split('\n').slice(1).join('\n');
+  if (block.name !== expectedName || block.text !== expectedBlock) {
+    return undefined;
+  }
+
+  return resourceId;
 }
 
 function normalizePreviewTargets(
@@ -395,6 +456,10 @@ function isPrimaryResourceBlock(
   resourceId: string,
   resourceAliases?: readonly string[],
 ): boolean {
+  if (block.type === 'terraform_data' && block.name.startsWith('cloudpulse_remediate_')) {
+    return false;
+  }
+
   if (isDirectIdentityMatch(block, resourceName, resourceId, resourceAliases)) {
     return true;
   }

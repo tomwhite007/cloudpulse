@@ -18,6 +18,7 @@ import {
 import {
   collectTombstoneTargets,
   generateUnmanagedRemediationBlock,
+  pruneCompletedCleanupActions,
   tombstoneTargetedResource,
 } from './hcl-tombstone';
 
@@ -63,9 +64,14 @@ export async function createGitHubRemediationPr(
           resourceAliases: input.resourceAliases,
           hclDiff: input.hclDiff,
         };
-        const remediatedTargets = collectTombstoneTargets(currentHcl, tombstoneOptions);
-        const patched = tombstoneTargetedResource(currentHcl, tombstoneOptions);
-        const prInput = withActualRemediationPreview(input, remediatedTargets.length);
+        const cleanup = pruneCompletedCleanupActions(currentHcl, input.activeResourceIds);
+        const remediatedTargets = collectTombstoneTargets(cleanup.hcl, tombstoneOptions);
+        const patched = tombstoneTargetedResource(cleanup.hcl, tombstoneOptions);
+        const prInput = withActualRemediationPreview(
+          input,
+          remediatedTargets.length,
+          cleanup.prunedResourceIds,
+        );
 
         await octokit.rest.repos.createOrUpdateFileContents({
           owner,
@@ -119,9 +125,14 @@ export async function createGitHubRemediationPr(
     resourceAliases: input.resourceAliases,
     hclDiff: input.hclDiff,
   };
-  const remediatedTargets = collectTombstoneTargets(currentHcl, tombstoneOptions);
-  const patched = tombstoneTargetedResource(currentHcl, tombstoneOptions);
-  const prInput = withActualRemediationPreview(input, remediatedTargets.length);
+  const cleanup = pruneCompletedCleanupActions(currentHcl, input.activeResourceIds);
+  const remediatedTargets = collectTombstoneTargets(cleanup.hcl, tombstoneOptions);
+  const patched = tombstoneTargetedResource(cleanup.hcl, tombstoneOptions);
+  const prInput = withActualRemediationPreview(
+    input,
+    remediatedTargets.length,
+    cleanup.prunedResourceIds,
+  );
 
   await octokit.rest.repos.createOrUpdateFileContents({
     owner,
@@ -163,13 +174,19 @@ export async function createGitHubRemediationPr(
 function withActualRemediationPreview(
   input: DraftPrRequest,
   matchedTargetCount: number,
+  prunedCleanupResourceIds: readonly string[],
 ): DraftPrRequest {
-  if (matchedTargetCount > 0) {
-    return input;
-  }
+  const previewInput =
+    matchedTargetCount > 0
+      ? input
+      : {
+          ...input,
+          hclDiff: generateUnmanagedRemediationBlock(input.resourceId) ?? input.hclDiff,
+        };
 
-  const unmanagedRemediation = generateUnmanagedRemediationBlock(input.resourceId);
-  return unmanagedRemediation ? { ...input, hclDiff: unmanagedRemediation } : input;
+  return prunedCleanupResourceIds.length > 0
+    ? { ...previewInput, prunedCleanupResourceIds }
+    : previewInput;
 }
 
 async function resolveAuthenticatedOwner(octokit: Octokit): Promise<string> {

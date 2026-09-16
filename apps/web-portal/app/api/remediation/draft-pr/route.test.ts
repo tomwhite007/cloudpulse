@@ -1,3 +1,4 @@
+import { MOCK_COST_AUDIT_SUMMARY } from '@cloudpulse/api-contracts/mocks';
 import { MOCK_DRAFT_PR } from '@cloudpulse/gitflow/mocks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -49,12 +50,14 @@ describe('POST /api/remediation/draft-pr', () => {
     vi.stubEnv('GITHUB_TOKEN', 'token');
     getCloudPulseSession.mockResolvedValue({});
 
-    const { POST } = await import('./route');
-    const response = await POST(jsonRequest(validPayload));
+    const { postDraftPr } = await import('./route');
+    const fetchImpl = vi.fn();
+    const response = await postDraftPr(jsonRequest(validPayload), { fetchImpl });
     const payload = await response.json();
 
     expect(payload).toEqual(MOCK_DRAFT_PR);
     expect(createGitHubRemediationPr).not.toHaveBeenCalled();
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it('creates a live GitHub PR only when the evaluator session is unlocked and a token is present', async () => {
@@ -68,16 +71,62 @@ describe('POST /api/remediation/draft-pr', () => {
       prUrl: 'https://github.com/tomwhite007/cloudpulse/pull/88',
     });
 
-    const { POST } = await import('./route');
-    const response = await POST(jsonRequest(validPayload));
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(Response.json(MOCK_COST_AUDIT_SUMMARY)),
+    ) as unknown as typeof fetch;
+    const { postDraftPr } = await import('./route');
+    const response = await postDraftPr(jsonRequest(validPayload), { fetchImpl });
     const payload = await response.json();
 
-    expect(createGitHubRemediationPr).toHaveBeenCalledWith(validPayload);
+    expect(fetchImpl).toHaveBeenCalledWith(
+      expect.stringContaining('/api/audit/summary'),
+      expect.objectContaining({
+        headers: { 'x-cloudpulse-mode': 'live' },
+        cache: 'no-store',
+      }),
+    );
+    expect(createGitHubRemediationPr).toHaveBeenCalledWith({
+      ...validPayload,
+      activeResourceIds: MOCK_COST_AUDIT_SUMMARY.resources.map((resource) => resource.id),
+    });
     expect(payload).toEqual({
       success: true,
       simulated: false,
       prNumber: 88,
       prUrl: 'https://github.com/tomwhite007/cloudpulse/pull/88',
     });
+  });
+
+  it('creates the PR without pruning when the fresh audit request fails', async () => {
+    vi.stubEnv('GITHUB_TOKEN', 'token');
+    vi.stubEnv('DEMO_MODE', 'false');
+    getCloudPulseSession.mockResolvedValue({ isEvaluator: true });
+    createGitHubRemediationPr.mockResolvedValue({
+      success: true,
+      simulated: false,
+      prNumber: 89,
+      prUrl: 'https://github.com/tomwhite007/cloudpulse/pull/89',
+    });
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(new Response(null, { status: 503 })),
+    ) as unknown as typeof fetch;
+
+    const { postDraftPr } = await import('./route');
+    const response = await postDraftPr(jsonRequest(validPayload), { fetchImpl });
+
+    expect(response.status).toBe(200);
+    expect(createGitHubRemediationPr).toHaveBeenCalledWith({
+      ...validPayload,
+      activeResourceIds: undefined,
+    });
+  });
+
+  it('rejects an invalid fresh audit payload', async () => {
+    const fetchImpl = vi.fn(() =>
+      Promise.resolve(Response.json({ resources: [] })),
+    ) as unknown as typeof fetch;
+    const { fetchActiveResourceIds } = await import('./route');
+
+    await expect(fetchActiveResourceIds(fetchImpl)).rejects.toBeDefined();
   });
 });

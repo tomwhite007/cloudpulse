@@ -116,6 +116,17 @@ describe('buildRemediationPrBody', () => {
     expect(body).toContain('`aws_instance.web` (primary) — `i-0123456789abcdefg`');
     expect(body).toContain('`aws_eip_association.web_eip` (coupled satellite)');
   });
+
+  it('documents cleanup action records pruned from the PR', () => {
+    const body = buildRemediationPrBody({
+      ...validPayload,
+      prunedCleanupResourceIds: ['eipalloc-complete', 'vol-complete'],
+    });
+
+    expect(body).toContain('### Completed Cleanup Records Pruned');
+    expect(body).toContain('- `eipalloc-complete`');
+    expect(body).toContain('- `vol-complete`');
+  });
 });
 
 describe('updateConsolidatedPrBody', () => {
@@ -127,6 +138,7 @@ describe('updateConsolidatedPrBody', () => {
       resourceName: 'cloudpulse-test-waste-2',
       monthlySavingsUsd: 3.5,
       hclDiff: '- resource "aws_ebs_volume" "cloudpulse_test_waste_2" {}',
+      prunedCleanupResourceIds: ['eipalloc-complete'],
     };
 
     const updated = updateConsolidatedPrBody(initialBody, secondPayload);
@@ -135,6 +147,25 @@ describe('updateConsolidatedPrBody', () => {
     expect(updated).toContain('vol-99999999999999999');
     expect(updated).toContain('+$8.00/mo'); // 4.5 + 3.5 = 8.00
     expect(updated).toContain(secondPayload.hclDiff);
+    expect(updated).toContain('### Completed Cleanup Records Pruned');
+    expect(updated).toContain('- `eipalloc-complete`');
+  });
+
+  it('merges cleanup details without duplicating the section', () => {
+    const initialBody = buildRemediationPrBody({
+      ...validPayload,
+      prunedCleanupResourceIds: ['eipalloc-first'],
+    });
+    const updated = updateConsolidatedPrBody(initialBody, {
+      ...validPayload,
+      resourceId: 'vol-99999999999999999',
+      resourceName: 'cloudpulse-test-waste-2',
+      prunedCleanupResourceIds: ['vol-second'],
+    });
+
+    expect(updated.match(/### Completed Cleanup Records Pruned/g)).toHaveLength(1);
+    expect(updated).toContain('- `eipalloc-first`');
+    expect(updated).toContain('- `vol-second`');
   });
 });
 

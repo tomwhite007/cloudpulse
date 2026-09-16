@@ -32,11 +32,15 @@ export const remediationProposalSchema = z.object({
     .enum(['RESIZE', 'TERMINATE', 'SCHEDULE_SLEEP'])
     .describe('Remediation action to apply'),
   monthlySavingsUsd: z.number().describe('Estimated monthly savings in USD'),
-  branchName: z.string().describe('Git branch name for the remediation PR'),
+  branchName: z
+    .string()
+    .describe(
+      'Candidate branch name used only when no remediation PR is open. If an open finops/ PR exists, this remediation is appended to that PR instead.',
+    ),
   commitMessage: z
     .string()
     .describe(
-      'Commit message / PR description. Name the primary resource being decommissioned and, when coupled satellites are tombstoned, explain that linked resources (for example an Elastic IP or volume attachment) were also removed to prevent idle provider charges or broken Terraform references.',
+      'Per-resource commit message appended to the consolidated remediation PR. Name the primary resource being decommissioned and, when coupled satellites are tombstoned, explain that linked resources (for example an Elastic IP or volume attachment) were also removed to prevent idle provider charges or broken Terraform references.',
     ),
   hclDiff: z
     .string()
@@ -146,12 +150,16 @@ export function buildAdvisorSystemPrompt(auditContext: CostAuditSummaryDto): str
     'Help the operator analyse cloud waste and propose safe Terraform remediations.',
     'Always reference real resource IDs from the audit findings below.',
     'Whenever you suggest an infrastructure change, you MUST execute the proposeTerraformRemediation tool so the UI can render a proposal card.',
+    'Generate exactly one remediation card per target resource. Cards are approval units, not promises of separate pull requests.',
+    'The first approved card creates the remediation PR when none is open. Every later approved card appends a commit and updates that same open finops/ PR.',
+    'Describe approval as adding the remediation to the consolidated PR. Do not claim that each card creates its own branch or pull request; branchName is only a candidate for the initial PR.',
     'Do not invent resources that are not present in the audit context.',
     `Infrastructure files live at \`${terraformPath}\` (operator-configured GitFlow Terraform path; default is \`apps/infra/environments/sandbox/storage.tf\`). Align conversational explanations and HCL previews with that file. Remediation PRs tombstone matching managed resource blocks; supported unmanaged EBS volumes and Elastic IPs are scheduled for idempotent cleanup during Terraform apply.`,
     'Inspect the entire file content at that resolved Terraform path holistically — not just the target resource block.',
     'Identify direct downstream satellites or coupled blocks that reference the primary waste resource ID or name, specifically: aws_eip_association, the associated aws_eip, and aws_volume_attachment.',
     'If coupled resources are found, tombstone BOTH the primary resource AND every coupled satellite in the generated HCL diff so terraform validate stays green and idle provider charges (for example unassociated Elastic IPs) are not left behind.',
     'In commitMessage, document which primary resource was decommissioned and explain that linked resources (e.g. Elastic IP) were also removed to prevent idle provider charges or broken references.',
+    'GitFlow deterministically prunes completed cleanup action records using a fresh live audit snapshot when the PR is updated. Explain that behavior when relevant, but never decide or assert from model reasoning alone that a cleanup record is safe to remove.',
     '',
     'Situational grounding:',
     formatAuditContextMarkdown(auditContext),
@@ -243,7 +251,7 @@ export function createAdvisorTools(auditContext: CostAuditSummaryDto) {
     }),
     proposeTerraformRemediation: tool({
       description:
-        'Propose a Terraform remediation for a real audited resource. Call this whenever you suggest an infrastructure change so the UI can render a proposal card. Inspect the entire Terraform file at the resolved GitFlow path, not only the target block. Include coupled satellites (aws_eip_association, associated aws_eip, aws_volume_attachment) in hclDiff when they reference the primary waste resource. Document that linked-resource tombstoning in commitMessage. branchName and hclDiff are aligned with the operator-configured GitFlow Terraform path and branch prefix.',
+        'Propose one approval card for one real audited resource. The first approved card creates a remediation PR when none is open; later cards append commits to the same open finops/ PR, so never promise a separate PR per card. Inspect the entire Terraform file at the resolved GitFlow path, not only the target block. Include coupled satellites (aws_eip_association, associated aws_eip, aws_volume_attachment) in hclDiff when they reference the primary waste resource. Document that linked-resource tombstoning in commitMessage. branchName is only an initial candidate; hclDiff is aligned with the operator-configured GitFlow Terraform path.',
       inputSchema: remediationProposalSchema,
       execute: async (params): Promise<RemediationProposal> => {
         const finding = auditContext.resources.find(

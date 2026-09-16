@@ -65,6 +65,10 @@ describe('buildAdvisorSystemPrompt', () => {
     expect(prompt).toContain('proposeTerraformRemediation');
     expect(prompt).toContain('PulseAdvisor');
     expect(prompt).toContain('res-ebs-analytics-scratch');
+    expect(prompt).toContain('one remediation card per target resource');
+    expect(prompt).toContain('same open finops/ PR');
+    expect(prompt).toContain('not promises of separate pull requests');
+    expect(prompt).toContain('fresh live audit snapshot');
   });
 });
 

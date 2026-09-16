@@ -4,8 +4,10 @@ import {
   commentOutResourceBlocks,
   findResourceBlocks,
   generateTombstoneDiffPreview,
+  generateUnmanagedRemediationBlock,
   hclResourceIdentifier,
   parseResourceHeadersFromHcl,
+  pruneCompletedCleanupActions,
   tombstoneTargetedResource,
 } from './hcl-tombstone';
 
@@ -135,11 +137,62 @@ describe('tombstoneTargetedResource', () => {
     expect(patched).toContain('describe-');
     expect(patched).not.toContain('Decommissioned out-of-band');
   });
+
+  it('keeps an existing cleanup action active when the same target is proposed again', () => {
+    const resourceId = 'vol-02f8da166848b65bc';
+    const existing = generateUnmanagedRemediationBlock(resourceId);
+    if (!existing) {
+      throw new Error('Expected a supported cleanup action');
+    }
+
+    expect(
+      tombstoneTargetedResource(existing, {
+        resourceName: 'cloudpulse-zombie-vol',
+        resourceId,
+      }),
+    ).toBe(existing);
+  });
 });
 
 describe('commentOutLines', () => {
   it('prefixes each line with a hash comment', () => {
     expect(commentOutLines('foo\nbar')).toBe('# foo\n# bar');
+  });
+});
+
+describe('pruneCompletedCleanupActions', () => {
+  const staleEipId = 'eipalloc-09cd8d4c528267722';
+  const activeVolumeId = 'vol-02f8da166848b65bc';
+  const cleanupHcl = [
+    `# TOMBSTONED by CloudPulse (FinOps Remediation) — stale EIP (${staleEipId})`,
+    generateUnmanagedRemediationBlock(staleEipId),
+    `# TOMBSTONED by CloudPulse (FinOps Remediation) — active volume (${activeVolumeId})`,
+    generateUnmanagedRemediationBlock(activeVolumeId),
+    '',
+  ].join('\n');
+
+  it('removes only completed generated actions and preserves their tombstone comments', () => {
+    const result = pruneCompletedCleanupActions(cleanupHcl, [activeVolumeId]);
+
+    expect(result.prunedResourceIds).toEqual([staleEipId]);
+    expect(result.hcl).toContain(`stale EIP (${staleEipId})`);
+    expect(result.hcl).not.toContain(`triggers_replace = ["${staleEipId}"]`);
+    expect(result.hcl).toContain(`triggers_replace = ["${activeVolumeId}"]`);
+  });
+
+  it('fails closed when no authoritative active-resource snapshot is supplied', () => {
+    expect(pruneCompletedCleanupActions(cleanupHcl)).toEqual({
+      hcl: cleanupHcl,
+      prunedResourceIds: [],
+    });
+  });
+
+  it('does not prune malformed or hand-written terraform_data blocks', () => {
+    const malformed = `resource "terraform_data" "cloudpulse_remediate_vol_bad" {
+  triggers_replace = ["vol-0123456789abcdef0"]
+}`;
+
+    expect(pruneCompletedCleanupActions(malformed, []).hcl).toBe(malformed);
   });
 });
 
