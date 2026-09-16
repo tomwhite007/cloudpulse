@@ -15,7 +15,11 @@ import {
   slugResourceName,
   type GitFlowEnv,
 } from './gitflow-config';
-import { collectTombstoneTargets, tombstoneTargetedResource } from './hcl-tombstone';
+import {
+  collectTombstoneTargets,
+  generateUnmanagedRemediationBlock,
+  tombstoneTargetedResource,
+} from './hcl-tombstone';
 
 const FALLBACK_SANDBOX_STORAGE = `# CloudPulse Monitored Storage
 resource "aws_ebs_volume" "cloudpulse_test_waste" {
@@ -59,7 +63,9 @@ export async function createGitHubRemediationPr(
           resourceAliases: input.resourceAliases,
           hclDiff: input.hclDiff,
         };
+        const remediatedTargets = collectTombstoneTargets(currentHcl, tombstoneOptions);
         const patched = tombstoneTargetedResource(currentHcl, tombstoneOptions);
+        const prInput = withActualRemediationPreview(input, remediatedTargets.length);
 
         await octokit.rest.repos.createOrUpdateFileContents({
           owner,
@@ -71,8 +77,8 @@ export async function createGitHubRemediationPr(
           ...(existing.sha ? { sha: existing.sha } : {}),
         });
 
-        const updatedBody = updateConsolidatedPrBody(openPr.body, input);
-        const updatedTitle = updateConsolidatedPrTitle(openPr.title, input);
+        const updatedBody = updateConsolidatedPrBody(openPr.body, prInput);
+        const updatedTitle = updateConsolidatedPrTitle(openPr.title, prInput);
 
         await octokit.rest.pulls.update({
           owner,
@@ -103,13 +109,7 @@ export async function createGitHubRemediationPr(
   const defaultBranchName = requestedBranch.startsWith('finops/')
     ? requestedBranch
     : `finops/remediate-${slugResourceName(input.resourceName)}`;
-  const branchName = await createUniqueBranch(
-    octokit,
-    owner,
-    repo,
-    defaultBranchName,
-    baseSha,
-  );
+  const branchName = await createUniqueBranch(octokit, owner, repo, defaultBranchName, baseSha);
 
   const existing = await readTerraformFile(octokit, owner, repo, branchName, terraformPath);
   const currentHcl = existing.content ?? FALLBACK_SANDBOX_STORAGE;
@@ -121,6 +121,7 @@ export async function createGitHubRemediationPr(
   };
   const remediatedTargets = collectTombstoneTargets(currentHcl, tombstoneOptions);
   const patched = tombstoneTargetedResource(currentHcl, tombstoneOptions);
+  const prInput = withActualRemediationPreview(input, remediatedTargets.length);
 
   await octokit.rest.repos.createOrUpdateFileContents({
     owner,
@@ -139,7 +140,7 @@ export async function createGitHubRemediationPr(
     head: branchName,
     base: baseBranch,
     body: buildRemediationPrBody({
-      ...input,
+      ...prInput,
       remediatedResources:
         remediatedTargets.length > 0
           ? remediatedTargets.map((target) => ({
@@ -159,6 +160,18 @@ export async function createGitHubRemediationPr(
   };
 }
 
+function withActualRemediationPreview(
+  input: DraftPrRequest,
+  matchedTargetCount: number,
+): DraftPrRequest {
+  if (matchedTargetCount > 0) {
+    return input;
+  }
+
+  const unmanagedRemediation = generateUnmanagedRemediationBlock(input.resourceId);
+  return unmanagedRemediation ? { ...input, hclDiff: unmanagedRemediation } : input;
+}
+
 async function resolveAuthenticatedOwner(octokit: Octokit): Promise<string> {
   try {
     const { data } = await octokit.rest.users.getAuthenticated();
@@ -172,7 +185,13 @@ async function findOpenRemediationPr(
   octokit: Octokit,
   owner: string,
   repo: string,
-): Promise<{ number: number; branch: string; html_url: string; body: string; title: string } | null> {
+): Promise<{
+  number: number;
+  branch: string;
+  html_url: string;
+  body: string;
+  title: string;
+} | null> {
   try {
     const { data: openPrs } = await octokit.rest.pulls.list({
       owner,

@@ -147,7 +147,7 @@ export function buildAdvisorSystemPrompt(auditContext: CostAuditSummaryDto): str
     'Always reference real resource IDs from the audit findings below.',
     'Whenever you suggest an infrastructure change, you MUST execute the proposeTerraformRemediation tool so the UI can render a proposal card.',
     'Do not invent resources that are not present in the audit context.',
-    `Infrastructure files live at \`${terraformPath}\` (operator-configured GitFlow Terraform path; default is \`apps/infra/environments/sandbox/storage.tf\`). Align conversational explanations and HCL previews with that file. Remediation PRs tombstone matching resource blocks rather than deleting them.`,
+    `Infrastructure files live at \`${terraformPath}\` (operator-configured GitFlow Terraform path; default is \`apps/infra/environments/sandbox/storage.tf\`). Align conversational explanations and HCL previews with that file. Remediation PRs tombstone matching managed resource blocks; supported unmanaged EBS volumes and Elastic IPs are scheduled for idempotent cleanup during Terraform apply.`,
     'Inspect the entire file content at that resolved Terraform path holistically — not just the target resource block.',
     'Identify direct downstream satellites or coupled blocks that reference the primary waste resource ID or name, specifically: aws_eip_association, the associated aws_eip, and aws_volume_attachment.',
     'If coupled resources are found, tombstone BOTH the primary resource AND every coupled satellite in the generated HCL diff so terraform validate stays green and idle provider charges (for example unassociated Elastic IPs) are not left behind.',

@@ -210,14 +210,58 @@ export function tombstoneTargetedResource(hcl: string, options: TombstoneOptions
     );
   }
 
+  const unmanagedRemediation = generateUnmanagedRemediationBlock(options.resourceId);
   const appendix = [
     '',
     `# TOMBSTONED by CloudPulse (FinOps Remediation) — ${options.resourceName} (${options.resourceId})`,
-    `# Unmanaged AWS resource (not found in HCL configuration). Decommissioned out-of-band.`,
+    unmanagedRemediation ??
+      `# Unmanaged AWS resource requires an explicitly supported out-of-band remediation.`,
     '',
   ].join('\n');
 
   return `${hcl.trimEnd()}${appendix}`;
+}
+
+export function generateUnmanagedRemediationBlock(resourceId: string): string | undefined {
+  const identifier = hclResourceIdentifier(`cloudpulse_remediate_${resourceId}`);
+
+  if (/^eipalloc-[0-9a-f]+$/.test(resourceId)) {
+    return [
+      '# Unmanaged AWS resource: release during the next Terraform apply.',
+      `resource "terraform_data" "${identifier}" {`,
+      `  triggers_replace = ["${resourceId}"]`,
+      '',
+      '  provisioner "local-exec" {',
+      '    command = <<-EOT',
+      `      allocation_id="${resourceId}"`,
+      "      if aws ec2 describe-addresses --allocation-ids \"$allocation_id\" --query 'Addresses[0].AllocationId' --output text 2>/dev/null | grep -q '^eipalloc-'; then",
+      '        aws ec2 release-address --allocation-id "$allocation_id"',
+      '      fi',
+      '    EOT',
+      '  }',
+      '}',
+    ].join('\n');
+  }
+
+  if (/^vol-[0-9a-f]+$/.test(resourceId)) {
+    return [
+      '# Unmanaged AWS resource: delete during the next Terraform apply.',
+      `resource "terraform_data" "${identifier}" {`,
+      `  triggers_replace = ["${resourceId}"]`,
+      '',
+      '  provisioner "local-exec" {',
+      '    command = <<-EOT',
+      `      volume_id="${resourceId}"`,
+      "      if aws ec2 describe-volumes --volume-ids \"$volume_id\" --query 'Volumes[0].VolumeId' --output text 2>/dev/null | grep -q '^vol-'; then",
+      '        aws ec2 delete-volume --volume-id "$volume_id"',
+      '      fi',
+      '    EOT',
+      '  }',
+      '}',
+    ].join('\n');
+  }
+
+  return undefined;
 }
 
 function normalizePreviewTargets(

@@ -100,7 +100,7 @@ describe('tombstoneTargetedResource', () => {
     expect(patched).not.toMatch(/^resource "aws_eip"/m);
   });
 
-  it('appends an unmanaged comment block when no resource block matches', () => {
+  it('appends a safe fallback when an unsupported resource does not match', () => {
     const patched = tombstoneTargetedResource('locals { env = "sandbox" }\n', {
       resourceName: 'missing-volume',
       resourceId: 'vol-missing',
@@ -110,8 +110,30 @@ describe('tombstoneTargetedResource', () => {
     expect(patched).toContain(
       '# TOMBSTONED by CloudPulse (FinOps Remediation) — missing-volume (vol-missing)',
     );
-    expect(patched).toContain('# Unmanaged AWS resource (not found in HCL configuration).');
+    expect(patched).toContain('requires an explicitly supported out-of-band remediation');
+    expect(patched).not.toContain('provisioner "local-exec"');
     expect(patched).toContain('locals { env = "sandbox" }');
+  });
+
+  it.each([
+    {
+      resourceName: '34.251.40.229',
+      resourceId: 'eipalloc-09cd8d4c528267722',
+      command: 'aws ec2 release-address --allocation-id "$allocation_id"',
+    },
+    {
+      resourceName: 'cloudpulse-zombie-vol',
+      resourceId: 'vol-02f8da166848b65bc',
+      command: 'aws ec2 delete-volume --volume-id "$volume_id"',
+    },
+  ])('schedules an idempotent apply-time cleanup for unmanaged $resourceId', (target) => {
+    const patched = tombstoneTargetedResource('locals { env = "sandbox" }\n', target);
+
+    expect(patched).toContain('resource "terraform_data" "cloudpulse_remediate_');
+    expect(patched).toContain(`triggers_replace = ["${target.resourceId}"]`);
+    expect(patched).toContain(target.command);
+    expect(patched).toContain('describe-');
+    expect(patched).not.toContain('Decommissioned out-of-band');
   });
 });
 
