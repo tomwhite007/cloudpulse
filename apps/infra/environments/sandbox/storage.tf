@@ -77,3 +77,5 @@
 # Unmanaged AWS resource (not found in HCL configuration). Decommissioned out-of-band.
 # TOMBSTONED by CloudPulse (FinOps Remediation) — cloudpulse-zombie-vol (vol-02f8da166848b65bc)
 # Unmanaged AWS resource (not found in HCL configuration). Decommissioned out-of-band.
+# TOMBSTONED by CloudPulse (FinOps Remediation) — cloudpulse-zombie-eip-2026-09-16 (eipalloc-09cd8d4c528267722)
+# Unmanaged AWS resource (not found in HCL configuration). Decommissioned out-of-band.
