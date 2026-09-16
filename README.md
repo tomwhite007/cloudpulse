@@ -20,7 +20,8 @@
 - [4. Technology Stack](#4-technology-stack)
 - [5. Repository Structure](#5-repository-structure)
 - [6. Local Development & Testing](#6-local-development--testing)
-- [7. Roadmap & Upcoming Features](#-7-roadmap--upcoming-features)
+- [7. Deploying to Your AWS Environment](#7-deploying-to-your-aws-environment)
+- [8. Roadmap & Upcoming Features](#-8-roadmap--upcoming-features)
 
 ---
 
@@ -196,7 +197,19 @@ pnpm run test-all
 
 ---
 
-## 🚀 7. Roadmap & Upcoming Features
+## 7. Deploying to Your AWS Environment
+
+CloudPulse is designed for modular deployment to any AWS Account:
+
+1. **Infrastructure Prerequisites:** AWS CLI configured with deployer permissions, Terraform 1.7+, Docker Buildx, and an active S3 remote state bucket.
+2. **Environment Secrets:** Provision `/cloudpulse/sandbox/DEMO_INVITE_PASSPHRASE` and `/cloudpulse/sandbox/SESSION_SECRET` in AWS SSM Parameter Store.
+3. **Terraform Provisioning:** Update variables in `apps/infra/environments/sandbox/` and execute `terraform init && terraform apply`.
+
+> 💡 **Custom Enterprise Integration:** Need multi-account AWS Organization onboarding, custom cloud provider adapters, or enterprise deployment guidance? Connect with [Tom White on LinkedIn](https://www.linkedin.com/in/tom-white-111a9a34/) to discuss implementation and consulting.
+
+---
+
+## 🚀 8. Roadmap & Upcoming Features
 
 - [ ] **Concurrent Multi-Region Account Sweeper**: Expand auditing beyond single-region configuration (`AWS_REGION`) to dynamically iterate and sweep all enabled AWS regions across the account in a single audit pass.
 - [ ] **S3 Bucket Lifecycle & Stale Data Auditor**: Deep scanning of unutilized S3 buckets via CloudWatch metrics & object last-modified date analysis to identify zero-access storage waste.
