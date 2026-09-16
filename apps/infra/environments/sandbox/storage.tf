@@ -79,3 +79,17 @@
 # Unmanaged AWS resource (not found in HCL configuration). Decommissioned out-of-band.
 # TOMBSTONED by CloudPulse (FinOps Remediation) — cloudpulse-zombie-eip-2026-09-16 (eipalloc-09cd8d4c528267722)
 # Unmanaged AWS resource (not found in HCL configuration). Decommissioned out-of-band.
+# TOMBSTONED by CloudPulse (FinOps Remediation) — cloudpulse-zombie-vol (vol-02f8da166848b65bc)
+# Unmanaged AWS resource: delete during the next Terraform apply.
+resource "terraform_data" "cloudpulse_remediate_vol_02f8da166848b65bc" {
+  triggers_replace = ["vol-02f8da166848b65bc"]
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      volume_id="vol-02f8da166848b65bc"
+      if aws ec2 describe-volumes --volume-ids "$volume_id" --query 'Volumes[0].VolumeId' --output text 2>/dev/null | grep -q '^vol-'; then
+        aws ec2 delete-volume --volume-id "$volume_id"
+      fi
+    EOT
+  }
+}
