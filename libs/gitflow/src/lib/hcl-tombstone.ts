@@ -357,12 +357,28 @@ function isDirectIdentityMatch(
   resourceName: string,
   resourceId: string,
 ): boolean {
-  const identities = [block.name, `${block.type}.${block.name}`].map(normalizeIdentity);
-  const needles = [resourceName, resourceId, resourceName.replace(/-/g, '_')]
-    .filter((value) => value.trim().length > 0)
+  const normBlockName = normalizeIdentity(block.name);
+  const normBlockNameNoTf = normBlockName.replace(/tf$/i, '');
+  const normFull = normalizeIdentity(`${block.type}.${block.name}`);
+
+  const candidates = [resourceName, resourceId, resourceName.replace(/-/g, '_')]
+    .filter((v) => Boolean(v && v.trim().length > 0))
     .map(normalizeIdentity);
 
-  return needles.some((needle) => identities.includes(needle));
+  for (const candidate of candidates) {
+    const candidateNoTf = candidate.replace(/tf$/i, '');
+    if (
+      candidate === normBlockName ||
+      candidateNoTf === normBlockName ||
+      candidate === normBlockNameNoTf ||
+      candidateNoTf === normBlockNameNoTf ||
+      candidate === normFull
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function referencesPrimary(
@@ -437,12 +453,38 @@ function blockMatchesTarget(
   resourceName: string,
   resourceId: string,
 ): boolean {
-  const haystack = normalizeIdentity(`${block.type} ${block.name} ${block.text}`);
-  const needles = [resourceName, resourceId, resourceName.replace(/-/g, '_')].filter(
-    (value) => value.trim().length > 0,
-  );
+  if (isDirectIdentityMatch(block, resourceName, resourceId)) {
+    return true;
+  }
 
-  return needles.some((needle) => haystack.includes(normalizeIdentity(needle)));
+  const trimmedId = resourceId.trim();
+  if (trimmedId.length >= 4 && block.text.includes(trimmedId)) {
+    return true;
+  }
+
+  const nameTagMatches = block.text.match(/Name\s*=\s*"([^"]+)"/i);
+  if (nameTagMatches) {
+    const tagValue = nameTagMatches[1];
+    const normTag = normalizeIdentity(tagValue);
+    const normTagNoTf = normTag.replace(/tf$/i, '');
+    const candidates = [resourceName, resourceName.replace(/-/g, '_')]
+      .filter((v) => Boolean(v && v.trim().length > 0))
+      .map(normalizeIdentity);
+
+    for (const candidate of candidates) {
+      const candidateNoTf = candidate.replace(/tf$/i, '');
+      if (
+        candidate === normTag ||
+        candidateNoTf === normTag ||
+        candidate === normTagNoTf ||
+        candidateNoTf === normTagNoTf
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 function normalizeIdentity(value: string): string {
