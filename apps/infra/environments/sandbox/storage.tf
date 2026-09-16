@@ -47,3 +47,10 @@
 # - }
 # + # TOMBSTONED by CloudPulse (FinOps Remediation)
 # + # resource "aws_eip" "cloudpulse_eip_52_18_132_197" { ... }
+# TOMBSTONED by CloudPulse — 54.247.132.19 (eipalloc-050c132df2341fedf)
+# apps/infra/environments/sandbox/storage.tf
+# - resource "aws_eip" "cloudpulse_eip_54_247_132_19" {
+# -   ...
+# - }
+# + # TOMBSTONED by CloudPulse (FinOps Remediation)
+# + # resource "aws_eip" "cloudpulse_eip_54_247_132_19" { ... }
