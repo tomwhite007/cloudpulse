@@ -41,15 +41,16 @@
 #   }
 # }
 
-resource "aws_eip" "cloudpulse_zombie_eip_2026_09_16" {
-  domain = "vpc"
-
-  tags = {
-    Name        = "cloudpulse-zombie-eip-2026-09-16-tf"
-    Environment = "sandbox"
-    ManagedBy   = "Terraform"
-  }
-}
+# TOMBSTONED by CloudPulse — cloudpulse-zombie-eip-2026-09-16-tf (eipalloc-0123e2e86d4cbbbe0)
+# resource "aws_eip" "cloudpulse_zombie_eip_2026_09_16" {
+#   domain = "vpc"
+#
+#   tags = {
+#     Name        = "cloudpulse-zombie-eip-2026-09-16-tf"
+#     Environment = "sandbox"
+#     ManagedBy   = "Terraform"
+#   }
+# }
 # TOMBSTONED by CloudPulse (FinOps Remediation) — 54.247.132.19 (eipalloc-050c132df2341fedf)
 # Unmanaged AWS resource (not found in HCL configuration). Decommissioned out-of-band.
 # TOMBSTONED by CloudPulse (FinOps Remediation) — 52.18.132.197 (eipalloc-0bd2e01043721d5d7)
