@@ -4,6 +4,7 @@ import {
   isGitFlowDemoMode,
   remediationPrTitle,
   sanitizeBranchName,
+  updateConsolidatedPrBody,
 } from './draft-pr';
 import { MOCK_DRAFT_PR } from '../mocks/draft-pr.mock';
 
@@ -107,6 +108,26 @@ describe('buildRemediationPrBody', () => {
     expect(body).toContain('### Remediated Resources');
     expect(body).toContain('`aws_instance.web` (primary) — `i-0123456789abcdefg`');
     expect(body).toContain('`aws_eip_association.web_eip` (coupled satellite)');
+  });
+});
+
+describe('updateConsolidatedPrBody', () => {
+  it('appends a second resource and updates total savings', () => {
+    const initialBody = buildRemediationPrBody(validPayload);
+    const secondPayload = {
+      ...validPayload,
+      resourceId: 'vol-99999999999999999',
+      resourceName: 'cloudpulse-test-waste-2',
+      monthlySavingsUsd: 3.5,
+      hclDiff: '- resource "aws_ebs_volume" "cloudpulse_test_waste_2" {}',
+    };
+
+    const updated = updateConsolidatedPrBody(initialBody, secondPayload);
+
+    expect(updated).toContain('cloudpulse-test-waste-2');
+    expect(updated).toContain('vol-99999999999999999');
+    expect(updated).toContain('+$8.00/mo'); // 4.5 + 3.5 = 8.00
+    expect(updated).toContain(secondPayload.hclDiff);
   });
 });
 

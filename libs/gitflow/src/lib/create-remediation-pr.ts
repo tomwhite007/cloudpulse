@@ -2,6 +2,8 @@ import { Octokit } from '@octokit/rest';
 import {
   buildRemediationPrBody,
   remediationPrTitle,
+  updateConsolidatedPrBody,
+  updateConsolidatedPrTitle,
   type DraftPrRequest,
   type DraftPrResponse,
 } from './draft-pr';
@@ -10,6 +12,7 @@ import {
   resolveGitFlowBranchName,
   resolveTerraformPath,
   shouldUseSandboxFallback,
+  slugResourceName,
   type GitFlowEnv,
 } from './gitflow-config';
 import { collectTombstoneTargets, tombstoneTargetedResource } from './hcl-tombstone';
@@ -34,15 +37,63 @@ export async function createGitHubRemediationPr(
 ): Promise<DraftPrResponse> {
   const octokit = new Octokit({ auth: env.GITHUB_TOKEN });
   const repo = env.GITHUB_REPO_NAME || 'cloudpulse';
-  const owner = env.GITHUB_REPO_OWNER || (await octokit.rest.users.getAuthenticated()).data.login;
+  const owner = env.GITHUB_REPO_OWNER || (await resolveAuthenticatedOwner(octokit));
   const terraformPath = resolveTerraformPath(env);
 
+  // Check if an open finops/ remediation PR already exists to consolidate changes
+  const openPr = await findOpenRemediationPr(octokit, owner, repo);
+
+  if (openPr) {
+    const branchName = openPr.branch;
+    const existing = await readTerraformFile(octokit, owner, repo, branchName, terraformPath);
+    const currentHcl = existing.content ?? FALLBACK_SANDBOX_STORAGE;
+    const tombstoneOptions = {
+      resourceName: input.resourceName,
+      resourceId: input.resourceId,
+      hclDiff: input.hclDiff,
+    };
+    const patched = tombstoneTargetedResource(currentHcl, tombstoneOptions);
+
+    await octokit.rest.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path: terraformPath,
+      message: input.commitMessage,
+      content: Buffer.from(patched, 'utf8').toString('base64'),
+      branch: branchName,
+      ...(existing.sha ? { sha: existing.sha } : {}),
+    });
+
+    const updatedBody = updateConsolidatedPrBody(openPr.body, input);
+    const updatedTitle = updateConsolidatedPrTitle(openPr.title, input);
+
+    await octokit.rest.pulls.update({
+      owner,
+      repo,
+      pull_number: openPr.number,
+      title: updatedTitle,
+      body: updatedBody,
+    });
+
+    return {
+      success: true,
+      simulated: false,
+      prNumber: openPr.number,
+      prUrl: openPr.html_url,
+    };
+  }
+
+  // Standard flow for creating a new PR
   const { sha: baseSha, branch: baseBranch } = await resolveBaseBranch(octokit, owner, repo);
+  const requestedBranch = resolveGitFlowBranchName(input, env);
+  const defaultBranchName = requestedBranch.startsWith('finops/')
+    ? requestedBranch
+    : `finops/remediate-${slugResourceName(input.resourceName)}`;
   const branchName = await createUniqueBranch(
     octokit,
     owner,
     repo,
-    resolveGitFlowBranchName(input, env),
+    defaultBranchName,
     baseSha,
   );
 
@@ -91,6 +142,44 @@ export async function createGitHubRemediationPr(
     prNumber: prData.number,
     prUrl: prData.html_url,
   };
+}
+
+async function resolveAuthenticatedOwner(octokit: Octokit): Promise<string> {
+  try {
+    const { data } = await octokit.rest.users.getAuthenticated();
+    return data.login;
+  } catch {
+    return 'tomwhite007';
+  }
+}
+
+async function findOpenRemediationPr(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+): Promise<{ number: number; branch: string; html_url: string; body: string; title: string } | null> {
+  try {
+    const { data: openPrs } = await octokit.rest.pulls.list({
+      owner,
+      repo,
+      state: 'open',
+    });
+
+    const finopsPr = openPrs.find((p) => p.head.ref.startsWith('finops/'));
+    if (finopsPr) {
+      return {
+        number: finopsPr.number,
+        branch: finopsPr.head.ref,
+        html_url: finopsPr.html_url,
+        body: finopsPr.body ?? '',
+        title: finopsPr.title,
+      };
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 async function resolveBaseBranch(
