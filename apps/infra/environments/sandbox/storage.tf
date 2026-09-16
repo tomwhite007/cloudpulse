@@ -163,3 +163,26 @@ resource "terraform_data" "cloudpulse_remediate_eipalloc_050c132df2341fedf" {
     EOT
   }
 }
+
+# Managed Zombie Fixture — 2026-09-16 (v2)
+resource "aws_ebs_volume" "cloudpulse_zombie_vol_2026_09_16_v2" {
+  availability_zone = "eu-west-1a"
+  size              = 1
+  type              = "gp3"
+
+  tags = {
+    Name        = "cloudpulse-zombie-vol-2026-09-16-v2-tf"
+    Environment = "sandbox"
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_eip" "cloudpulse_zombie_eip_2026_09_16_v2" {
+  domain = "vpc"
+
+  tags = {
+    Name        = "cloudpulse-zombie-eip-2026-09-16-v2-tf"
+    Environment = "sandbox"
+    ManagedBy   = "Terraform"
+  }
+}
