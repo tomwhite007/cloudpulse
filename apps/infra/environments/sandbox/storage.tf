@@ -33,3 +33,10 @@
 # - }
 # + # TOMBSTONED by CloudPulse (FinOps Remediation)
 # + # resource "aws_ebs_volume" "cloudpulse_zombie_vol" { ... }
+# TOMBSTONED by CloudPulse — cloudpulse-zombie-vol-2026-09-15 (vol-01ad1fe87cbeb4a38)
+# apps/infra/environments/sandbox/storage.tf
+# - resource "aws_ebs_volume" "cloudpulse_zombie_vol_2026_09_15" {
+# -   ...
+# - }
+# + # TOMBSTONED by CloudPulse (FinOps Remediation)
+# + # resource "aws_ebs_volume" "cloudpulse_zombie_vol_2026_09_15" { ... }
