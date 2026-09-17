@@ -130,17 +130,18 @@
 
 
 # Managed Zombie Fixture — 2026-09-17 (v1)
-resource "aws_ebs_volume" "cloudpulse_zombie_vol_2026_09_17" {
-  availability_zone = "eu-west-1a"
-  size              = 1
-  type              = "gp3"
-
-  tags = {
-    Name        = "cloudpulse-zombie-vol-2026-09-17-tf"
-    Environment = "sandbox"
-    ManagedBy   = "Terraform"
-  }
-}
+# TOMBSTONED by CloudPulse — cloudpulse-zombie-vol-2026-09-17-tf (vol-0ebf51bd33e3467a1)
+# resource "aws_ebs_volume" "cloudpulse_zombie_vol_2026_09_17" {
+#   availability_zone = "eu-west-1a"
+#   size              = 1
+#   type              = "gp3"
+#
+#   tags = {
+#     Name        = "cloudpulse-zombie-vol-2026-09-17-tf"
+#     Environment = "sandbox"
+#     ManagedBy   = "Terraform"
+#   }
+# }
 
 # TOMBSTONED by CloudPulse — cloudpulse-zombie-eip-2026-09-17 (eipalloc-0e43f6a4c467743a9)
 # resource "aws_eip" "cloudpulse_zombie_eip_2026_09_17" {
