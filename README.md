@@ -17,6 +17,7 @@
 - [3. GitHub Actions CI/CD Pipelines](#3-github-actions-cicd-pipelines)
   - [Workflow Execution Flow](#workflow-execution-flow)
   - [Key Workflows](#key-workflows)
+  - [Environment Promotion & Staging Strategy](#environment-promotion--staging-strategy)
 - [4. Technology Stack](#4-technology-stack)
 - [5. Repository Structure](#5-repository-structure)
 - [6. Local Development & Testing](#6-local-development--testing)
@@ -141,6 +142,18 @@ CloudPulse utilizes a unified, automated CI/CD architecture powered by **Nx affe
 3. **Infrastructure Workflows ([`.github/workflows/infra-main-apply.yml`](.github/workflows/infra-main-apply.yml) & [`.github/workflows/infra-pr-plan.yml`](.github/workflows/infra-pr-plan.yml))**:
    - **Trigger**: Pull Request or push to `main` modifying HCL files under `apps/infra`.
    - **Validation & Apply**: Checks HCL formatting (`terraform fmt -check`), validates Terraform modules (`terraform validate`), generates execution plans (`terraform plan`), and applies changes on `main` (`terraform apply`).
+
+### 🚀 Environment Promotion & Staging Strategy
+
+To ensure production stability for the live demo platform without locking down rapid feature development, CloudPulse follows a strict environment promotion topology:
+
+* **Current Architecture (Single-Account Sandbox):**
+  - **Main Branch Deployment:** Pushes to `main` undergo automated Nx affected quality gates (`lint`, `test`) before building ARM64 ECR container images and updating the live ECS Fargate cluster.
+  - **Safety Barrier:** Changes to backend APIs (`auditor-api`), BFF routes (`web-portal`), and GitFlow PR generators are 100% verified locally via Nx unit/integration tests (`pnpm test-all`) before merge.
+* **Target Enterprise Extension (Multi-Environment Promotion):**
+  - **Isolated AWS Staging Account / VPC:** Infrastructure state is partitioned into isolated Terraform workspaces (`staging` vs `production`).
+  - **Ephemeral Preview Environments:** Pull requests automatically trigger ephemeral ECS task definitions or AWS API Gateway / Lambda aliases with unique feature URLs (`pr-42.staging.cloudpulse.dev`).
+  - **Release Tag Gated Deployments:** Production releases are decoupled from merges to `main`. Deployments to the live demo environment require explicit Git release tags (e.g. `v1.2.0`) or GitHub Environment approval gates, ensuring zero disruption to public evaluators during deep refactoring phases.
 
 ---
 
