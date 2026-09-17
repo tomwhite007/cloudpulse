@@ -10,9 +10,9 @@ Paths relative to `apps/auditor-api/`. Payloads: `@cloudpulse/api-contracts`. Mo
 
 - **Topology & Ingress**: Co-located inside single AWS VPC on ECS Fargate (ARM64 / Graviton). Zero public IP / zero internet ingress. Ingress accepts traffic on port `3333` exclusively from Next.js web portal Security Group.
 - Thin controllers: route, extract, call service, return. No business logic in controllers.
-- `CLOUD_AUDITOR_SERVICE`: always `AwsCloudAuditorService` via `createCloudAuditorService` (`applyLiveAwsEnv` + AWS SDK clients in `src/auditor/`). Wire only via module `useFactory`. Status is always `LIVE` with `resolveLiveAwsProfile()`. `MockCloudAuditorService` is for specs only. Portal demo vs live is the evaluator session, not an auditor env flag. Do not rename `DEMO_MODE` / `SIMULATED`|`LIVE`.
+- `CLOUD_AUDITOR_SERVICE` & Header Routing: `AppController` inspects `x-cloudpulse-mode` header sent by Next.js BFF. When `mode === 'demo'`, `AppController` selects `MockCloudAuditorService`; otherwise it routes to `AwsCloudAuditorService` (`applyLiveAwsEnv` + AWS SDK clients in `src/auditor/` using `resolveLiveAwsProfile()`).
 - No ORM and no Repository layer. AWS SDK lives in auditor services.
-- Validate request bodies with contract Zod (`safeParse`), not class-validator.
+- Validate request bodies `@Body()` at the controller with contract Zod (`safeParse`), throwing Nest `BadRequestException` on failure.
 - Use Nest `HttpException` subclasses (`BadRequestException`, …). Do not add a global exception filter unless one is introduced on purpose.
 - MCP SSE lives in `src/mcp/` (`propose_terraform_remediation_pr`).
 - Tests: Jest, colocated `*.spec.ts`.
