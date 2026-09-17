@@ -81,7 +81,10 @@ export function PulseAdvisor() {
       triggerAdvisorPrompt(null);
       const panel = panelRef.current;
       if (panel) {
-        panel.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+        const isMobileView = typeof window !== 'undefined' && window.innerWidth < 1024;
+        if (isMobileView) {
+          panel.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+        }
         panel.focus({ preventScroll: true });
       }
     }

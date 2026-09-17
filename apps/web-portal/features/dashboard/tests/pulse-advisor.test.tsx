@@ -22,7 +22,8 @@ describe('PulseAdvisor', () => {
     expect(screen.getByRole('button', { name: 'Send message' })).toBeDefined();
   });
 
-  it('scrolls the advisor landmark into view when a resource CTA triggers a prompt', async () => {
+  it('scrolls the advisor landmark into view on mobile viewports when a resource CTA triggers a prompt', async () => {
+    window.innerWidth = 500;
     await renderPresenter(<PulseAdvisor />);
     const panel = screen.getByRole('complementary', { name: 'PulseAdvisor AI Assistant' });
 
@@ -39,6 +40,28 @@ describe('PulseAdvisor', () => {
       expect(panel.scrollIntoView).toHaveBeenCalled();
     });
     expect(document.activeElement).toBe(panel);
+  });
+
+  it('does not scroll into view on wide desktop screens when a resource CTA triggers a prompt', async () => {
+    window.innerWidth = 1200;
+    await renderPresenter(<PulseAdvisor />);
+    const panel = screen.getByRole('complementary', { name: 'PulseAdvisor AI Assistant' });
+
+    await act(async () => {
+      useDashboardStore
+        .getState()
+        .triggerAdvisorPrompt(
+          `Request PR proposal for ${MOCK_AUDIT_RESOURCES[0].resourceName}`,
+          MOCK_AUDIT_RESOURCES[0],
+        );
+    });
+
+    await waitFor(() => {
+      expect(document.activeElement).toBe(panel);
+    });
+    expect(panel.scrollIntoView).not.toHaveBeenCalledWith(
+      expect.objectContaining({ block: 'start' }),
+    );
   });
 
   it('has no WCAG 2.1 AA axe violations when empty', async () => {
