@@ -130,17 +130,18 @@
 
 
 # Managed Zombie Fixture — 2026-09-17 (v1)
-resource "aws_ebs_volume" "cloudpulse_zombie_vol_2026_09_17" {
-  availability_zone = "eu-west-1a"
-  size              = 1
-  type              = "gp3"
-
-  tags = {
-    Name        = "cloudpulse-zombie-vol-2026-09-17-tf"
-    Environment = "sandbox"
-    ManagedBy   = "Terraform"
-  }
-}
+# TOMBSTONED by CloudPulse — cloudpulse-zombie-vol-2026-09-17-tf (vol-0ebf51bd33e3467a1)
+# resource "aws_ebs_volume" "cloudpulse_zombie_vol_2026_09_17" {
+#   availability_zone = "eu-west-1a"
+#   size              = 1
+#   type              = "gp3"
+#
+#   tags = {
+#     Name        = "cloudpulse-zombie-vol-2026-09-17-tf"
+#     Environment = "sandbox"
+#     ManagedBy   = "Terraform"
+#   }
+# }
 
 # TOMBSTONED by CloudPulse — cloudpulse-zombie-eip-2026-09-17 (eipalloc-0e43f6a4c467743a9)
 # resource "aws_eip" "cloudpulse_zombie_eip_2026_09_17" {
@@ -152,3 +153,31 @@ resource "aws_ebs_volume" "cloudpulse_zombie_vol_2026_09_17" {
 #     ManagedBy   = "Terraform"
 #   }
 # }
+# TOMBSTONED by CloudPulse (FinOps Remediation) — cloudpulse-zombie-vol-2026-09-17 (vol-0bf80f2d0c1d31e63)
+# Unmanaged AWS resource: delete during the next Terraform apply.
+resource "terraform_data" "cloudpulse_remediate_vol_0bf80f2d0c1d31e63" {
+  triggers_replace = ["vol-0bf80f2d0c1d31e63"]
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      volume_id="vol-0bf80f2d0c1d31e63"
+      if aws ec2 describe-volumes --volume-ids "$volume_id" --query 'Volumes[0].VolumeId' --output text 2>/dev/null | grep -q '^vol-'; then
+        aws ec2 delete-volume --volume-id "$volume_id"
+      fi
+    EOT
+  }
+}
+# TOMBSTONED by CloudPulse (FinOps Remediation) — cloudpulse-zombie-eip-2026-09-17 (eipalloc-0e43f6a4c467743a9)
+# Unmanaged AWS resource: release during the next Terraform apply.
+resource "terraform_data" "cloudpulse_remediate_eipalloc_0e43f6a4c467743a9" {
+  triggers_replace = ["eipalloc-0e43f6a4c467743a9"]
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      allocation_id="eipalloc-0e43f6a4c467743a9"
+      if aws ec2 describe-addresses --allocation-ids "$allocation_id" --query 'Addresses[0].AllocationId' --output text 2>/dev/null | grep -q '^eipalloc-'; then
+        aws ec2 release-address --allocation-id "$allocation_id"
+      fi
+    EOT
+  }
+}
