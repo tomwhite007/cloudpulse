@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import type { RemediationRequestDto } from '@cloudpulse/api-contracts';
 import { AppController } from './app.controller';
@@ -73,6 +74,13 @@ describe('AppController', () => {
       const response = await appController.remediateResource(request, 'live');
       expect(response).toEqual({ success: true });
       expect(mockCloudAuditorService.remediateResource).toHaveBeenCalledWith(request);
+    });
+
+    it('should throw BadRequestException when payload fails Zod validation', async () => {
+      const invalidRequest = { resourceId: 'res-1' } as RemediationRequestDto;
+      await expect(appController.remediateResource(invalidRequest, 'live')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

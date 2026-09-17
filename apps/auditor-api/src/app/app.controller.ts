@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Headers, Inject, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Headers, Inject, Post } from '@nestjs/common';
 import {
   CostAuditSummaryDto,
   RemediationRequestDto,
+  RemediationRequestSchema,
   RemediationResponseDto,
 } from '@cloudpulse/api-contracts';
 import { AppService } from './app.service';
@@ -47,10 +48,17 @@ export class AppController {
   }
 
   @Post('audit/remediate')
-  remediateResource(
+  async remediateResource(
     @Body() request: RemediationRequestDto,
     @Headers('x-cloudpulse-mode') mode?: string,
   ): Promise<RemediationResponseDto> {
-    return this.getAuditor(mode).remediateResource(request);
+    const parseResult = RemediationRequestSchema.safeParse(request);
+    if (!parseResult.success) {
+      throw new BadRequestException({
+        message: 'Invalid remediation request payload',
+        errors: parseResult.error.flatten().fieldErrors,
+      });
+    }
+    return this.getAuditor(mode).remediateResource(parseResult.data);
   }
 }

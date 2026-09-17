@@ -192,10 +192,13 @@ function withActualRemediationPreview(
 async function resolveAuthenticatedOwner(octokit: Octokit): Promise<string> {
   try {
     const { data } = await octokit.rest.users.getAuthenticated();
-    return data.login;
-  } catch {
-    return 'tomwhite007';
+    if (data.login) return data.login;
+  } catch (error) {
+    console.error('Failed to resolve authenticated GitHub owner from token:', error);
   }
+  throw new Error(
+    'Unable to resolve GitHub repository owner. Please set GITHUB_REPO_OWNER in your environment or provide a valid GITHUB_TOKEN.',
+  );
 }
 
 async function findOpenRemediationPr(

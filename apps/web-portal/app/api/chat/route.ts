@@ -83,7 +83,12 @@ export async function POST(req: Request) {
       throw error;
     }
   } catch (e: unknown) {
-    const message = e instanceof Error ? e.stack || e.message : String(e);
-    return new Response(message, { status: 500 });
+    console.error('PulseAdvisor chat handler error:', e);
+    const message =
+      e instanceof Error && e.message ? e.message : 'An internal error occurred.';
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
