@@ -224,7 +224,13 @@ CloudPulse is designed for modular deployment to any AWS Account:
 
 ## 🚀 8. Roadmap & Upcoming Features
 
-- [ ] **Concurrent Multi-Region Account Sweeper**: Expand auditing beyond single-region configuration (`AWS_REGION`) to dynamically iterate and sweep all enabled AWS regions across the account in a single audit pass.
-- [ ] **S3 Bucket Lifecycle & Stale Data Auditor**: Deep scanning of unutilized S3 buckets via CloudWatch metrics & object last-modified date analysis to identify zero-access storage waste.
-- [ ] **Playwright Visual Snapshot Testing**: Automated visual regression testing across multi-viewport breakpoints to ensure UI layout & component consistency.
-- [ ] **Multi-Cloud Provider Support**: Extending FinOps auditing & automated GitFlow remediation to GCP and Azure.
+### **v1.2.0 — Expanded AWS Resource Auditing & Dashboard Filtering**
+- [ ] **Stale Lambda Functions Auditor**: Audit Lambda functions with zero invocations over 30+ days, generating terraform tombstoning proposals or automated memory right-sizing PRs.
+- [ ] **Idle RDS Instance & Snapshot Scanner**: Detect non-connected RDS DB instances (`DatabaseConnections == 0`) and orphaned manual DB snapshots.
+- [ ] **S3 Stale Bucket & Zombie Storage Auditor**: Deep scanning of unutilized S3 buckets via CloudWatch metrics (`BucketSizeBytes` / `NumberOfObjects`) and object last-modified age to identify zero-access storage waste.
+- [ ] **Dashboard Category Filter Tabs**: Add UI tab navigation on the Web Portal dashboard (`All Resources`, `EBS & EIP`, `RDS Databases`, `Stale Lambdas`, `S3 Storage`) with real-time category filtering.
+
+### **v1.3.0 — Multi-Region & Advanced Telemetry**
+- [ ] **Concurrent Multi-Region Account Sweeper**: Expand auditing beyond single-region configuration (`AWS_REGION`) to dynamically sweep all enabled AWS regions in parallel.
+- [ ] **Playwright Visual Snapshot Testing**: Automated visual regression testing across multi-viewport breakpoints to ensure UI layout consistency.
+- [ ] **Multi-Cloud Adapters**: Extending FinOps auditing & automated GitFlow remediation to GCP (Google Cloud Platform) and Azure.
