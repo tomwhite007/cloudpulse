@@ -54,6 +54,7 @@ Thumbs.db
 out
 
 vitest.config.*.timestamp*
+test-output
 apps/web-portal/.env.local
 apps/auditor-api/.env
 

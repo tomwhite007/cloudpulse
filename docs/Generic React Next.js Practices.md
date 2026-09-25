@@ -120,7 +120,7 @@ E2e is its own Nx application, named with an `-e2e` suffix, sibling to the app u
 - Do not use `page.waitForTimeout()` or `page.waitForLoadState('networkidle')`. Assert on locators.
 - Reuse authenticated `storageState` instead of logging in through the UI every suite.
 
-**CloudPulse:** no `web-portal-e2e` app and no Playwright. Unit tests are Vitest.
+**CloudPulse:** `apps/web-portal-e2e` runs Playwright against production `nx start web-portal` on port 4000 and demo `auditor-api` on port 3000. Unit tests are Vitest.
 
 ---
 

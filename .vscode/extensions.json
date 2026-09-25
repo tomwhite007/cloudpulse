@@ -4,6 +4,7 @@
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
     "firsttris.vscode-jest-runner",
-    "hashicorp.terraform"
+    "hashicorp.terraform",
+    "ms-playwright.playwright"
   ]
 }
