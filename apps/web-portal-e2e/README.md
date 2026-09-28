@@ -11,6 +11,8 @@ You do not start `auditor-api` or the web portal yourself. `pnpm e2e-web-portal`
 
 The portal talks to the API through its own backend. An unauthenticated visit is demo mode, so the dashboard shows `Auditor Engine: Connected (Local)`. No passphrase and no AWS session are required.
 
+`src/remediation.spec.ts` clicks **Snapshot & Terminate** on the demo zombie volume, waits for the PulseAdvisor proposal, then clicks **Draft Pull Request**. That stays on the simulated GitFlow path and returns mock PR #104. It does not open a GitHub pull request.
+
 The first run is the slow one: Nx builds the portal before `next start`. Later runs reuse that build when sources have not changed.
 
 ## Headless
