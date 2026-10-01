@@ -160,12 +160,14 @@
 # Unmanaged AWS resource: release during the next Terraform apply.
 # TOMBSTONED by CloudPulse (FinOps Remediation) — cloudpulse-zombie-eip-2026-09-22-tf (eipalloc-077ae98f1f76fb84e)
 # Unmanaged AWS resource: release during the next Terraform apply.
-resource "terraform_data" "cloudpulse_remediate_eipalloc_077ae98f1f76fb84e" {
-  triggers_replace = ["eipalloc-077ae98f1f76fb84e"]
+# TOMBSTONED by CloudPulse (FinOps Remediation) — cloudpulse-zombie-eip-2026-10-01 (eipalloc-03e6978ca47e43f05)
+# Unmanaged AWS resource: release during the next Terraform apply.
+resource "terraform_data" "cloudpulse_remediate_eipalloc_03e6978ca47e43f05" {
+  triggers_replace = ["eipalloc-03e6978ca47e43f05"]
 
   provisioner "local-exec" {
     command = <<-EOT
-      allocation_id="eipalloc-077ae98f1f76fb84e"
+      allocation_id="eipalloc-03e6978ca47e43f05"
       if aws ec2 describe-addresses --allocation-ids "$allocation_id" --query 'Addresses[0].AllocationId' --output text 2>/dev/null | grep -q '^eipalloc-'; then
         aws ec2 release-address --allocation-id "$allocation_id"
       fi
